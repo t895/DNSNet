@@ -25,6 +25,9 @@ object Intents {
     fun getStopVpnIntent(): Intent = Intent(applicationContext, AdVpnService::class.java)
         .putExtra(AdVpnService.COMMAND_TAG, Command.STOP.ordinal)
 
+    fun getRestartVpnIntent(): Intent = Intent(applicationContext, AdVpnService::class.java)
+        .putExtra(AdVpnService.COMMAND_TAG, Command.RESTART.ordinal)
+
     fun getMainActivityPendingIntent(): PendingIntent = PendingIntent.getActivity(
         applicationContext,
         0,

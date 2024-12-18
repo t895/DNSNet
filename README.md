@@ -50,6 +50,33 @@ Contributing
 ------------
 See [CONTRIBUTING.md](CONTRIBUTING.md)
 
+Building
+--------
+You'll need a few things installed to get up and running
+- [Rust](https://www.rust-lang.org/tools/install)
+- [Python 3](https://www.python.org/downloads/)
+- [Android Studio](https://developer.android.com/studio) (Optionally)
+
+Add all of the Rust build targets
+```bash
+rustup target add x86_64-linux-android i686-linux-android aarch64-linux-android armv7-linux-androideabi
+```
+
+Then build
+```bash
+./gradlew assembleDebug
+```
+
+Note - Android Studio Ladybug on macOS has an issue where it won't be able to find "rustc" and "cargo" when building.
+You'll need to build via the command line in order for things to work properly.
+
+https://issuetracker.google.com/issues/377339196?pli=1
+
+Alternatively, you can launch Android Studio with this command to workaround the issue.
+```bash
+open -na "Android Studio.app"
+```
+
 License
 -------
 This program is free software: you can redistribute it and/or modify

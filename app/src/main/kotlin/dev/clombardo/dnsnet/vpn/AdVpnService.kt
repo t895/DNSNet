@@ -40,9 +40,12 @@ import dev.clombardo.dnsnet.R
 import dev.clombardo.dnsnet.config
 import dev.clombardo.dnsnet.logd
 import dev.clombardo.dnsnet.logi
+import dev.clombardo.dnsnet.logw
 import dev.clombardo.dnsnet.vpn.VpnStatus.Companion.toVpnStatus
+import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import uniffi.net.AdVpnCallback
 
 enum class VpnStatus {
     STARTING,
@@ -75,9 +78,10 @@ enum class Command {
     STOP,
     PAUSE,
     RESUME,
+    RESTART,
 }
 
-class AdVpnService : VpnService(), Handler.Callback {
+class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
     companion object {
         const val SERVICE_NOTIFICATION_ID = 1
         const val REQUEST_CODE_START = 43
@@ -91,6 +95,10 @@ class AdVpnService : VpnService(), Handler.Callback {
 
         private val _status = MutableStateFlow(VpnStatus.STOPPED)
         val status = _status.asStateFlow()
+
+        fun isRunning(): Boolean {
+            return status.value != VpnStatus.STOPPED
+        }
 
         val logger by lazy { BlockLogger.load() }
 
@@ -114,6 +122,11 @@ class AdVpnService : VpnService(), Handler.Callback {
         }
 
         fun start(context: Context) {
+            if (isRunning()) {
+                logw("VPN is already running")
+                return
+            }
+
             val intent = Intents.getStartVpnIntent()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
@@ -123,7 +136,21 @@ class AdVpnService : VpnService(), Handler.Callback {
         }
 
         fun stop(context: Context) {
+            if (!isRunning()) {
+                logw("VPN is already stopped")
+                return
+            }
+
             context.startService(Intents.getStopVpnIntent())
+        }
+
+        fun restart(context: Context) {
+            if (!isRunning()) {
+                logw("VPN is stopped, cannot restart")
+                return
+            }
+
+            context.startService(Intents.getRestartVpnIntent())
         }
 
         private const val NOTIFICATION_ACTION_PENDING_INTENT_FLAGS =
@@ -163,16 +190,10 @@ class AdVpnService : VpnService(), Handler.Callback {
 
     private val handler = Handler(Looper.myLooper()!!, this)
 
-    private var vpnThread: AdVpnThread? = AdVpnThread(
-        vpnService = this,
-        notify = { status ->
-            handler.sendMessage(handler.obtainMessage(VPN_MSG_STATUS_UPDATE, status.ordinal, 0))
-        },
-        log = { connectionName, allowed ->
-            if (config.blockLogging) {
-                logger.newConnection(connectionName, allowed)
-            }
-        }
+    private var vpnThread = AdVpnThread(
+        adVpnService = this,
+        notify = { status -> notify(status.ordinal) },
+        blockLoggerCallback = logger,
     )
 
     private var defaultNetwork: NetworkDetails? = null
@@ -196,6 +217,7 @@ class AdVpnService : VpnService(), Handler.Callback {
         }
 
         if (shouldReconnect(defaultNetwork, newNetwork)) {
+            logi("Default network changed, reconnecting")
             reconnect()
         }
 
@@ -246,7 +268,7 @@ class AdVpnService : VpnService(), Handler.Callback {
         return !oldNetwork.transports.contentEquals(newNetwork.transports)
     }
 
-    private var connectivityChangedCallbackRegistered = false
+    private var connectivityChangedCallbackRegistered = atomic(false)
     private val connectivityChangedCallback = object : NetworkCallback() {
         override fun onCapabilitiesChanged(
             network: Network,
@@ -288,6 +310,30 @@ class AdVpnService : VpnService(), Handler.Callback {
         }
     }
 
+    private fun registerConnectivityChangedCallback() {
+        if (connectivityChangedCallbackRegistered.getAndSet(true)) {
+            logw("Connectivity changed callback already registered")
+            return
+        }
+
+        defaultNetwork = null
+        connectedNetworks.clear()
+        getSystemService(ConnectivityManager::class.java)
+            .registerDefaultNetworkCallback(connectivityChangedCallback)
+    }
+
+    private fun unregisterConnectivityChangedCallback() {
+        if (!connectivityChangedCallbackRegistered.getAndSet(false)) {
+            logw("Connectivity changed callback already unregistered")
+            return
+        }
+
+        defaultNetwork = null
+        connectedNetworks.clear()
+        getSystemService(ConnectivityManager::class.java)
+            .unregisterNetworkCallback(connectivityChangedCallback)
+    }
+
     private val serviceNotificationBuilder =
         NotificationCompat.Builder(this, NotificationChannels.SERVICE_RUNNING)
             .setSmallIcon(R.drawable.ic_state_deny)
@@ -313,18 +359,14 @@ class AdVpnService : VpnService(), Handler.Callback {
             Command.entries[intent.getIntExtra(COMMAND_TAG, Command.START.ordinal)]
         }
 
-        val start = {
-            Preferences.VpnIsActive = true
-            startVpn()
-        }
-
         when (command) {
             Command.START,
             Command.RESUME -> {
-                with(getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager) {
+                with(getSystemService(NotificationManager::class.java)) {
                     cancel(SERVICE_NOTIFICATION_ID)
                 }
-                start()
+                Preferences.VpnIsActive = true
+                startVpn()
             }
 
             Command.STOP -> {
@@ -333,6 +375,8 @@ class AdVpnService : VpnService(), Handler.Callback {
             }
 
             Command.PAUSE -> pauseVpn()
+
+            Command.RESTART -> restartVpnThread()
         }
 
         return START_STICKY
@@ -345,7 +389,7 @@ class AdVpnService : VpnService(), Handler.Callback {
         }
 
         updateVpnStatus(VpnStatus.STARTING)
-        restartVpnThread()
+        vpnThread.startThread()
     }
 
     private fun updateVpnStatus(newStatus: VpnStatus) {
@@ -355,10 +399,14 @@ class AdVpnService : VpnService(), Handler.Callback {
         }
         _status.value = newStatus
 
-        if (!connectivityChangedCallbackRegistered && newStatus == VpnStatus.RUNNING) {
-            getSystemService(ConnectivityManager::class.java)
-                .registerDefaultNetworkCallback(connectivityChangedCallback)
-            connectivityChangedCallbackRegistered = true
+        when (newStatus) {
+            VpnStatus.STARTING,
+            VpnStatus.RUNNING,
+            VpnStatus.WAITING_FOR_NETWORK,
+            VpnStatus.RECONNECTING,
+            VpnStatus.RECONNECTING_NETWORK_ERROR -> registerConnectivityChangedCallback()
+
+            VpnStatus.STOPPING, VpnStatus.STOPPED -> unregisterConnectivityChangedCallback()
         }
     }
 
@@ -378,13 +426,11 @@ class AdVpnService : VpnService(), Handler.Callback {
     }
 
     private fun restartVpnThread() {
-        if (vpnThread == null) {
-            logi("restartVpnThread: Not restarting thread, could not find thread.")
-            return
-        }
-
-        vpnThread?.stopThread()
-        vpnThread?.startThread()
+        logd("Restarting thread")
+        unregisterConnectivityChangedCallback()
+        vpnThread.stopThread()
+        vpnThread.startThread()
+        registerConnectivityChangedCallback()
     }
 
     private fun waitForNetVpn() {
@@ -392,29 +438,27 @@ class AdVpnService : VpnService(), Handler.Callback {
             return
         }
 
-        vpnThread?.stopThread()
         updateVpnStatus(VpnStatus.WAITING_FOR_NETWORK)
+        vpnThread.stopThread()
     }
 
     private fun reconnect() {
+        if (status.value != VpnStatus.RUNNING) {
+            return
+        }
+
         updateVpnStatus(VpnStatus.RECONNECTING)
         restartVpnThread()
     }
 
     private fun stopVpn() {
         logi("Stopping Service")
-        vpnThread?.stopThread() ?: return
-        vpnThread = null
 
-        updateVpnStatus(VpnStatus.STOPPED)
-
-        if (connectivityChangedCallbackRegistered) {
-            getSystemService(ConnectivityManager::class.java)
-                .unregisterNetworkCallback(connectivityChangedCallback)
-            connectivityChangedCallbackRegistered = false
-        }
+        vpnThread.stopThread()
 
         logger.save()
+
+        updateVpnStatus(VpnStatus.STOPPED)
 
         stopSelf()
     }
@@ -430,5 +474,13 @@ class AdVpnService : VpnService(), Handler.Callback {
             else -> throw IllegalArgumentException("Invalid message with what = ${msg.what}")
         }
         return true
+    }
+
+    override fun protectRawSocketFd(socketFd: Int): Boolean {
+        return protect(socketFd)
+    }
+
+    override fun notify(nativeStatus: Int) {
+        handler.sendMessage(handler.obtainMessage(VPN_MSG_STATUS_UPDATE, nativeStatus, 0))
     }
 }
