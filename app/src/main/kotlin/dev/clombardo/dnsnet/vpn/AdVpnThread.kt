@@ -539,12 +539,14 @@ class AdVpnThread(
             }
         }
 
-        // Add all knows DNS servers
-        for (addr in dnsServers) {
-            try {
-                newDNSServer(builder, format, ipv6Template, addr)
-            } catch (e: java.lang.Exception) {
-                loge("configure: Cannot add server:", e)
+        // Add all known DNS servers
+        if (!config.dnsServers.enabled) {
+            for (addr in dnsServers) {
+                try {
+                    newDNSServer(builder, format, ipv6Template, addr)
+                } catch (e: java.lang.Exception) {
+                    loge("configure: Cannot add server:", e)
+                }
             }
         }
 
