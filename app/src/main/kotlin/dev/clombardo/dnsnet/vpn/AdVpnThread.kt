@@ -540,7 +540,7 @@ class AdVpnThread(
         }
 
         // Add all known DNS servers
-        if (!config.dnsServers.enabled) {
+        if (!config.dnsServers.enabled || config.dnsServers.items.none { it.enabled }) {
             for (addr in dnsServers) {
                 try {
                     newDNSServer(builder, format, ipv6Template, addr)
