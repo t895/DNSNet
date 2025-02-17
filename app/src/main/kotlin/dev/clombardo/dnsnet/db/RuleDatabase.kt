@@ -11,8 +11,8 @@
 
 package dev.clombardo.dnsnet.db
 
-import androidx.collection.MutableIntSet
-import androidx.collection.intSetOf
+import androidx.collection.MutableScatterSet
+import androidx.collection.mutableScatterSetOf
 import dev.clombardo.dnsnet.FileHelper
 import dev.clombardo.dnsnet.Host
 import dev.clombardo.dnsnet.HostException
@@ -97,7 +97,7 @@ class RuleDatabase {
         }
     }
 
-    private var blockedHosts by atomic(intSetOf())
+    private var blockedHosts by atomic(mutableScatterSetOf<String>())
 
     /**
      * Checks if a host is blocked.
@@ -105,7 +105,7 @@ class RuleDatabase {
      * @param host A hostname
      * @return true if the host is blocked, false otherwise.
      */
-    fun isBlocked(host: String): Boolean = blockedHosts.contains(host.hashCode())
+    fun isBlocked(host: String): Boolean = blockedHosts.contains(host)
 
     /**
      * Check if any hosts are blocked
@@ -135,7 +135,7 @@ class RuleDatabase {
             }
             .sortedBy { it.state.ordinal }
 
-        val newHosts = MutableIntSet(sortedHostItems.size + config.hosts.exceptions.size)
+        val newHosts = MutableScatterSet<String>(sortedHostItems.size + config.hosts.exceptions.size)
         for (item in sortedHostItems) {
             if (Thread.interrupted()) {
                 throw InterruptedException("Interrupted")
@@ -161,7 +161,7 @@ class RuleDatabase {
      * @throws InterruptedException If the thread was interrupted.
      */
     @Throws(InterruptedException::class)
-    private fun loadItem(set: MutableIntSet, item: HostFile) {
+    private fun loadItem(set: MutableScatterSet<String>, item: HostFile) {
         if (item.state == HostState.IGNORE) {
             return
         }
@@ -186,19 +186,19 @@ class RuleDatabase {
      * @param item The item the host belongs to
      * @param host The host
      */
-    private fun addHost(set: MutableIntSet, item: Host, host: String) {
+    private fun addHost(set: MutableScatterSet<String>, item: Host, host: String) {
         // Single address to block
         if (item.state == HostState.ALLOW) {
-            set.remove(host.hashCode())
+            set.remove(host)
         } else if (item.state == HostState.DENY) {
-            set.add(host.hashCode())
+            set.add(host)
         }
     }
 
-    private fun addHostException(set: MutableIntSet, exception: HostException) {
+    private fun addHostException(set: MutableScatterSet<String>, exception: HostException) {
         when (exception.state) {
-            HostState.ALLOW -> set.remove(exception.data.hashCode())
-            HostState.DENY -> set.add(exception.data.hashCode())
+            HostState.ALLOW -> set.remove(exception.data)
+            HostState.DENY -> set.add(exception.data)
             else -> return
         }
     }
@@ -211,7 +211,7 @@ class RuleDatabase {
      * @throws InterruptedException If thread was interrupted
      */
     @Throws(InterruptedException::class)
-    fun loadReader(set: MutableIntSet, item: Host, reader: Reader): Boolean {
+    fun loadReader(set: MutableScatterSet<String>, item: Host, reader: Reader): Boolean {
         var count = 0
         try {
             logd("loadBlockedHosts: Reading: ${item.data}")
