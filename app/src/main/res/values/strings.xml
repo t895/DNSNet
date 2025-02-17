@@ -2,7 +2,6 @@
     <string name="app_name" translatable="false">DNSNet</string>
     <string name="app_shortdesc">Host blocking and custom DNS servers</string>
     <string name="custom_dns">Custom DNS servers</string>
-    <string name="enable_hosts">Filter hosts</string>
     <string name="start_tab">Start</string>
     <string name="hosts_tab">Hosts</string>
     <string name="dns_tab">DNS</string>
@@ -17,13 +16,10 @@
     <string name="info_app_license">This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.</string>
     <string name="info_app_copyright" translatable="false">©2025 Charles Lombardo</string>
     <string name="switch_onboot">Resume on system start-up</string>
-    <string name="activity_edit">Edit Item</string>
     <string name="title">Title</string>
     <string name="location">Location (URL or host)</string>
     <string name="action">Action</string>
-    <string name="cannot_restore_previous_config">Cannot restore previous configuration: %s</string>
     <string name="cannot_read_config">Cannot read configuration</string>
-    <string name="cannot_load_default_config">Cannot read default settings: %s - This should not happen</string>
     <string name="cannot_write_config">Cannot write configuration: %s</string>
     <string name="action_refresh">Refresh host files</string>
     <string name="notification_starting">Starting</string>
@@ -53,15 +49,8 @@
     <string name="website" translatable="false">https://github.com/t895/DNSNet</string>
     <string name="view_source_code">View source code</string>
     <string name="allowlist_tab">Apps</string>
-    <string name="show_notification">Show Notification</string>
     <string name="dns_description">Enable your preferred DNS servers</string>
-    <string name="host_description">Red rules block, green rules allow</string>
-    <string name="disable_notification_title">Disabling Notification</string>
-    <string name="disable_notification_message">Disabling the notification may cause DNSNet to be stopped under memory pressure.\n\nDo you want to disable the notification?</string>
-    <string name="disable_notification_ack">Disable Notification</string>
-    <string name="disable_notification_nak">Abort</string>
     <string name="allowlist_description">Bypass DNSNet for marked apps</string>
-    <string name="switch_show_system_apps">Show system apps</string>
     <string name="location_dns">IP address of DNS server (IPv4 or IPv6)</string>
     <string name="state_dns_enabled">Enabled</string>
     <string name="host_update_error_item">Error %1$d: %2$s</string>
@@ -78,11 +67,6 @@
     <string name="unknown_error_s">Unexpected error: %1$s</string>
     <string name="requested_timed_out">Request timed out</string>
     <string name="action_delete">Delete</string>
-    <string name="night_mode">Dark Theme</string>
-    <string name="expand_bar_toggle_expand">Open details panel</string>
-    <string name="expand_bar_toggle_close">Close details panel</string>
-    <string name="expand_bar_expanded">Opened</string>
-    <string name="expand_bar_closed">Closed</string>
     <string name="action_stop">Stop</string>
     <string name="action_start">Start</string>
     <string name="automatic_refresh">Refresh daily</string>
@@ -90,21 +74,12 @@
     <string name="watchdog">Watch connection</string>
     <string name="watchdog_description">Check the connection in increasingly longer intervals and reconnect if it stopped working</string>
     <string name="legend_host_intro">Blocked entries are added first. Then the allowed entries create exceptions. You can control this with the following options:</string>
-    <string name="legend_host_ignore">Ignore this entry</string>
-    <string name="legend_host_allow">Allow access to hosts in this entry</string>
-    <string name="legend_host_deny">Deny access to hosts in this entry</string>
-    <string name="do_not_use_dns_server">Off</string>
-    <string name="use_dns_server">On</string>
     <string name="switch_onboot_description">Start DNSNet when the device is turned on if it was active when the device was turned off.</string>
     <string name="activity_edit_dns_server">Edit DNS server</string>
     <string name="add_dns_server">Add DNS server</string>
     <string name="add_address">Add address</string>
     <string name="notification_paused_title">DNSNet paused</string>
-    <string name="notification_paused_text">Tap to resume.</string>
     <string name="notification_action_pause">Pause</string>
-    <string name="allowlist_on_vpn">No apps</string>
-    <string name="allowlist_not_on_vpn">All apps</string>
-    <string name="allowlist_intelligent">System apps except browsers</string>
     <string name="ipv6_support_description">Disable this if your network does not use IPv6 or you cannot start the service.</string>
     <string name="ipv6_support">IPv6 support</string>
     <string name="action_logcat">Logcat</string>
@@ -120,7 +95,6 @@
     <string name="unstable_feature">Unstable feature</string>
     <string name="unstable_watchdog_message">Watching the connection may cause reconnects and the connection to get stuck</string>
     <string name="button_cancel">Cancel</string>
-    <string name="button_continue">Continue</string>
     <string name="allowlist_defaults_title">Allowlist defaults</string>
     <string-array name="allowlist_defaults">
         <item>No apps bypass by default</item>
