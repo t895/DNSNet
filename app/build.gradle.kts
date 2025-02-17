@@ -101,6 +101,10 @@ android {
     androidResources {
         generateLocaleConfig = true
     }
+
+    lint {
+        disable += "ExtraTranslation"
+    }
 }
 
 kotlin {
