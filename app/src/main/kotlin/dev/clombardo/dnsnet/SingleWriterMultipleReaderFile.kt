@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Charles Lombardo <clombardo169@gmail.com>
+/* Copyright (C) 2025 Charles Lombardo <clombardo169@gmail.com>
  *
  * Derived from DNS66:
  * Copyright (C) 2017 Julian Andres Klode <jak@jak-linux.org>
