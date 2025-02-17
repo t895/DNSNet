@@ -875,7 +875,9 @@ fun HomeScreen(
                     },
                     onItemCheckClicked = { item ->
                         vm.toggleDnsServer(item)
-                        onRestartService()
+                        if (customDnsServers) {
+                            onRestartService()
+                        }
                     },
                 )
             }
