@@ -525,15 +525,17 @@ class AdVpnThread(
         if (config.dnsServers.enabled) {
             for (item in config.dnsServers.items) {
                 if (item.enabled) {
-                    try {
-                        newDNSServer(
-                            builder,
-                            format,
-                            ipv6Template,
-                            InetAddress.getByName(item.location)
-                        )
-                    } catch (e: Exception) {
-                        loge("configure: Cannot add custom DNS server", e)
+                    for (address in item.getAddresses()) {
+                        try {
+                            newDNSServer(
+                                builder,
+                                format,
+                                ipv6Template,
+                                InetAddress.getByName(address)
+                            )
+                        } catch (e: Exception) {
+                            loge("configure: Cannot add custom DNS server", e)
+                        }
                     }
                 }
             }
@@ -590,7 +592,7 @@ class AdVpnThread(
 
         if (config.dnsServers.enabled) {
             for (item in config.dnsServers.items) {
-                if (item.enabled && item.location.contains(":")) {
+                if (item.enabled && item.addresses.contains(":")) {
                     return true
                 }
             }

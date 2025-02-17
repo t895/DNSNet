@@ -117,55 +117,6 @@ data class Configuration(
         minorVersion = level
     }
 
-    fun updateURL(oldURL: String, newURL: String?, newState: HostState) =
-        hosts.items.forEach {
-            if (it.data == oldURL) {
-                if (newURL != null) {
-                    it.data = newURL
-                }
-
-                it.state = newState
-            }
-        }
-
-    fun updateDNS(oldIP: String, newIP: String) =
-        dnsServers.items.forEach {
-            if (it.location == oldIP) {
-                it.location = newIP
-            }
-        }
-
-    fun addDNS(title: String, location: String, isEnabled: Boolean) =
-        dnsServers.items.add(
-            DnsServer(
-                title = title,
-                location = location,
-                enabled = isEnabled,
-            )
-        )
-
-    fun addURL(index: Int, title: String, location: String, state: HostState) =
-        hosts.items.add(
-            index = index,
-            element = HostFile(
-                title = title,
-                data = location,
-                state = state,
-            ),
-        )
-
-    fun removeURL(oldURL: String) =
-        hosts.items.removeAll { it.data == oldURL }
-
-    fun disableURL(oldURL: String) {
-        logd("disableURL: Disabling $oldURL")
-        hosts.items.forEach {
-            if (it.data == oldURL) {
-                it.state = HostState.IGNORE
-            }
-        }
-    }
-
     fun save(name: String = DEFAULT_CONFIG_FILENAME) {
         val outputStream = FileHelper.openWrite(name)
         save(outputStream)
@@ -281,9 +232,11 @@ enum class AllowListMode {
 @Serializable
 data class DnsServer(
     var title: String = "",
-    var location: String = "",
+    @SerialName("location") var addresses: String = "",
     var enabled: Boolean = false,
-) : Parcelable
+) : Parcelable {
+    fun getAddresses(): List<String> = addresses.split(",").map { it.trim() }
+}
 
 interface Host : Parcelable {
     var title: String
@@ -382,18 +335,13 @@ data class DnsServers(
     companion object {
         val defaultServers = listOf(
             DnsServer(
-                title = "Cloudflare (1)",
-                location = "1.1.1.1",
-                enabled = false,
-            ),
-            DnsServer(
-                title = "Cloudflare (2)",
-                location = "1.0.0.1",
+                title = "Cloudflare",
+                addresses = "1.1.1.1,1.0.0.1",
                 enabled = false,
             ),
             DnsServer(
                 title = "Quad9",
-                location = "9.9.9.9",
+                addresses = "9.9.9.9",
                 enabled = false,
             ),
         )
