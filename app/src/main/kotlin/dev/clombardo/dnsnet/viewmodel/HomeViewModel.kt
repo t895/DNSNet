@@ -135,14 +135,10 @@ class HomeViewModel : ViewModel() {
 
         val pm = applicationContext.packageManager
         viewModelScope.launch(Dispatchers.IO) {
-            val apps = pm.getInstalledApplications(0)
-
-            Collections.sort(apps, ApplicationInfo.DisplayNameComparator(pm))
-
             val entries = ArrayList<App>()
             val notOnVpn = HashSet<String>()
             config.appList.resolve(pm, HashSet(), notOnVpn)
-            apps.forEach {
+            pm.getInstalledApplications(0).forEach {
                 if (it.packageName != dev.clombardo.dnsnet.BuildConfig.APPLICATION_ID) {
                     entries.add(
                         App(
