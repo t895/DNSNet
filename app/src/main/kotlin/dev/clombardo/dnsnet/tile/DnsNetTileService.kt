@@ -50,7 +50,7 @@ class DnsNetTileService : TileService() {
     }
 
     private fun update(status: VpnStatus) {
-        qsTile.apply {
+        qsTile?.apply {
             val statusString = applicationContext.getString(status.toTextId())
             contentDescription = statusString
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
