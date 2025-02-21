@@ -41,7 +41,6 @@
     <string name="missing_hosts_files_title">Faltando os arquivos host</string>
     <string name="button_no">Não</string>
     <string name="button_yes">Sim</string>
-    <string name="website" translatable="false">https://github.com/julian-klode/dns66</string>
     <string name="allowlist_tab">Apps</string>
     <string name="show_notification">Mostrar a notificação</string>
     <string name="dns_description">Habilitar seus servidores DNS preferidos</string>

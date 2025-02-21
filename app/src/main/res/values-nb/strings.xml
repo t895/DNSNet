@@ -8,7 +8,7 @@
     <string name="action_export">Eksporter innstillinger</string>
     <string name="action_import">Importer innstillinger</string>
     <string name="load_defaults">Last standardinnstillingene</string>
-    <string name="action_about">Om DNS66</string>
+    <string name="action_about">Om DNSNet</string>
     <string name="info_app_license">Dette programmet er fri programvare: du kan distribuere det rundt og/eller modifisere den under betingelsene til GNU General Public License som publisert av Free Software Foundation, enten versjon 3 av den lisensen eller (Valgfritt) enhver senere versjon.</string>
     <string name="switch_onboot">Fortsett ved systemoppstart</string>
     <string name="activity_edit">Rediger gjenstand</string>

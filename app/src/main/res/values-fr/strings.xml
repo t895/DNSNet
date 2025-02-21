@@ -104,8 +104,8 @@
     <string name="notifications_group_service">Contrôle du service</string>
     <string name="notifications_group_updates">Mises à joir</string>
     <string-array name="allowlist_defaults">
-        <item>Toutes les apps passent par DNS66 par défaut</item>
-        <item>Aucune app ne passe par DNS66 par défaut</item>
-        <item>Les apps systèmes ne passent pas par DNS66 par défaut</item>
+        <item>Toutes les apps passent par DNSNet par défaut</item>
+        <item>Aucune app ne passe par DNSNet par défaut</item>
+        <item>Les apps systèmes ne passent pas par DNSNet par défaut</item>
     </string-array>
 </resources>
