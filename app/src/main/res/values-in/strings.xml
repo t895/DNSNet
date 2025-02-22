@@ -1,0 +1,154 @@
+<resources>
+    <string name="app_name" translatable="false">DNSNet</string>
+    <string name="app_shortdesc">Pemblokiran host dan server DNS khusus</string>
+    <string name="custom_dns">Server DNS khusus</string>
+    <string name="start_tab">Mulai</string>
+    <string name="hosts_tab">Hosts</string>
+    <string name="dns_tab">DNS</string>
+    <string name="action_export">Ekspor pengaturan</string>
+    <string name="export_description">Buat salinan cadangan dari konfigurasi Anda</string>
+    <string name="action_import">Impor pengaturan</string>
+    <string name="import_description">Muat berkas cadangan pengaturan</string>
+    <string name="load_defaults">Muat pengaturan default</string>
+    <string name="load_defaults_description">Atur ulang semua pengaturan kembali ke nilai default</string>
+    <string name="action_about">Tentang</string>
+    <string name="about_description">Informasi tentang DNSNet</string>
+    <string name="info_app_license">Program ini merupakan perangkat lunak gratis: Anda dapat mendistribusikan ulang dan/atau memodifikasinya di bawah persyaratan Lisensi Publik Umum GNU seperti yang diterbitkan oleh Free Software Foundation, baik versi 3 dari Lisensi, atau (sesuai pilihan Anda) versi yang lebih baru.</string>
+    <string name="info_app_copyright" translatable="false">©2025 Charles Lombardo</string>
+    <string name="switch_onboot">Melanjutkan saat sistem dimulai</string>
+    <string name="title">Judul</string>
+    <string name="location">Locakasi (URL atau host)</string>
+    <string name="action">Tindakan</string>
+    <string name="cannot_read_config">Tidak dapat membaca konfigurasi</string>
+    <string name="cannot_write_config">Tidak dapat menulis konfigurasi: %s</string>
+    <string name="action_refresh">Segarkan berkas host</string>
+    <string name="notification_starting">Mulai</string>
+    <string name="notification_running">Aktif</string>
+    <string name="notification_stopping">Menghentikan</string>
+    <string name="notification_waiting_for_net">Menunggu jaringan</string>
+    <string name="notification_reconnecting">Menyambung kembali</string>
+    <string name="notification_reconnecting_error">Kesalahan menyambungkan kembali</string>
+    <string name="notification_stopped">Dihentikan</string>
+    <string name="deny">Tolak</string>
+    <string name="allow">Izinkan</string>
+    <string name="ignore">Abaikan</string>
+    <string-array name="item_states">
+        <item>@string/deny</item>
+        <item>@string/allow</item>
+        <item>@string/ignore</item>
+    </string-array>
+    <!-- Translate with something like <Language> Translation: Your Name -->
+    <string name="translator_credits">Terjemahan Indonesia oleh cyberboh</string>
+    <string name="app_version_info">Versi: %s</string>
+    <string name="dns66_credit">Berdasarkan pada DNS66 yang dibuat oleh Julian Andres Klode</string>
+    <string name="adbuster_credit">Beberapa bagian diperoleh dari AdBuster yang dibuat oleh Daniel Brodie</string>
+    <string name="missing_hosts_files_message">Beberapa file host yang Anda konfigurasi (yang tidak diabaikan) hilang.\n\nGunakan tindakan ‘Segarkan’ untuk mengunduh berkas hosts.\n\nApakah Anda masih ingin melanjutkannya?</string>
+    <string name="missing_hosts_files_title">Berkas host hilang</string>
+    <string name="button_no">Tidak</string>
+    <string name="button_yes">Ya</string>
+    <string name="website" translatable="false">https://github.com/t895/DNSNet</string>
+    <string name="view_source_code">Lihat kode sumber</string>
+    <string name="allowlist_tab">Aplikasi</string>
+    <string name="dns_description">Aktifkan server DNS pilihan Anda</string>
+    <string name="allowlist_description">Abaikan DNSNet untuk aplikasi yang ditandai</string>
+    <string name="location_dns">Alamat IP server DNS (IPv4 atau IPv6)</string>
+    <string name="state_dns_enabled">Diaktifkan</string>
+    <string name="host_update_error_item">Kesalahan %1$d: %2$s</string>
+    <string name="update_incomplete">Pembaruan tidak lengkap</string>
+    <string name="update_incomplete_description">Beberapa berkas host tidak dapat diunduh. Jika file sebelumnya telah diunduh, versi lama akan terus digunakan.</string>
+    <string name="updating_hostfiles">Memperbarui berkas host</string>
+    <string name="action_use_file">Gunakan berkas</string>
+    <string name="persistable_uri_permission_failed">Tidak dapat menggunakan berkas yang diminta: Tidak diizinkan untuk terus menggunakan berkas yang diminta</string>
+    <string name="updating_n_host_files">Memperbarui %1$d berkas host</string>
+    <string name="could_not_update_all_hosts">Tidak dapat memperbarui semua berkas host</string>
+    <string name="permission_denied">Izin ditolak</string>
+    <string name="invalid_url_s">URL tidak sah: %1$s</string>
+    <string name="file_not_found">Berkas tidak ditemukan</string>
+    <string name="unknown_error_s">Kesalahan tak terduga: %1$s</string>
+    <string name="requested_timed_out">Permintaan telah habis waktu</string>
+    <string name="action_delete">Hapus</string>
+    <string name="action_stop">Berhenti</string>
+    <string name="action_start">Mulai</string>
+    <string name="automatic_refresh">Segarkan setiap hari</string>
+    <string name="automatic_refresh_description">Pembaruan harian dilakukan saat mengisi daya, siaga, dan pada jaringan yang tidak terukur.</string>
+    <string name="watchdog">Lihat sambungan</string>
+    <string name="watchdog_description">Periksa sambungan dalam interval yang semakin lama dan sambungkan kembali jika berhenti berfungsi</string>
+    <string name="legend_host_intro">Entri yang diblokir ditambahkan terlebih dahulu. Kemudian entri yang diizinkan membuat pengecualian. Anda dapat mengontrol hal ini dengan pilihan berikut:</string>
+    <string name="switch_onboot_description">Mulai DNSNet saat perangkat dihidupkan jika aktif saat perangkat dimatikan.</string>
+    <string name="activity_edit_dns_server">Ubah server DNS</string>
+    <string name="add_dns_server">Tambahkan server DNS</string>
+    <string name="add_address">Tambahkan alamat</string>
+    <string name="notification_paused_title">DNSNet dijeda</string>
+    <string name="notification_action_pause">Jeda</string>
+    <string name="ipv6_support_description">Nonaktifkan ini jika jaringan Anda tidak menggunakan IPv6 atau Anda tidak dapat memulai layanan.</string>
+    <string name="ipv6_support">Dukungan IPv6</string>
+    <string name="action_logcat">Logcat</string>
+    <string name="logcat_description">Bagikan catatan aplikasi saat Anda perlu melaporkan masalah</string>
+    <string name="notifications_running">Layanan yang sedang berjalan</string>
+    <string name="notifications_running_desc">Notifikasi untuk berinteraksi dengan layanan yang sedang berjalan</string>
+    <string name="notifications_update">Status</string>
+    <string name="notifications_update_desc">Notifikasi tentang memperbarui berkas host</string>
+    <string name="notifications_paused">Layanan yang dijeda</string>
+    <string name="notifications_paused_desc">Notifikasi untuk melanjutkan setelah menjeda</string>
+    <string name="notifications_group_service">Kontrol layanan</string>
+    <string name="notifications_group_updates">Pembaruan</string>
+    <string name="unstable_feature">Fitur yang tidak stabil</string>
+    <string name="unstable_watchdog_message">Melihat sambungan dapat menyebabkan penyambungan ulang dan sambungan macet</string>
+    <string name="button_cancel">Batalkan</string>
+    <string name="allowlist_defaults_title">Default daftar yang diijinkan</string>
+    <string-array name="allowlist_defaults">
+        <item>Tidak ada aplikasi yang dilewati secara default</item>
+        <item>Semua aplikasi dilewati secara default</item>
+        <item>Aplikasi sistem dilewati secara default</item>
+    </string-array>
+    <string name="input_blank_error">Masukan tidak boleh kosong</string>
+    <string name="resume">Lanjutkan</string>
+    <string name="notification_permission">Diperlukan izin notifikasi</string>
+    <string name="notification_permission_description">Kami memerlukan izin notifikasi untuk menampilkan status pemblokir host dan pembaruannya.</string>
+    <string name="could_not_start_vpn">Tidak dapat memulai VPN</string>
+    <string name="could_not_start_vpn_description">Anda harus menerima permintaan untuk memulai VPN supaya DNSNet dapat berfungsi. Jika masih gagal, Anda mungkin perlu menonaktifkan layanan VPN yang selalu aktif saat ini.</string>
+    <string name="add">Tambahkan</string>
+    <string name="navigate_up">Arahkan ke atas</string>
+    <string name="save">Simpan</string>
+    <string name="more_options">Pilihan lainnya</string>
+    <string name="expanded">Perluas</string>
+    <string name="collapsed">Perkecil</string>
+    <string name="private_dns_error">Kesalahan DNS Pribadi</string>
+    <string name="private_dns_error_description">Ketika DNS Pribadi diaktifkan, kami tidak dapat membuat dan memblokir sambungan dengan benar.\nAnda perlu menonaktifkannya di pengaturan jaringan untuk melanjutkan.</string>
+    <string name="open_settings">Buka Pengaturan</string>
+    <string name="close">Tutup</string>
+    <string name="try_again">Coba lagi</string>
+    <string name="blocked">Diblokir</string>
+    <string name="allowed">Diizinkan</string>
+    <string name="blocked_connections_percent">%d%% Diblokir</string>
+    <string name="block_log">Catatan Blokir</string>
+    <string name="block_log_description">Rekam setiap sambungan untuk melihat dan menganalisisnya</string>
+    <string name="warning">Peringatan</string>
+    <string name="disable_block_log_warning_description">Setelah dinonaktifkan, catatan blokir yang ada akan dihapus secara permanen.</string>
+    <string name="disable">Nonaktifkan</string>
+    <string name="scroll_up">Gulir ke atas</string>
+    <string name="alphabetical">Menurut abjad</string>
+    <string name="attempts">Upaya</string>
+    <string name="modify_list">Modifikasi daftar</string>
+    <string name="last_connected">Terakhir terhubung</string>
+    <string name="reset">Atur ulang</string>
+    <string name="reset_settings_warning_description">Ini akan menghapus pengaturan Anda saat ini secara permanen.</string>
+    <string name="permanently_delete_warning_description">Ini akan menghapus secara permanen %s</string>
+    <string name="create_exception">Buat pengecualian</string>
+    <string name="add_hosts_file">Tambahkan berkas hosts</string>
+    <string name="edit_hosts_file">Ubah berkas hosts</string>
+    <string name="add_host">Tambahkan host</string>
+    <string name="edit_host">Ubah host</string>
+    <string name="hostname">Nama host</string>
+    <string name="start_title">Konfigurasi umum DNSNet</string>
+    <string name="hosts_title">Menyaring hosts dengan berkas dan pengecualian</string>
+    <string name="credits">Penghargaan</string>
+    <string name="open_license">Lisensi terbuka</string>
+    <string name="dns66_license_link" translatable="false">https://github.com/julian-klode/dns66/blob/main/COPYING</string>
+    <string name="adbuster_license_link" translatable="false">https://github.com/dbrodie/AdBuster/blob/master/License-GPLv3</string>
+    <string name="search">Cari</string>
+    <string name="ascending">Meningkat</string>
+    <string name="descending">Menurun</string>
+    <string name="system_apps">Aplikasi sistem</string>
+    <string name="logcat_written_successfully">Logcat berhasil ditulis</string>
+</resources>
