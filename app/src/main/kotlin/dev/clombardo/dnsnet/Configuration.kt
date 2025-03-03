@@ -29,6 +29,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
+import uniffi.net.NativeHost
+import uniffi.net.NativeHostState
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -242,6 +244,8 @@ interface Host : Parcelable {
     var title: String
     var data: String
     var state: HostState
+
+    fun toNative(): NativeHost = NativeHost(title, data, state.toNative())
 }
 
 @Parcelize
@@ -352,6 +356,12 @@ data class DnsServers(
 @Keep
 enum class HostState {
     IGNORE, DENY, ALLOW;
+
+    fun toNative(): NativeHostState = when (this.ordinal) {
+        1 -> NativeHostState.DENY
+        2 -> NativeHostState.ALLOW
+        else -> NativeHostState.IGNORE
+    }
 
     companion object {
         fun Int.toHostState(): HostState = entries.firstOrNull { it.ordinal == this } ?: IGNORE

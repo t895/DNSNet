@@ -1,0 +1,1324 @@
+use std::{
+    collections::{HashSet, VecDeque},
+    fs::File,
+    io::{self, BufRead, Read, Write},
+    mem::{self, MaybeUninit},
+    net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6, UdpSocket},
+    os::fd::{AsRawFd, FromRawFd, RawFd},
+    str::FromStr,
+    sync::{atomic::AtomicBool, Arc},
+    thread,
+    time::{self, Duration, SystemTime, UNIX_EPOCH},
+    usize,
+};
+
+use android_logger::Config;
+use etherparse::{
+    ip_number, IpHeaders, IpNumber, Ipv4Header, Ipv6FlowLabel, Ipv6Header, NetSlice, PacketBuilder,
+    PacketBuilderStep, SlicedPacket, TransportSlice, UdpSlice,
+};
+use log::LevelFilter;
+use polling::{Event, Events, Poller};
+use simple_dns::{rdata::RData, Name, PacketFlag, ResourceRecord};
+use socket2::{Domain, Protocol, SockAddr, Socket, Type};
+
+#[macro_use]
+extern crate log;
+extern crate android_logger;
+
+uniffi::setup_scaffolding!();
+
+#[uniffi::export]
+pub fn rust_init() {
+    android_logger::init_once(
+        Config::default()
+            .with_max_level(LevelFilter::Trace) // limit log level
+            .with_tag("DNSNet Native"), // logs will show under mytag tag
+    );
+}
+
+#[uniffi::export]
+pub fn run_vpn_native(
+    ad_vpn_callback: Box<dyn AdVpnCallback>,
+    block_logger_callback: Box<dyn BlockLoggerCallback>,
+    android_file_helper: Box<dyn AndroidFileHelper>,
+    host_items: Vec<NativeHost>,
+    host_exceptions: Vec<NativeHost>,
+    upstream_dns_servers: Vec<Vec<u8>>,
+    watchdog_target_address: String,
+    vpn_fd: i32,
+    vpn_controller: Arc<VpnController>,
+    watchdog_enabled: bool,
+) -> Result<(), VpnError> {
+    info!(
+        "run_vpn_native: Starting VPN with parameters\n\
+        host_items: {:?}\n\
+        host_exceptions: {:?}\n\
+        upstream_dns_servers: {:?}\n\
+        watchdog_enabled: {}\n\
+        watchdog_target_address: {}\n\
+        vpn_fd: {}",
+        host_items,
+        host_exceptions,
+        upstream_dns_servers,
+        watchdog_enabled,
+        watchdog_target_address,
+        vpn_fd
+    );
+
+    let mut vpn = AdVpn::new(
+        vpn_fd,
+        vpn_controller,
+        watchdog_enabled,
+        &watchdog_target_address,
+    );
+
+    let result = vpn.run(
+        &ad_vpn_callback,
+        block_logger_callback,
+        android_file_helper,
+        host_items,
+        host_exceptions,
+        upstream_dns_servers,
+    );
+    info!("run_vpn_native: Stopped");
+    return result;
+}
+
+#[derive(uniffi::Object)]
+pub struct VpnController {
+    signal_fd: i32,
+    should_stop: AtomicBool,
+}
+
+#[uniffi::export]
+impl VpnController {
+    #[uniffi::constructor]
+    fn new() -> Arc<Self> {
+        Arc::new(VpnController {
+            signal_fd: unsafe {
+                let result = libc::eventfd(0, 0);
+                if result != -1 {
+                    result
+                } else {
+                    panic!()
+                }
+            },
+            should_stop: AtomicBool::new(false),
+        })
+    }
+
+    fn get_should_stop(&self) -> bool {
+        return self.should_stop.load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    fn stop(&self) {
+        self.should_stop
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+        unsafe { libc::eventfd_write(self.signal_fd, 1) };
+    }
+}
+
+impl Drop for VpnController {
+    fn drop(&mut self) {
+        unsafe { libc::close(self.signal_fd) };
+    }
+}
+
+fn build_ipv4_packet_with_udp_payload(
+    source_address: &[u8; 4],
+    source_port: u16,
+    destination_address: &[u8; 4],
+    destination_port: u16,
+    time_to_live: u8,
+    identification: u16,
+    udp_payload: &[u8],
+) -> Option<Vec<u8>> {
+    let mut header = match Ipv4Header::new(
+        udp_payload.len() as u16,
+        time_to_live,
+        ip_number::UDP,
+        *source_address,
+        *destination_address,
+    ) {
+        Ok(value) => {
+            debug!("build_packet_v4: Successfully created Ipv4Header");
+            value
+        }
+        Err(e) => {
+            error!("build_packet_v4: Failed to create Ipv4Header! - {:?}", e);
+            return None;
+        }
+    };
+
+    header.identification = identification;
+    let builder = PacketBuilder::ip(IpHeaders::Ipv4(header, Default::default()));
+    return build_ip_packet_with_udp_payload(builder, source_port, destination_port, udp_payload);
+}
+
+fn build_ipv6_packet_with_udp_payload(
+    source_address: &[u8; 16],
+    source_port: u16,
+    destination_address: &[u8; 16],
+    destination_port: u16,
+    traffic_class: u8,
+    flow_label: Ipv6FlowLabel,
+    hop_limit: u8,
+    udp_payload: &[u8],
+) -> Option<Vec<u8>> {
+    let header = Ipv6Header {
+        traffic_class,
+        flow_label,
+        payload_length: udp_payload.len() as u16,
+        next_header: IpNumber::UDP,
+        hop_limit,
+        source: *source_address,
+        destination: *destination_address,
+    };
+    let builder = PacketBuilder::ip(IpHeaders::Ipv6(header, Default::default()));
+    return build_ip_packet_with_udp_payload(builder, source_port, destination_port, udp_payload);
+}
+
+fn build_ip_packet_with_udp_payload(
+    builder: PacketBuilderStep<IpHeaders>,
+    source_port: u16,
+    destination_port: u16,
+    udp_payload: &[u8],
+) -> Option<Vec<u8>> {
+    let udp_builder = builder.udp(source_port, destination_port);
+    let mut result = Vec::<u8>::with_capacity(udp_builder.size(udp_payload.len()));
+    match udp_builder.write(&mut result, &udp_payload) {
+        Ok(_) => debug!("build_packet: Successfully built packet"),
+        Err(e) => {
+            error!("build_packet: Failed to build packet! - {:?}", e);
+            return None;
+        }
+    };
+    return Some(result);
+}
+
+#[derive(Debug)]
+struct GenericIpPacket<'a> {
+    packet: SlicedPacket<'a>,
+}
+
+impl<'a> GenericIpPacket<'a> {
+    fn from_ip_packet(data: &'a [u8]) -> Option<Self> {
+        match SlicedPacket::from_ip(data) {
+            Ok(value) => Some(GenericIpPacket::new(value)),
+            Err(_) => None,
+        }
+    }
+
+    fn new(packet: SlicedPacket<'a>) -> Self {
+        Self { packet }
+    }
+
+    fn get_ipv4_header(&self) -> Option<Ipv4Header> {
+        match &self.packet.net {
+            Some(net) => match net {
+                NetSlice::Ipv4(value) => Some(value.header().to_header()),
+                NetSlice::Ipv6(_) => None,
+            },
+            None => None,
+        }
+    }
+
+    fn get_ipv6_header(&self) -> Option<Ipv6Header> {
+        match &self.packet.net {
+            Some(net) => match net {
+                NetSlice::Ipv4(_) => None,
+                NetSlice::Ipv6(value) => Some(value.header().to_header()),
+            },
+            None => None,
+        }
+    }
+
+    fn get_destination_address(&self) -> Option<Vec<u8>> {
+        let ipv4_header = self.get_ipv4_header();
+        if ipv4_header.is_some() {
+            return Some(ipv4_header.unwrap().destination.to_vec());
+        }
+
+        let ipv6_header = self.get_ipv6_header();
+        if ipv6_header.is_some() {
+            return Some(ipv6_header.unwrap().destination.to_vec());
+        }
+
+        return None;
+    }
+
+    pub fn get_udp_packet(&self) -> Option<&UdpSlice> {
+        match &self.packet.transport {
+            Some(transport) => match transport {
+                TransportSlice::Udp(udp) => Some(udp),
+                _ => None,
+            },
+            None => None,
+        }
+    }
+}
+
+fn build_response_packet(request_packet: &[u8], response_payload: &[u8]) -> Option<Vec<u8>> {
+    let generic_request_packet = match GenericIpPacket::from_ip_packet(request_packet) {
+        Some(value) => value,
+        None => return None,
+    };
+
+    let request_payload = match generic_request_packet.get_udp_packet() {
+        Some(value) => value,
+        None => return None,
+    };
+
+    match generic_request_packet.get_ipv4_header() {
+        Some(header) => {
+            return build_ipv4_packet_with_udp_payload(
+                &header.destination,
+                request_payload.destination_port(),
+                &header.source,
+                request_payload.source_port(),
+                header.time_to_live,
+                header.identification,
+                &response_payload,
+            );
+        }
+        None => {}
+    };
+
+    match generic_request_packet.get_ipv6_header() {
+        Some(header) => {
+            return build_ipv6_packet_with_udp_payload(
+                &header.destination,
+                request_payload.destination_port(),
+                &header.source,
+                request_payload.source_port(),
+                header.traffic_class,
+                header.flow_label,
+                header.hop_limit,
+                &response_payload,
+            );
+        }
+        None => {}
+    }
+
+    return None;
+}
+
+fn get_epoch_millis() -> u128 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_millis()
+}
+
+pub enum VpnStatus {
+    Starting,
+    Running,
+    Stopping,
+    WaitingForNetwork,
+    Reconnecting,
+    ReconnectingNetworkError,
+    Stopped,
+}
+
+impl VpnStatus {
+    fn ordinal(&self) -> i32 {
+        match self {
+            VpnStatus::Starting => 0,
+            VpnStatus::Running => 1,
+            VpnStatus::Stopping => 2,
+            VpnStatus::WaitingForNetwork => 3,
+            VpnStatus::Reconnecting => 4,
+            VpnStatus::ReconnectingNetworkError => 5,
+            VpnStatus::Stopped => 6,
+        }
+    }
+}
+
+#[derive(Debug, thiserror::Error, uniffi::Error)]
+#[uniffi(flat_error)]
+pub enum VpnError {
+    #[error("Failed to set up polling for the tunnel file descriptor")]
+    TunnelPollFailure,
+
+    #[error("Failed to set up poling for a socket file descriptor")]
+    SocketPollFailure,
+
+    #[error("Failed to write to the tunnel file descriptor")]
+    TunnelWriteFailure,
+
+    #[error("Failed to read from the tunnel file descriptor")]
+    TunnelReadFailure,
+
+    #[error("Watchdog timed out")]
+    Timeout,
+}
+
+#[uniffi::export(callback_interface)]
+pub trait AdVpnCallback: Send + Sync {
+    fn protect_raw_socket_fd(&self, socket_fd: i32) -> bool;
+
+    fn notify(&self, native_status: i32);
+}
+
+struct AdVpn {
+    vpn_file: File,
+    vpn_controller: Arc<VpnController>,
+    device_writes: VecDeque<Vec<u8>>,
+    vpn_watchdog: VpnWatchdog,
+    wosp_list: WospList,
+    ipv6_unspecified: SocketAddrV6,
+}
+
+impl AdVpn {
+    const VPN_EVENT_KEY: usize = usize::MAX - 1;
+
+    const DNS_RESPONSE_PACKET_SIZE: usize = 1024;
+
+    const DNS_PORT: u16 = 53;
+
+    fn new(
+        vpn_fd: RawFd,
+        interrupt_flag: Arc<VpnController>,
+        watchdog_enabled: bool,
+        watchdog_target_address: &str,
+    ) -> Self {
+        let vpn_file = unsafe { File::from_raw_fd(vpn_fd) };
+
+        let target_address = match IpAddr::from_str(watchdog_target_address) {
+            Ok(value) => value,
+            Err(e) => {
+                error!(
+                    "AdVpn::new: Failed to create watchdog target address from string! - {:?}",
+                    e
+                );
+                panic!()
+            }
+        };
+
+        AdVpn {
+            vpn_file,
+            vpn_controller: interrupt_flag,
+            device_writes: VecDeque::new(),
+            vpn_watchdog: VpnWatchdog::new(watchdog_enabled, (target_address, Self::DNS_PORT)),
+            wosp_list: WospList::new(),
+            ipv6_unspecified: SocketAddrV6::new(Ipv6Addr::UNSPECIFIED, 0, 0, 0),
+        }
+    }
+
+    fn run(
+        &mut self,
+        android_vpn_callback: &Box<dyn AdVpnCallback>,
+        block_logger_callback: Box<dyn BlockLoggerCallback>,
+        android_file_helper: Box<dyn AndroidFileHelper>,
+        host_items: Vec<NativeHost>,
+        host_exceptions: Vec<NativeHost>,
+        upstream_dns_servers: Vec<Vec<u8>>,
+    ) -> Result<(), VpnError> {
+        let mut packet = vec![0u8; i16::MAX as usize];
+        self.vpn_watchdog.init();
+
+        let mut dns_packet_proxy = DnsPacketProxy::new(
+            android_vpn_callback,
+            block_logger_callback,
+            android_file_helper,
+        );
+        dns_packet_proxy.initialize(host_items, host_exceptions, upstream_dns_servers);
+
+        let poller = match Poller::new() {
+            Ok(value) => value,
+            Err(e) => {
+                error!("do_one: Failed to create poller! - {:?}", e);
+                return Result::Err(VpnError::TunnelPollFailure);
+            }
+        };
+        unsafe {
+            match poller.add(self.vpn_controller.signal_fd, Event::readable(usize::MAX - 2)) {
+                Ok(_) => {},
+                Err(e) => {
+                    error!("run: Failed to register signal descriptor! - {:?}", e);
+                    return Result::Err(VpnError::TunnelPollFailure);
+                }
+            };
+        }
+        let mut events = Events::new();
+
+        android_vpn_callback.notify(VpnStatus::Running.ordinal());
+        loop {
+            match self.do_one(
+                &poller,
+                &mut events,
+                &mut dns_packet_proxy,
+                packet.as_mut_slice(),
+            ) {
+                Ok(should_stop) => {
+                    if should_stop {
+                        return Result::Ok(());
+                    } else {
+                        continue;
+                    }
+                },
+                Err(e) => {
+                    return Result::Err(e);
+                },
+            };
+        }
+    }
+
+    fn do_one(
+        &mut self,
+        poller: &Poller,
+        events: &mut Events,
+        dns_packet_proxy: &mut DnsPacketProxy,
+        packet: &mut [u8],
+    ) -> Result<bool, VpnError> {
+        unsafe {
+            match poller.add_with_mode(
+                self.vpn_file.as_raw_fd(),
+                Event::new(Self::VPN_EVENT_KEY, true, !self.device_writes.is_empty())
+                    .with_priority(),
+                polling::PollMode::Edge,
+            ) {
+                Ok(_) => {}
+                Err(e) => {
+                    error!("do_one: Failed to add VPN descriptor to poller! - {:?}", e);
+                    return Result::Err(VpnError::TunnelPollFailure);
+                }
+            };
+        }
+
+        let mut waiting_sockets = 1;
+        let mut bad_sockets = Vec::<usize>::new();
+        for (index, wosp) in self.wosp_list.list.iter().enumerate() {
+            unsafe {
+                match poller.add(&wosp.socket, Event::readable(wosp.time as usize)) {
+                    Ok(_) => waiting_sockets += 1,
+                    Err(e) => {
+                        if e.kind() == std::io::ErrorKind::AlreadyExists {
+                            waiting_sockets += 1;
+                        } else {
+                            warn!(
+                                "do_one: Failed to add socket {:?} to poller! - {:?}",
+                                wosp, e
+                            );
+                            bad_sockets.push(index);
+                        }
+                    }
+                };
+            }
+        }
+        for index in bad_sockets {
+            self.wosp_list.list.remove(index);
+        }
+
+        debug!("do_one: Polling {} socket(s)", waiting_sockets);
+        // let timeout = self.vpn_watchdog.get_poll_timeout();
+        match poller.wait(events, None) {
+            Ok(events_length) => info!("do_one: Found {} events", events_length),
+            Err(e) => {
+                debug!("do_one: Poll timed out - {:?}", e);
+                // self.vpn_watchdog.handle_timeout();
+                return Result::Err(VpnError::Timeout);
+            }
+        };
+
+        if self.vpn_controller.get_should_stop() {
+            info!("do_one: Told to stop");
+            return Result::Ok(true);
+        }
+
+        // Need to do this before reading from the device, otherwise a new insertion there could
+        // invalidate one of the sockets we want to read from either due to size or time out
+        // constraints
+        let mut read_from_device = false;
+        let mut write_to_device = false;
+        let mut wosps_to_process = Vec::<WaitingOnSocketPacket>::new();
+        for event in events.iter() {
+            debug!("do_one: Got event {:?}", event);
+            if event.key == Self::VPN_EVENT_KEY {
+                read_from_device = event.readable;
+                write_to_device = event.writable;
+            } else {
+                let index = self
+                    .wosp_list
+                    .list
+                    .iter()
+                    .position(|value| (value.time as usize) == event.key)
+                    .unwrap_or(usize::MAX);
+                match self.wosp_list.list.remove(index) {
+                    Some(wosp) => {
+                        debug!("do_one: Read from DNS socket: {:?}", wosp.socket);
+                        match poller.delete(&wosp.socket) {
+                            Ok(_) => {}
+                            Err(e) => {
+                                warn!("do_one: Failed to remove socket from poller! - {:?}", e)
+                            }
+                        };
+                        wosps_to_process.push(wosp);
+                    }
+                    None => {
+                        error!("do_one: Got event for wosp that doesn't exist in list! This should never happen.");
+                        return Result::Err(VpnError::SocketPollFailure);
+                    }
+                };
+            }
+        }
+        events.clear();
+
+        for wosp in wosps_to_process {
+            self.handle_raw_dns_response(dns_packet_proxy, wosp);
+        }
+
+        if write_to_device {
+            debug!("do_one: Write to device");
+            self.write_to_device()?;
+        }
+
+        if read_from_device {
+            debug!("do_one: Read from device");
+            self.read_packet_from_device(dns_packet_proxy, packet)?;
+        }
+
+        match poller.delete(&self.vpn_file) {
+            Ok(_) => {}
+            Err(e) => {
+                error!("do_one: Failed to remove VPN FD from poller! - {:?}", e);
+                return Result::Err(VpnError::TunnelPollFailure);
+            }
+        };
+
+        return Result::Ok(false);
+    }
+
+    fn write_to_device(&mut self) -> Result<(), VpnError> {
+        let device_write = match self.device_writes.pop_front() {
+            Some(value) => value,
+            None => {
+                error!("write_to_device: device_writes is empty! This should be impossible");
+                return Result::Err(VpnError::TunnelWriteFailure);
+            }
+        };
+
+        match self.vpn_file.write(&device_write) {
+            Ok(_) => Result::Ok(()),
+            Err(e) => {
+                error!("write_to_device: Failed writing - {:?}", e);
+                Result::Err(VpnError::TunnelWriteFailure)
+            }
+        }
+    }
+
+    fn read_packet_from_device(
+        &mut self,
+        dns_packet_proxy: &mut DnsPacketProxy,
+        packet: &mut [u8],
+    ) -> Result<(), VpnError> {
+        let length = match self.vpn_file.read(packet) {
+            Ok(value) => value,
+            Err(e) => {
+                error!("read_packet_from_device: Cannot read from device - {:?}", e);
+                return Result::Err(VpnError::TunnelReadFailure);
+            }
+        };
+
+        if length == 0 {
+            warn!("read_packet_from_device: Got empty packet!");
+            return Result::Ok(());
+        }
+
+        self.vpn_watchdog.handle_packet(packet);
+        dns_packet_proxy.handle_dns_request(self, packet);
+
+        return Result::Ok(());
+    }
+
+    fn handle_raw_dns_response(
+        &mut self,
+        dns_packet_proxy: &DnsPacketProxy,
+        wosp: WaitingOnSocketPacket,
+    ) {
+        let mut response_payload = vec![MaybeUninit::<u8>::uninit(); Self::DNS_RESPONSE_PACKET_SIZE];
+
+        match wosp.socket.recv(response_payload.as_mut_slice()) {
+            Ok(res) => {
+                debug!(
+                    "handle_raw_dns_response: Successfully received reply with {} bytes",
+                    res
+                );
+
+                let initialized_response_payload =
+                    unsafe { mem::transmute::<_, Vec<u8>>(response_payload) };
+                dns_packet_proxy.handle_dns_response(
+                    self,
+                    &wosp.packet,
+                    &initialized_response_payload,
+                );
+            }
+            Err(e) => {
+                warn!(
+                    "handle_raw_dns_response: Failed to receive response packet from DNS socket! - {:?}",
+                    e
+                );
+                return;
+            }
+        };
+    }
+
+    fn forward_packet(
+        &mut self,
+        android_vpn_service: &Box<dyn AdVpnCallback>,
+        packet: &[u8],
+        request_packet: &[u8],
+        destination_address: SocketAddr,
+    ) -> bool {
+        let socket = match Socket::new_raw(Domain::IPV6, Type::DGRAM, Some(Protocol::UDP)) {
+            Ok(value) => value,
+            Err(e) => {
+                error!("forward_packet: Failed to create socket! - {:?}", e);
+                let os_error = e.raw_os_error();
+                if os_error.is_some() {
+                    return Self::eval_socket_error(os_error.unwrap());
+                }
+                return false;
+            }
+        };
+
+        // Packets to be sent to the real DNS server will need to be protected from the VPN
+        if !android_vpn_service.protect_raw_socket_fd(socket.as_raw_fd()) {
+            error!("forward_packet: Failed for protect socket fd!");
+            return false;
+        }
+
+        let bind_address = SockAddr::from(self.ipv6_unspecified);
+        match socket.bind(&bind_address) {
+            Ok(_) => debug!("forward_packet: Successfully bound socket - {:?}", socket),
+            Err(e) => error!("forward_packet: Failed to bind socket! - {:?}", e),
+        };
+
+        let destination_sockaddr = SockAddr::from(destination_address);
+        match socket.send_to(packet, &destination_sockaddr) {
+            Ok(value) => {
+                debug!(
+                    "forward_packet: Successfully wrote {} bytes to socket",
+                    value
+                );
+                self.wosp_list
+                    .add(WaitingOnSocketPacket::new(socket, request_packet.to_vec()));
+                return true;
+            }
+            Err(e) => {
+                warn!("forward_packet: Failed to send message - {:?}", e);
+                if e.raw_os_error().is_some() {
+                    return Self::eval_socket_error(e.raw_os_error().unwrap());
+                }
+            }
+        }
+
+        return true;
+    }
+
+    fn eval_socket_error(error_code: i32) -> bool {
+        error!("eval_socket_error: Cannot send message");
+        return error_code != libc::ENETUNREACH || error_code != libc::EPERM;
+    }
+
+    fn queue_device_write(&mut self, packet: Vec<u8>) {
+        self.device_writes.push_back(packet)
+    }
+}
+
+struct VpnWatchdog {
+    enabled: bool,
+    init_penalty: u64,
+    last_packet_sent: u128,
+    last_packet_received: u128,
+    poll_timeout: u64,
+    target_address: (IpAddr, u16),
+}
+
+impl VpnWatchdog {
+    // Polling is quadrupled on every success, and values range from 4s to 1h8m.
+    const POLL_TIMEOUT_START: u64 = 1000;
+    const POLL_TIMEOUT_END: u64 = 4096000;
+    const POLL_TIMEOUT_WAITING: u64 = 7000;
+    const POLL_TIMEOUT_GROW: u64 = 4;
+
+    // Reconnect penalty ranges from 0s to 5s, in increments of 200 ms.
+    const INIT_PENALTY_START: u64 = 0;
+    const INIT_PENALTY_END: u64 = 5000;
+    const INIT_PENALTY_INC: u64 = 200;
+
+    fn new(enabled: bool, target_address: (IpAddr, u16)) -> Self {
+        Self {
+            enabled,
+            init_penalty: Self::INIT_PENALTY_START,
+            last_packet_sent: 0,
+            last_packet_received: 0,
+            poll_timeout: VpnWatchdog::POLL_TIMEOUT_START,
+            target_address,
+        }
+    }
+
+    fn init(&self) {
+        if self.init_penalty > 0 {
+            thread::sleep(time::Duration::from_millis(self.init_penalty));
+        }
+    }
+
+    fn get_poll_timeout(&self) -> Option<Duration> {
+        return if !self.enabled {
+            None
+        } else if self.last_packet_received < self.last_packet_sent {
+            Some(Duration::from_millis(VpnWatchdog::POLL_TIMEOUT_WAITING))
+        } else {
+            Some(Duration::from_millis(self.poll_timeout))
+        };
+    }
+
+    fn handle_packet(&mut self, packet_data: &[u8]) {
+        if !self.enabled {
+            return;
+        }
+
+        debug!(
+            "handle_packet: Received packet of length {}",
+            packet_data.len()
+        );
+        self.last_packet_received = get_epoch_millis();
+    }
+
+    fn send_packet(&mut self) {
+        if !self.enabled {
+            return;
+        }
+
+        debug!(
+            "send_packet: Sending packet, poll timeout is {}",
+            self.poll_timeout
+        );
+        let result = UdpSocket::bind("[::]:53");
+        match result {
+            Ok(socket) => {
+                match socket.send_to(vec![].as_slice(), &self.target_address) {
+                    Ok(_) => debug!("send_packet: Successfully sent packet over UDP socket"),
+                    Err(e) => {
+                        error!(
+                            "send_packet: Failed to send packet over UDP socket! - {:?}",
+                            e
+                        );
+                        return;
+                    }
+                };
+                self.last_packet_sent = get_epoch_millis();
+            }
+            Err(e) => error!("send_packet: Failed to send watchdog packet! - {:?}", e),
+        };
+    }
+
+    fn handle_timeout(&mut self) -> bool {
+        if !self.enabled {
+            return false;
+        }
+
+        debug!(
+            "handleTimeout: Milliseconds elapsed between last receive and sent: {}",
+            self.last_packet_received
+        );
+
+        if self.last_packet_received < self.last_packet_sent && self.last_packet_sent != 0 {
+            self.init_penalty += Self::INIT_PENALTY_INC;
+            if self.init_penalty > Self::INIT_PENALTY_END {
+                self.init_penalty = Self::INIT_PENALTY_END;
+            }
+            return true;
+        }
+
+        self.poll_timeout *= Self::POLL_TIMEOUT_GROW;
+        if self.poll_timeout > Self::POLL_TIMEOUT_END {
+            self.poll_timeout = Self::POLL_TIMEOUT_END;
+        }
+
+        self.send_packet();
+        return false;
+    }
+}
+
+#[derive(Debug)]
+struct WaitingOnSocketPacket {
+    socket: Socket,
+    packet: Vec<u8>,
+    time: u128,
+}
+
+impl WaitingOnSocketPacket {
+    fn new(socket: Socket, packet: Vec<u8>) -> Self {
+        Self {
+            socket,
+            packet,
+            time: get_epoch_millis(),
+        }
+    }
+
+    fn age_seconds(&self) -> u128 {
+        (get_epoch_millis() - self.time) / 1000
+    }
+}
+
+struct WospList {
+    list: VecDeque<WaitingOnSocketPacket>,
+}
+
+impl WospList {
+    const DNS_MAXIMUM_WAITING: usize = 1024;
+    const DNS_TIMEOUT_SEC: u128 = 10;
+
+    fn new() -> Self {
+        Self {
+            list: VecDeque::new(),
+        }
+    }
+
+    fn add(&mut self, wosp: WaitingOnSocketPacket) {
+        if self.list.len() > Self::DNS_MAXIMUM_WAITING {
+            debug!(
+                "add: Dropping socket due to space constraints: {:?}",
+                self.list.front().unwrap().packet
+            );
+            self.list.pop_front();
+        }
+
+        while !self.list.is_empty()
+            && self.list.front().unwrap().age_seconds() > Self::DNS_TIMEOUT_SEC
+        {
+            debug!(
+                "add: Timeout on socket {:?}",
+                self.list.front().unwrap().socket
+            );
+            self.list.pop_front();
+        }
+
+        self.list.push_back(wosp);
+    }
+}
+
+#[uniffi::export(callback_interface)]
+pub trait AndroidFileHelper {
+    fn get_host_fd(&self, host: String, mode: String) -> Option<i32>;
+}
+
+#[derive(uniffi::Enum, PartialEq, PartialOrd, Debug)]
+pub enum NativeHostState {
+    IGNORE,
+    DENY,
+    ALLOW,
+}
+
+#[derive(uniffi::Record, Debug)]
+pub struct NativeHost {
+    title: String,
+    data: String,
+    state: NativeHostState,
+}
+
+struct RuleDatabase {
+    android_file_helper: Box<dyn AndroidFileHelper>,
+    blocked_hosts: Arc<HashSet<String>>,
+}
+
+impl RuleDatabase {
+    const IPV4_LOOPBACK: &'static str = "127.0.0.1";
+    const IPV6_LOOPBACK: &'static str = "::1";
+    const NO_ROUTE: &'static str = "0.0.0.0";
+
+    fn parse_line(line: &str) -> Option<String> {
+        if line.trim().is_empty() {
+            return None;
+        }
+
+        let mut end_of_line = match line.find('#') {
+            Some(index) => index,
+            None => line.len(),
+        };
+
+        let mut start_of_host = 0;
+
+        match line.find(Self::IPV4_LOOPBACK) {
+            Some(index) => {
+                start_of_host += index + Self::IPV4_LOOPBACK.len();
+            }
+            None => {}
+        };
+
+        if start_of_host == 0 {
+            match line.find(Self::IPV6_LOOPBACK) {
+                Some(index) => {
+                    start_of_host += index + Self::IPV6_LOOPBACK.len();
+                }
+                None => {}
+            }
+        }
+
+        if start_of_host == 0 {
+            match line.find(Self::NO_ROUTE) {
+                Some(index) => {
+                    start_of_host += index + Self::NO_ROUTE.len();
+                }
+                None => {}
+            }
+        }
+
+        if start_of_host >= end_of_line {
+            return None;
+        }
+
+        while start_of_host < end_of_line
+            && line.chars().nth(start_of_host).unwrap().is_whitespace()
+        {
+            start_of_host += 1;
+        }
+
+        while start_of_host > end_of_line
+            && line.chars().nth(end_of_line - 1).unwrap().is_whitespace()
+        {
+            end_of_line -= 1;
+        }
+
+        let host = (&line[start_of_host..end_of_line]).to_lowercase();
+        if host.is_empty() || host.contains(char::is_whitespace) {
+            return None;
+        }
+
+        return Some(host);
+    }
+
+    fn new(android_file_helper: Box<dyn AndroidFileHelper>) -> Self {
+        RuleDatabase {
+            android_file_helper,
+            blocked_hosts: Arc::new(HashSet::new()),
+        }
+    }
+
+    fn initialize(&mut self, host_items: Vec<NativeHost>, host_exceptions: Vec<NativeHost>) {
+        info!(
+            "initialize: Loading block list with {} hosts and {} exceptions",
+            host_items.len(),
+            host_exceptions.len()
+        );
+
+        let mut new_set: HashSet<String> = HashSet::new();
+
+        let mut sorted_host_items = host_items
+            .iter()
+            .filter(|item| item.state != NativeHostState::IGNORE)
+            .collect::<Vec<&NativeHost>>();
+        sorted_host_items.sort_by(|a, b| a.state.partial_cmp(&b.state).unwrap());
+
+        for item in sorted_host_items.iter() {
+            self.load_item(&mut new_set, item);
+        }
+
+        let mut sorted_host_exceptions = host_exceptions
+            .iter()
+            .filter(|item| item.state != NativeHostState::IGNORE)
+            .collect::<Vec<&NativeHost>>();
+        sorted_host_exceptions.sort_by(|a, b| a.state.partial_cmp(&b.state).unwrap());
+
+        for exception in sorted_host_exceptions {
+            self.add_host(&mut new_set, &exception.state, exception.data.clone());
+        }
+
+        self.blocked_hosts = Arc::new(new_set);
+    }
+
+    fn load_item(&mut self, set: &mut HashSet<String>, host: &NativeHost) {
+        if host.state == NativeHostState::IGNORE {
+            return;
+        }
+
+        match self
+            .android_file_helper
+            .get_host_fd(host.data.clone(), String::from("r"))
+        {
+            Some(value) => {
+                let file = unsafe { File::from_raw_fd(value) };
+                let lines: io::Lines<io::BufReader<File>> = io::BufReader::new(file).lines();
+                self.load_file(set, &host, lines);
+            }
+            None => {
+                warn!(
+                    "Failed to open {}. Attempting to add as single host.",
+                    host.data
+                );
+                self.add_host(set, &host.state, host.data.clone());
+            }
+        };
+    }
+
+    fn add_host(&mut self, set: &mut HashSet<String>, state: &NativeHostState, data: String) {
+        match state {
+            NativeHostState::IGNORE => return,
+            NativeHostState::DENY => set.insert(data),
+            NativeHostState::ALLOW => set.remove(&data),
+        };
+    }
+
+    fn load_file(
+        &mut self,
+        set: &mut HashSet<String>,
+        host: &NativeHost,
+        lines: io::Lines<io::BufReader<File>>,
+    ) {
+        let mut count = 0;
+        for line in lines {
+            match line {
+                Ok(value) => {
+                    let data = Self::parse_line(value.as_str());
+                    if data.is_some() {
+                        self.add_host(set, &host.state, data.unwrap());
+                    }
+                    count += 1;
+                }
+                Err(e) => {
+                    error!(
+                        "load_file: Error while reading {} after {} lines - {:?}",
+                        &host.data, count, e
+                    );
+                    return;
+                }
+            }
+        }
+        debug!("load_file: Loaded {} hosts from {}", count, &host.data);
+    }
+
+    fn is_blocked(&self, host: &str) -> bool {
+        self.blocked_hosts.contains(host)
+    }
+}
+
+#[uniffi::export(callback_interface)]
+pub trait BlockLoggerCallback: Send + Sync {
+    fn log(&self, connection_name: String, allowed: bool);
+}
+
+struct DnsPacketProxy<'a> {
+    android_vpn_callback: &'a Box<dyn AdVpnCallback>,
+    block_logger_callback: Box<dyn BlockLoggerCallback>,
+    rule_database: RuleDatabase,
+    upstream_dns_servers: Vec<Vec<u8>>,
+    negative_cache_record: ResourceRecord<'a>,
+}
+
+impl<'a> DnsPacketProxy<'a> {
+    const INVALID_HOSTNAME: &'static str = "dnsnet.dnsnet.invalid.";
+    const NEGATIVE_CACHE_TTL_SECONDS: u32 = 5;
+
+    fn new(
+        android_vpn_callback: &'a Box<dyn AdVpnCallback>,
+        block_logger_callback: Box<dyn BlockLoggerCallback>,
+        android_file_helper: Box<dyn AndroidFileHelper>,
+    ) -> Self {
+        let name = match Name::new(Self::INVALID_HOSTNAME) {
+            Ok(value) => value,
+            Err(e) => {
+                error!("Failed to parse our invalid hostname! - {:?}", e);
+                panic!();
+            }
+        };
+        let soa_record = RData::SOA(simple_dns::rdata::SOA {
+            mname: name.clone(),
+            rname: name.clone(),
+            serial: 0,
+            refresh: 0,
+            retry: 0,
+            expire: 0,
+            minimum: Self::NEGATIVE_CACHE_TTL_SECONDS,
+        });
+        let negative_cache_record = ResourceRecord::new(
+            name,
+            simple_dns::CLASS::IN,
+            Self::NEGATIVE_CACHE_TTL_SECONDS,
+            soa_record,
+        );
+        DnsPacketProxy {
+            android_vpn_callback,
+            block_logger_callback,
+            rule_database: RuleDatabase::new(android_file_helper),
+            upstream_dns_servers: Vec::new(),
+            negative_cache_record,
+        }
+    }
+
+    fn initialize(
+        &mut self,
+        host_items: Vec<NativeHost>,
+        host_exceptions: Vec<NativeHost>,
+        upstream_dns_servers: Vec<Vec<u8>>,
+    ) {
+        self.rule_database.initialize(host_items, host_exceptions);
+        self.upstream_dns_servers = upstream_dns_servers;
+    }
+
+    fn handle_dns_response(
+        &self,
+        ad_vpn: &mut AdVpn,
+        request_packet: &[u8],
+        response_payload: &[u8],
+    ) {
+        match build_response_packet(request_packet, response_payload) {
+            Some(packet) => ad_vpn.queue_device_write(packet),
+            None => return,
+        };
+    }
+
+    fn handle_dns_request(&mut self, ad_vpn: &mut AdVpn, packet_data: &[u8]) {
+        let packet = match GenericIpPacket::from_ip_packet(packet_data) {
+            Some(value) => value,
+            None => {
+                warn!(
+                    "handle_dns_request: Failed to parse packet data - {:?}",
+                    packet_data
+                );
+                return;
+            }
+        };
+
+        let udp_packet = match packet.get_udp_packet() {
+            Some(value) => value,
+            None => {
+                warn!("handle_dns_request: IP packet did not contain UDP payload");
+                return;
+            }
+        };
+
+        let destination_address = match packet.get_destination_address() {
+            Some(value) => value,
+            None => {
+                warn!(
+                    "handle_dns_request: Failed to get destination address for packet - {:?}",
+                    packet
+                );
+                return;
+            }
+        };
+        let translated_destination_address =
+            match self.translate_destination_address(&destination_address) {
+                Some(value) => value,
+                None => {
+                    warn!(
+                        "handle_dns_request: Failed to translate destination address - {:?}",
+                        destination_address
+                    );
+                    return;
+                }
+            };
+
+        let destination_port = udp_packet.destination_port();
+        let mut dns_packet = match simple_dns::Packet::parse(udp_packet.payload()) {
+            Ok(value) => value,
+            Err(e) => {
+                warn!(
+                    "handle_dns_request: Discarding no-DNS or invalid packet - {:?}",
+                    e
+                );
+                return;
+            }
+        };
+
+        if dns_packet.questions.is_empty() {
+            warn!(
+                "handle_dns_request: Discarding DNS packet with no questions - {:?}",
+                dns_packet
+            );
+            return;
+        }
+
+        let dns_query_name = dns_packet
+            .questions
+            .first()
+            .unwrap()
+            .qname
+            .to_string()
+            .to_lowercase();
+        if !self.rule_database.is_blocked(&dns_query_name) {
+            info!(
+                "handle_dns_request: DNS Name {} allowed. Sending to {:?}",
+                dns_query_name, translated_destination_address
+            );
+            self.block_logger_callback.log(dns_query_name, true);
+
+            if translated_destination_address.len() == 4 {
+                // IPV4
+                let destination_socket_address = SocketAddrV4::new(
+                    Ipv4Addr::from(
+                        TryInto::<[u8; 4]>::try_into(translated_destination_address).unwrap(),
+                    ),
+                    destination_port,
+                );
+
+                ad_vpn.forward_packet(
+                    &self.android_vpn_callback,
+                    udp_packet.payload(),
+                    packet_data,
+                    std::net::SocketAddr::V4(destination_socket_address),
+                );
+            } else if translated_destination_address.len() == 16 {
+                // IPV6
+                let destination_socket_address = SocketAddrV6::new(
+                    Ipv6Addr::from(
+                        TryInto::<[u8; 16]>::try_into(translated_destination_address).unwrap(),
+                    ),
+                    destination_port,
+                    0,
+                    0,
+                );
+
+                ad_vpn.forward_packet(
+                    &self.android_vpn_callback,
+                    udp_packet.payload(),
+                    packet_data,
+                    std::net::SocketAddr::V6(destination_socket_address),
+                );
+            } else {
+                warn!("handle_dns_request: Received destination address with unknown protocol! - {:?}", translated_destination_address);
+            }
+        } else {
+            info!("handle_dns_request: DNS Name {} blocked!", dns_query_name);
+            self.block_logger_callback.log(dns_query_name, false);
+
+            dns_packet.set_flags(PacketFlag::RESPONSE);
+            *dns_packet.rcode_mut() = simple_dns::RCODE::NoError;
+            dns_packet
+                .additional_records
+                .push(self.negative_cache_record.clone());
+
+            let mut wire = Vec::<u8>::new();
+            match dns_packet.write_to(&mut wire) {
+                Ok(_) => debug!("Packet written to wire successfully!"),
+                Err(e) => {
+                    error!("Failed to write DNS packet to wire! - {:?}", e);
+                    return;
+                }
+            };
+
+            self.handle_dns_response(ad_vpn, packet_data, &wire);
+        }
+    }
+
+    fn translate_destination_address(&self, destination_address: &Vec<u8>) -> Option<Vec<u8>> {
+        return if !self.upstream_dns_servers.is_empty() {
+            let index = match destination_address.get(destination_address.len() - 1) {
+                Some(value) => value,
+                None => {
+                    debug!("translate_destination_address: Failed to get upstream index from destination address");
+                    return None;
+                }
+            };
+
+            self.upstream_dns_servers
+                .get((*index - 2) as usize)
+                .cloned()
+        } else {
+            Some(destination_address.clone())
+        };
+    }
+}

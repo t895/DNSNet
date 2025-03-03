@@ -31,39 +31,32 @@ import android.net.NetworkInfo
 import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
-import android.system.ErrnoException
-import android.system.Os
 import android.system.OsConstants
-import android.system.StructPollfd
 import dev.clombardo.dnsnet.Configuration
+import dev.clombardo.dnsnet.DnsNetApplication.Companion.applicationContext
 import dev.clombardo.dnsnet.FileHelper
 import dev.clombardo.dnsnet.MainActivity
+import dev.clombardo.dnsnet.R
 import dev.clombardo.dnsnet.config
 import dev.clombardo.dnsnet.logd
 import dev.clombardo.dnsnet.loge
 import dev.clombardo.dnsnet.logi
 import dev.clombardo.dnsnet.logw
-import org.pcap4j.packet.IpPacket
-import java.io.FileDescriptor
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.io.IOException
-import java.net.DatagramPacket
-import java.net.DatagramSocket
+import kotlinx.atomicfu.atomic
+import uniffi.net.BlockLoggerCallback
+import uniffi.net.VpnController
+import uniffi.net.VpnException
+import uniffi.net.runVpnNative
 import java.net.Inet4Address
 import java.net.Inet6Address
 import java.net.InetAddress
-import java.net.SocketException
 import java.net.UnknownHostException
-import java.util.Arrays
-import java.util.LinkedList
-import java.util.Queue
 
 class AdVpnThread(
-    private val vpnService: VpnService,
+    private val adVpnService: AdVpnService,
     private val notify: (VpnStatus) -> Unit,
-    log: (name: String, allowed: Boolean) -> Unit,
-) : Runnable, EventLoop {
+    private val blockLoggerCallback: BlockLoggerCallback,
+) : Runnable {
     companion object {
         private const val MIN_RETRY_TIME = 5
         private const val MAX_RETRY_TIME = 2 * 60
@@ -72,17 +65,9 @@ class AdVpnThread(
         /* If we had a successful connection for that long, reset retry timeout */
         private const val RETRY_RESET_SEC: Long = 60
 
-        /* Maximum number of responses we want to wait for */
-        const val DNS_MAXIMUM_WAITING = 1024
-        const val DNS_TIMEOUT_SEC: Long = 10
-
         private const val PREFIX_LENGTH = 24
 
-        private const val DNS_RESPONSE_PACKET_SIZE = 1024
-
-        private const val PACKET_SIZE = 32767
-
-        @Throws(VpnNetworkException::class)
+        @Throws(IllegalStateException::class)
         private fun getDnsServers(context: Context): List<InetAddress> {
             val known = HashSet<InetAddress>()
             val out = ArrayList<InetAddress>()
@@ -90,7 +75,7 @@ class AdVpnThread(
             with(context.getSystemService(VpnService.CONNECTIVITY_SERVICE) as ConnectivityManager) {
                 // Seriously, Android? Seriously?
                 val activeInfo: NetworkInfo =
-                    activeNetworkInfo ?: throw VpnNetworkException("No DNS Server")
+                    activeNetworkInfo ?: throw IllegalStateException("No DNS Server")
 
                 for (nw in allNetworks) {
                     val ni: NetworkInfo = getNetworkInfo(nw) ?: continue
@@ -115,50 +100,46 @@ class AdVpnThread(
     }
 
     /* Upstream DNS servers, indexed by our IP */
-    val upstreamDnsServers = ArrayList<InetAddress>()
+    private val upstreamDnsServers = ArrayList<InetAddress>()
 
-    /* Data to be written to the device */
-    private val deviceWrites: Queue<ByteArray> = LinkedList()
+    private var watchdogTarget: InetAddress? = null
 
-    // HashMap that keeps an upper limit of packets
-    private val dnsIn: WospList = WospList()
+    internal data class ThreadData(
+        val thread: Thread,
+        val vpnController: VpnController
+    )
 
-    // The object where we actually handle packets.
-    private val dnsPacketProxy = DnsPacketProxy(this, log)
-
-    // Watch dog that checks our connection is alive.
-    private val vpnWatchDog = VpnWatchdog()
-
-    private var thread: Thread? = null
-    private var blockFd: FileDescriptor? = null
-    private var interruptFd: FileDescriptor? = null
+    private var threadData by atomic<ThreadData?>(null)
 
     fun startThread() {
+        if (threadData != null) {
+            logw("startThread: Thread wasn't stopped before starting a new one!")
+            return
+        }
+
         logi("Starting Vpn Thread")
-        thread = Thread(this, "AdVpnThread")
-        thread?.start()
+        threadData = ThreadData(
+            thread = Thread(this, this::class.java.simpleName),
+            vpnController = VpnController()
+        )
+        threadData!!.thread.start()
         logi("Vpn Thread started")
     }
 
     fun stopThread() {
         logi("Stopping Vpn Thread")
-        if (thread != null) {
-            thread?.interrupt()
-        }
 
-        interruptFd =
-            FileHelper.closeOrWarn(interruptFd, "stopThread: Could not close interruptFd")
+        // Tell the Rust code to stop
+        threadData?.vpnController?.stop()
         try {
-            if (thread != null) {
-                thread?.join(2000)
-            }
+            threadData?.thread?.join(2000)
         } catch (e: InterruptedException) {
             logw("stopThread: Interrupted while joining thread", e)
         }
-        if (thread != null && thread!!.isAlive) {
+        if (threadData != null && threadData?.thread?.isAlive == true) {
             logw("stopThread: Could not kill VPN thread, it is still alive")
         } else {
-            thread = null
+            threadData = null
             logi("Vpn Thread stopped")
         }
     }
@@ -169,42 +150,23 @@ class AdVpnThread(
 
         notify(VpnStatus.STARTING)
 
-        // Load the block list
-        try {
-            dnsPacketProxy.initialize(upstreamDnsServers)
-            vpnWatchDog.initialize(config.watchDog)
-        } catch (e: InterruptedException) {
-            notify(VpnStatus.STOPPED)
-            return
-        }
-
         var retryTimeout = MIN_RETRY_TIME
         // Try connecting the vpn continuously
         while (true) {
-            var connectTimeMillis: Long = 0
+            val connectTimeMillis: Long = System.currentTimeMillis()
+
             try {
-                connectTimeMillis = System.currentTimeMillis()
                 // If the function returns, that means it was interrupted
                 runVpn()
-
-                logi("Told to stop")
-                notify(VpnStatus.STOPPING)
                 break
-            } catch (e: InterruptedException) {
-                break
-            } catch (e: VpnLostConnectionException) {
-                // We want to filter out VpnNetworkException from out crash analytics as these
-                // are exceptions that we expect to happen from network errors
-                logw("Network exception in vpn thread, ignoring and reconnecting", e)
-                // If an exception was thrown, show to the user and try again
+            } catch (e: IllegalStateException) {
+                // Configuration error. Try again immediately.
+                loge("Got configuration error - ${e.message}")
                 notify(VpnStatus.RECONNECTING)
-            } catch (e: VpnNetworkException) {
-                // Same thing here, but show that there was an error
-                logw("Network exception in vpn thread, ignoring and reconnecting", e)
-                notify(VpnStatus.RECONNECTING_NETWORK_ERROR)
-            } catch (e: Exception) {
-                loge("Network exception in vpn thread, reconnecting", e)
-                // ExceptionHandler.saveException(e, Thread.currentThread(), null);
+                continue
+            } catch (e: VpnException) {
+                // Internal error. Wait and try again.
+                loge("Got internal VPN exception - ${e.message}")
                 notify(VpnStatus.RECONNECTING_NETWORK_ERROR)
             }
 
@@ -214,10 +176,10 @@ class AdVpnThread(
             }
 
             // ...wait and try again
-            logi("Retrying to connect in ${retryTimeout}seconds...")
+            logi("Pausing for $retryTimeout seconds for potential reconnection...")
             try {
                 Thread.sleep(retryTimeout.toLong() * 1000)
-            } catch (e: InterruptedException) {
+            } catch (_: InterruptedException) {
                 break
             }
 
@@ -230,188 +192,23 @@ class AdVpnThread(
         logi("Exiting")
     }
 
-    @Throws(
-        InterruptedException::class,
-        ErrnoException::class,
-        IOException::class,
-        VpnNetworkException::class
-    )
+    @Throws(IllegalStateException::class, VpnException::class)
     private fun runVpn() {
-        // Allocate the buffer for a single packet.
-        val packet = ByteArray(PACKET_SIZE)
-
-        // A pipe we can interrupt the poll() call with by closing the interruptFd end
-        val pipes = Os.pipe()
-        interruptFd = pipes[0]
-        blockFd = pipes[1]
-
         // Authenticate and configure the virtual network interface.
-        try {
-            configure().use { pfd ->
-                // Read and write views of the tun device
-                val inputStream = FileInputStream(pfd.fileDescriptor)
-                val outFd = FileOutputStream(pfd.fileDescriptor)
-
-                // Now we are connected. Set the flag and show the message.
-                notify(VpnStatus.RUNNING)
-
-                while (doOne(inputStream, outFd, packet)) {
-                    // We keep forwarding packets till something goes wrong.
-                }
-            }
-        } finally {
-            blockFd = FileHelper.closeOrWarn(blockFd, "runVpn: Could not close blockFd")
-        }
-    }
-
-    @Throws(
-        IOException::class,
-        ErrnoException::class,
-        InterruptedException::class,
-        VpnNetworkException::class
-    )
-    private fun doOne(
-        inputStream: FileInputStream,
-        outFd: FileOutputStream,
-        packet: ByteArray
-    ): Boolean {
-        val deviceFd = StructPollfd()
-        deviceFd.fd = inputStream.getFD()
-        deviceFd.events = OsConstants.POLLIN.toShort()
-        val blockFd = StructPollfd()
-        blockFd.fd = this.blockFd
-        blockFd.events = (OsConstants.POLLHUP or OsConstants.POLLERR).toShort()
-
-        if (!deviceWrites.isEmpty()) {
-            deviceFd.events = (deviceFd.events.toInt() or OsConstants.POLLOUT).toShort()
-        }
-
-        val polls = arrayOfNulls<StructPollfd>(2 + dnsIn.size)
-        polls[0] = deviceFd
-        polls[1] = blockFd
-        var offset = -1
-        for (i in dnsIn.indices) {
-            offset++
-            polls[2 + offset] = StructPollfd()
-            val pollFd = polls[2 + offset]
-            pollFd!!.fd = ParcelFileDescriptor.fromDatagramSocket(dnsIn[i].socket).fileDescriptor
-            pollFd.events = OsConstants.POLLIN.toShort()
-        }
-
-        logd("doOne: Polling ${polls.size} file descriptors")
-        val result = Os.poll(polls, vpnWatchDog.pollTimeout)
-        if (result == 0) {
-            vpnWatchDog.handleTimeout()
-            return true
-        }
-
-        if (blockFd.revents.toInt() != 0) {
-            logi("Told to stop VPN")
-            return false
-        }
-
-        // Need to do this before reading from the device, otherwise a new insertion there could
-        // invalidate one of the sockets we want to read from either due to size or time out
-        // constraints
-        if (dnsIn.isNotEmpty()) {
-            var i = -1
-            val iter = dnsIn.iterator()
-            while (iter.hasNext()) {
-                i++
-                val wosp = iter.next()
-                if (polls[i + 2]!!.revents.toInt() and OsConstants.POLLIN != 0) {
-                    logd("Read from DNS socket" + wosp.socket)
-                    iter.remove()
-                    handleRawDnsResponse(wosp.packet, wosp.socket)
-                    wosp.socket.close()
-                }
-            }
-        }
-
-        if ((deviceFd.revents.toInt() and OsConstants.POLLOUT) != 0) {
-            logd("Write to device")
-            writeToDevice(outFd)
-        }
-
-        if (deviceFd.revents.toInt() and OsConstants.POLLIN != 0) {
-            logd("Read from device")
-            readPacketFromDevice(inputStream, packet)
-        }
-
-        return true
-    }
-
-    @Throws(VpnNetworkException::class)
-    private fun writeToDevice(outFd: FileOutputStream) =
-        try {
-            outFd.write(deviceWrites.poll())
-        } catch (e: IOException) {
-            logd("writeToDevice: Failed writing", e)
-            throw VpnNetworkException("Outgoing VPN output stream closed")
-        }
-
-    @Throws(VpnNetworkException::class, SocketException::class)
-    private fun readPacketFromDevice(inputStream: FileInputStream, packet: ByteArray) {
-        // Read the outgoing packet from the input stream.
-        val length: Int = try {
-            inputStream.read(packet)
-        } catch (e: IOException) {
-            throw VpnNetworkException("Cannot read from device", e)
-        }
-
-        if (length == 0) {
-            logw("Got empty packet!")
-            return
-        }
-
-        val readPacket = Arrays.copyOfRange(packet, 0, length)
-
-        vpnWatchDog.handlePacket(readPacket)
-        dnsPacketProxy.handleDnsRequest(readPacket)
-    }
-
-    @Throws(VpnNetworkException::class)
-    override fun forwardPacket(packet: DatagramPacket?, requestPacket: IpPacket?) {
-        var dnsSocket: DatagramSocket? = null
-        try {
-            // Packets to be sent to the real DNS server will need to be protected from the VPN
-            dnsSocket = DatagramSocket()
-
-            vpnService.protect(dnsSocket)
-
-            dnsSocket.send(packet)
-
-            if (requestPacket != null) {
-                dnsIn.add(WaitingOnSocketPacket(dnsSocket, requestPacket))
-            } else {
-                FileHelper.closeOrWarn(
-                    dnsSocket,
-                    "handleDnsRequest: Cannot close socket in error"
-                )
-            }
-        } catch (e: IOException) {
-            FileHelper.closeOrWarn(dnsSocket, "handleDnsRequest: Cannot close socket in error")
-            if (e.cause is ErrnoException) {
-                val errnoExc = e.cause as ErrnoException
-                if (errnoExc.errno == OsConstants.ENETUNREACH || errnoExc.errno == OsConstants.EPERM) {
-                    throw VpnLostConnectionException("Cannot send message:", e)
-                }
-            }
-            logw("handleDnsRequest: Could not send packet to upstream", e)
-        }
-    }
-
-    @Throws(IOException::class)
-    private fun handleRawDnsResponse(parsedPacket: IpPacket, dnsSocket: DatagramSocket) {
-        val datagramData = ByteArray(DNS_RESPONSE_PACKET_SIZE)
-        val replyPacket = DatagramPacket(datagramData, datagramData.size)
-        dnsSocket.receive(replyPacket)
-        dnsPacketProxy.handleDnsResponse(parsedPacket, datagramData)
-    }
-
-    override fun queueDeviceWrite(packet: IpPacket?) {
-        packet ?: return
-        deviceWrites.add(packet.rawData)
+        notify(VpnStatus.RUNNING)
+        val vpnFd = configure().detachFd()
+        runVpnNative(
+            adVpnCallback = adVpnService,
+            blockLoggerCallback = blockLoggerCallback,
+            androidFileHelper = FileHelper,
+            hostItems = config.hosts.items.map { it.toNative() },
+            hostExceptions = config.hosts.exceptions.map { it.toNative() },
+            upstreamDnsServers = upstreamDnsServers.map { it.address },
+            watchdogTargetAddress = watchdogTarget?.hostAddress ?: "",
+            vpnFd = vpnFd,
+            vpnController = threadData!!.vpnController,
+            watchdogEnabled = config.watchDog
+        )
     }
 
     @Throws(UnknownHostException::class)
@@ -432,14 +229,14 @@ class AdVpnThread(
             val alias = String.format(format!!, upstreamDnsServers.size + 1)
             logi("configure: Adding DNS Server $addr as $alias")
             builder.addDnsServer(alias).addRoute(alias, 32)
-            vpnWatchDog.setTarget(InetAddress.getByName(alias))
+            watchdogTarget = InetAddress.getByName(alias)
         } else if (addr is Inet6Address) {
             upstreamDnsServers.add(addr)
             ipv6Template!![ipv6Template.size - 1] = (upstreamDnsServers.size + 1).toByte()
             val i6addr = Inet6Address.getByAddress(ipv6Template)
             logi("configure: Adding DNS Server $addr as $i6addr")
             builder.addDnsServer(i6addr)
-            vpnWatchDog.setTarget(i6addr)
+            watchdogTarget = i6addr
         }
     }
 
@@ -447,7 +244,7 @@ class AdVpnThread(
         val allowOnVpn: MutableSet<String> = HashSet()
         val doNotAllowOnVpn: MutableSet<String> = HashSet()
 
-        config.appList.resolve(vpnService.packageManager, allowOnVpn, doNotAllowOnVpn)
+        config.appList.resolve(adVpnService.packageManager, allowOnVpn, doNotAllowOnVpn)
 
         if (config.appList.defaultMode == dev.clombardo.dnsnet.AllowListMode.NOT_ON_VPN) {
             for (app in allowOnVpn) {
@@ -470,16 +267,16 @@ class AdVpnThread(
         }
     }
 
-    @Throws(VpnNetworkException::class)
+    @Throws(IllegalStateException::class)
     private fun configure(): ParcelFileDescriptor {
-        logi("Configuring $this")
+        logd("Configuring")
 
         // Get the current DNS servers before starting the VPN
-        val dnsServers = getDnsServers(vpnService)
+        val dnsServers = getDnsServers(adVpnService)
         logi("Got DNS servers = $dnsServers")
 
         // Configure a builder while parsing the parameters.
-        val builder = vpnService.Builder()
+        val builder = adVpnService.Builder()
 
         // Determine a prefix we can use. These are all reserved prefixes for example
         // use, so it's possible they might be blocked.
@@ -546,7 +343,7 @@ class AdVpnThread(
             for (addr in dnsServers) {
                 try {
                     newDNSServer(builder, format, ipv6Template, addr)
-                } catch (e: java.lang.Exception) {
+                } catch (e: Exception) {
                     loge("configure: Cannot add server:", e)
                 }
             }
@@ -571,13 +368,13 @@ class AdVpnThread(
 
         // Create a new interface using the builder and save the parameters.
         val pendingIntent = PendingIntent.getActivity(
-            vpnService,
+            adVpnService,
             1,
-            Intent(vpnService, MainActivity::class.java),
+            Intent(adVpnService, MainActivity::class.java),
             PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val pfd = builder
-            .setSession("DNSNet")
+            .setSession(applicationContext.getString(R.string.app_name))
             .setConfigureIntent(pendingIntent)
             .establish()
         logi("Configured")

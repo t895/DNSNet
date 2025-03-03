@@ -13,9 +13,11 @@ package dev.clombardo.dnsnet
 
 import android.content.Context
 import android.net.Uri
+import android.os.ParcelFileDescriptor
 import android.system.ErrnoException
 import android.system.Os
 import dev.clombardo.dnsnet.DnsNetApplication.Companion.applicationContext
+import uniffi.net.AndroidFileHelper
 import java.io.Closeable
 import java.io.File
 import java.io.FileDescriptor
@@ -31,7 +33,7 @@ import java.net.URLEncoder
 /**
  * Utility object for working with files.
  */
-object FileHelper {
+object FileHelper : AndroidFileHelper {
     /**
      * Try open the file with [Context.openFileInput]
      */
@@ -66,12 +68,14 @@ object FileHelper {
      * @param item    A configuration item.
      * @return File or null, if that item is not downloadable.
      */
-    fun getItemFile(item: HostFile): File? =
-        if (item.isDownloadable()) {
+    fun getItemFile(item: HostFile): File? = getItemFile(item.data)
+
+    fun getItemFile(path: String): File? =
+        if (isDownloadable(path)) {
             try {
                 File(
                     applicationContext.getExternalFilesDir(null),
-                    URLEncoder.encode(item.data, "UTF-8"),
+                    URLEncoder.encode(path, "UTF-8"),
                 )
             } catch (e: UnsupportedEncodingException) {
                 logd("getItemFile: File failed to decode", e)
@@ -80,6 +84,9 @@ object FileHelper {
         } else {
             null
         }
+
+    private fun isDownloadable(path: String): Boolean =
+        path.startsWith("https://") || path.startsWith("http://")
 
     @Throws(FileNotFoundException::class)
     fun openItemFile(host: HostFile): InputStreamReader? {
@@ -124,5 +131,21 @@ object FileHelper {
 
         // Always return null
         return null
+    }
+
+    override fun getHostFd(host: String, mode: String): Int? {
+        return if (host.startsWith("content://")) {
+            applicationContext.contentResolver.openFileDescriptor(Uri.parse(host), mode)?.detachFd()
+        } else {
+            // This is not robust at all but it's all I need
+            val modeInt = when (mode) {
+                "r" -> ParcelFileDescriptor.MODE_READ_ONLY
+                "w" -> ParcelFileDescriptor.MODE_WRITE_ONLY
+                "rw" -> ParcelFileDescriptor.MODE_READ_WRITE
+                else -> return null
+            }
+            val itemFile = getItemFile(host) ?: return null
+            ParcelFileDescriptor.open(itemFile, modeInt).detachFd()
+        }
     }
 }

@@ -9,6 +9,7 @@ import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
+import uniffi.net.BlockLoggerCallback
 
 @Serializable
 data class LoggedConnection(
@@ -23,7 +24,7 @@ data class LoggedConnection(
 }
 
 @Serializable
-data class BlockLogger(val connections: MutableMap<String, LoggedConnection> = HashMap()) {
+data class BlockLogger(val connections: MutableMap<String, LoggedConnection> = HashMap()): BlockLoggerCallback {
     @Transient
     private var onConnection: ((name: String, connection: LoggedConnection) -> Unit)? = null
 
@@ -82,5 +83,12 @@ data class BlockLogger(val connections: MutableMap<String, LoggedConnection> = H
                 BlockLogger()
             }
         }
+    }
+
+    override fun log(connectionName: String, allowed: Boolean) {
+        newConnection(
+            name = connectionName,
+            allowed = allowed,
+        )
     }
 }

@@ -17,6 +17,7 @@ import coil3.disk.directory
 import coil3.memory.MemoryCache
 import dev.clombardo.dnsnet.ui.image.AppImageFetcher
 import dev.clombardo.dnsnet.ui.image.AppImageKeyer
+import uniffi.net.rustInit
 
 var config = Configuration.load()
 
@@ -29,6 +30,8 @@ class DnsNetApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         application = this
+
+        rustInit()
 
         NotificationChannels.onCreate(this)
 

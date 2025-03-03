@@ -1,3 +1,5 @@
+import com.android.build.gradle.tasks.MergeSourceSetFolders
+import com.nishtahir.CargoBuildTask
 import io.gitlab.arturbosch.detekt.Detekt
 
 plugins {
@@ -12,6 +14,61 @@ plugins {
     alias(libs.plugins.cash.licensee)
     alias(libs.plugins.usefulness.licensee)
     alias(libs.plugins.arturbosch.detekt)
+    alias(libs.plugins.rust.android.gradle)
+}
+
+val libnet = "libnet"
+
+cargo {
+    module = "../$libnet"
+    libname = "net"
+
+    targets = listOf("arm64", "arm", "x86", "x86_64")
+
+    pythonCommand = "python3"
+
+    val isDebug = gradle.startParameter.taskNames.any {
+        it.lowercase().contains("debug")
+    }
+    if (!isDebug) {
+        profile = "release"
+    }
+}
+
+val task = tasks.register<Exec>("uniffiBindgen") {
+    val s = File.separatorChar
+    workingDir = file("${project.rootDir}${s}$libnet")
+    commandLine(
+        "cargo",
+        "run",
+        "--bin",
+        "uniffi-bindgen",
+        "generate",
+        "--library",
+        "${project.rootDir}${s}app${s}build${s}rustJniLibs${s}android${s}arm64-v8a${s}$libnet.so",
+        "--language",
+        "kotlin",
+        "--out-dir",
+        layout.buildDirectory.dir("generated${s}kotlin").get().asFile.path
+    )
+}
+
+project.afterEvaluate {
+    tasks.withType(CargoBuildTask::class)
+        .forEach { buildTask ->
+            tasks.withType(MergeSourceSetFolders::class)
+                .configureEach {
+                    inputs.dir(
+                        layout.buildDirectory.dir("rustJniLibs" + File.separatorChar + buildTask.toolchain!!.folder)
+                    )
+                    dependsOn(buildTask)
+                }
+        }
+}
+
+tasks.preBuild.configure {
+    dependsOn.add(tasks.withType(CargoBuildTask::class.java))
+    dependsOn.add(task)
 }
 
 android {
@@ -24,6 +81,16 @@ android {
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 33
         versionName = "1.0.19"
+
+        ndk {
+            abiFilters += listOf("x86_64", "x86", "arm64-v8a", "armeabi-v7a")
+        }
+    }
+
+    ndkVersion = "28.0.13004108"
+
+    sourceSets {
+        getByName("main").java.srcDir("build/generated/kotlin")
     }
 
     val storeFilePath = System.getenv("STORE_FILE_PATH")
@@ -114,11 +181,6 @@ kotlin {
 dependencies {
     implementation(libs.androidx.appcompat)
 
-    // Proxy stuff
-    implementation(libs.pcap4j.core)
-    implementation(libs.pcap4j.packetfactory.static)
-    implementation(libs.dnsjava)
-
     // Compose
     val composeBom = platform(libs.compose.bom)
     implementation(composeBom)
@@ -166,6 +228,12 @@ dependencies {
     implementation(libs.string.similarity.kotlin)
 
     implementation(libs.androidx.collection.ktx)
+
+    implementation(libs.jna) {
+        artifact {
+            type = "aar"
+        }
+    }
 }
 
 licensee {

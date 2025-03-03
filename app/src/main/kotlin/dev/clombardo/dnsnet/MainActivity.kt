@@ -64,6 +64,7 @@ import dev.clombardo.dnsnet.ui.theme.Animation
 import dev.clombardo.dnsnet.ui.theme.DnsNetTheme
 import dev.clombardo.dnsnet.viewmodel.HomeViewModel
 import dev.clombardo.dnsnet.vpn.AdVpnService
+import dev.clombardo.dnsnet.vpn.AdVpnThread
 import dev.clombardo.dnsnet.vpn.Command
 import dev.clombardo.dnsnet.vpn.VpnStatus
 import java.io.IOException
@@ -100,7 +101,7 @@ class MainActivity : AppCompatActivity() {
                         }
                         config.save()
                         vm.onReloadSettings()
-                        restartService()
+                        AdVpnService.restart(this)
                         recreate()
                     }
 
@@ -158,7 +159,7 @@ class MainActivity : AppCompatActivity() {
                         onShareLogcat = { logcatLauncher.launch("dnsnet-log.txt") },
                         onTryToggleService = { tryToggleService(true, vpnLauncher) },
                         onStartWithoutHostsCheck = { tryToggleService(false, vpnLauncher) },
-                        onRestartService = ::restartService,
+                        onRestartService = { AdVpnService.restart(this@MainActivity) },
                         onUpdateRefreshWork = ::updateRefreshWork,
                         onOpenNetworkSettings = ::openNetworkSettings,
                     )
@@ -221,7 +222,7 @@ class MainActivity : AppCompatActivity() {
         hostsCheck: Boolean,
         launcher: ManagedActivityResultLauncher<Intent, ActivityResult>,
     ) {
-        if (AdVpnService.status.value != VpnStatus.STOPPED) {
+        if (AdVpnService.isRunning()) {
             logi("Attempting to disconnect")
             AdVpnService.stop(this)
         } else {
@@ -234,12 +235,6 @@ class MainActivity : AppCompatActivity() {
                 return
             }
             startService(launcher)
-        }
-    }
-
-    private fun restartService() {
-        if (AdVpnService.status.value != VpnStatus.STOPPED) {
-            AdVpnService.start(this)
         }
     }
 

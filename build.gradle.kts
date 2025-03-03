@@ -19,4 +19,6 @@ plugins {
     alias(libs.plugins.usefulness.licensee) apply false
 
     alias(libs.plugins.arturbosch.detekt) apply false
+
+    alias(libs.plugins.rust.android.gradle) apply false
 }
