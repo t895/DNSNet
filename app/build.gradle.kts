@@ -22,8 +22,8 @@ android {
         applicationId = "dev.clombardo.dnsnet"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 32
-        versionName = "1.0.18"
+        versionCode = 33
+        versionName = "1.0.19"
     }
 
     val storeFilePath = System.getenv("STORE_FILE_PATH")
