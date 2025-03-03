@@ -726,7 +726,6 @@ fun HomeScreen(
             composable<HomeDestinations.Start> {
                 vm.showStatusBarShade()
                 var resumeOnStartup by remember { mutableStateOf(config.autoStart) }
-                var watchConnection by remember { mutableStateOf(config.watchDog) }
                 var ipv6Support by remember { mutableStateOf(config.ipV6Support) }
                 var blockLog by remember { mutableStateOf(config.blockLogging) }
 
@@ -764,13 +763,6 @@ fun HomeScreen(
                         config.autoStart = !config.autoStart
                         resumeOnStartup = config.autoStart
                         config.save()
-                    },
-                    watchConnection = watchConnection,
-                    onWatchConnectionClick = {
-                        config.watchDog = !config.watchDog
-                        watchConnection = config.watchDog
-                        config.save()
-                        onRestartService()
                     },
                     ipv6Support = ipv6Support,
                     onIpv6SupportClick = {

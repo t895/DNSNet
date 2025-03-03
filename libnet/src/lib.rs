@@ -3,23 +3,21 @@ use std::{
     fs::File,
     io::{self, BufRead, Read, Write},
     mem::{self, MaybeUninit},
-    net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6, UdpSocket},
+    net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6},
     os::fd::{AsRawFd, FromRawFd, RawFd},
-    str::FromStr,
-    sync::{atomic::AtomicBool, Arc},
-    thread,
-    time::{self, Duration, SystemTime, UNIX_EPOCH},
+    sync::{Arc, atomic::AtomicBool},
+    time::{SystemTime, UNIX_EPOCH},
     usize,
 };
 
 use android_logger::Config;
 use etherparse::{
-    ip_number, IpHeaders, IpNumber, Ipv4Header, Ipv6FlowLabel, Ipv6Header, NetSlice, PacketBuilder,
-    PacketBuilderStep, SlicedPacket, TransportSlice, UdpSlice,
+    IpHeaders, IpNumber, Ipv4Header, Ipv6FlowLabel, Ipv6Header, NetSlice, PacketBuilder,
+    PacketBuilderStep, SlicedPacket, TransportSlice, UdpSlice, ip_number,
 };
 use log::LevelFilter;
 use polling::{Event, Events, Poller};
-use simple_dns::{rdata::RData, Name, PacketFlag, ResourceRecord};
+use simple_dns::{Name, PacketFlag, ResourceRecord, rdata::RData};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
 #[macro_use]
@@ -45,33 +43,19 @@ pub fn run_vpn_native(
     host_items: Vec<NativeHost>,
     host_exceptions: Vec<NativeHost>,
     upstream_dns_servers: Vec<Vec<u8>>,
-    watchdog_target_address: String,
     vpn_fd: i32,
     vpn_controller: Arc<VpnController>,
-    watchdog_enabled: bool,
 ) -> Result<(), VpnError> {
     info!(
         "run_vpn_native: Starting VPN with parameters\n\
         host_items: {:?}\n\
         host_exceptions: {:?}\n\
         upstream_dns_servers: {:?}\n\
-        watchdog_enabled: {}\n\
-        watchdog_target_address: {}\n\
         vpn_fd: {}",
-        host_items,
-        host_exceptions,
-        upstream_dns_servers,
-        watchdog_enabled,
-        watchdog_target_address,
-        vpn_fd
+        host_items, host_exceptions, upstream_dns_servers, vpn_fd
     );
 
-    let mut vpn = AdVpn::new(
-        vpn_fd,
-        vpn_controller,
-        watchdog_enabled,
-        &watchdog_target_address,
-    );
+    let mut vpn = AdVpn::new(vpn_fd, vpn_controller);
 
     let result = vpn.run(
         &ad_vpn_callback,
@@ -98,18 +82,14 @@ impl VpnController {
         Arc::new(VpnController {
             signal_fd: unsafe {
                 let result = libc::eventfd(0, 0);
-                if result != -1 {
-                    result
-                } else {
-                    panic!()
-                }
+                if result != -1 { result } else { panic!() }
             },
             should_stop: AtomicBool::new(false),
         })
     }
 
     fn get_should_stop(&self) -> bool {
-        return self.should_stop.load(std::sync::atomic::Ordering::Relaxed)
+        return self.should_stop.load(std::sync::atomic::Ordering::Relaxed);
     }
 
     fn stop(&self) {
@@ -365,7 +345,6 @@ struct AdVpn {
     vpn_file: File,
     vpn_controller: Arc<VpnController>,
     device_writes: VecDeque<Vec<u8>>,
-    vpn_watchdog: VpnWatchdog,
     wosp_list: WospList,
     ipv6_unspecified: SocketAddrV6,
 }
@@ -375,32 +354,13 @@ impl AdVpn {
 
     const DNS_RESPONSE_PACKET_SIZE: usize = 1024;
 
-    const DNS_PORT: u16 = 53;
-
-    fn new(
-        vpn_fd: RawFd,
-        interrupt_flag: Arc<VpnController>,
-        watchdog_enabled: bool,
-        watchdog_target_address: &str,
-    ) -> Self {
+    fn new(vpn_fd: RawFd, interrupt_flag: Arc<VpnController>) -> Self {
         let vpn_file = unsafe { File::from_raw_fd(vpn_fd) };
-
-        let target_address = match IpAddr::from_str(watchdog_target_address) {
-            Ok(value) => value,
-            Err(e) => {
-                error!(
-                    "AdVpn::new: Failed to create watchdog target address from string! - {:?}",
-                    e
-                );
-                panic!()
-            }
-        };
 
         AdVpn {
             vpn_file,
             vpn_controller: interrupt_flag,
             device_writes: VecDeque::new(),
-            vpn_watchdog: VpnWatchdog::new(watchdog_enabled, (target_address, Self::DNS_PORT)),
             wosp_list: WospList::new(),
             ipv6_unspecified: SocketAddrV6::new(Ipv6Addr::UNSPECIFIED, 0, 0, 0),
         }
@@ -416,7 +376,6 @@ impl AdVpn {
         upstream_dns_servers: Vec<Vec<u8>>,
     ) -> Result<(), VpnError> {
         let mut packet = vec![0u8; i16::MAX as usize];
-        self.vpn_watchdog.init();
 
         let mut dns_packet_proxy = DnsPacketProxy::new(
             android_vpn_callback,
@@ -433,8 +392,11 @@ impl AdVpn {
             }
         };
         unsafe {
-            match poller.add(self.vpn_controller.signal_fd, Event::readable(usize::MAX - 2)) {
-                Ok(_) => {},
+            match poller.add(
+                self.vpn_controller.signal_fd,
+                Event::readable(usize::MAX - 2),
+            ) {
+                Ok(_) => {}
                 Err(e) => {
                     error!("run: Failed to register signal descriptor! - {:?}", e);
                     return Result::Err(VpnError::TunnelPollFailure);
@@ -457,10 +419,10 @@ impl AdVpn {
                     } else {
                         continue;
                     }
-                },
+                }
                 Err(e) => {
                     return Result::Err(e);
-                },
+                }
             };
         }
     }
@@ -512,12 +474,10 @@ impl AdVpn {
         }
 
         debug!("do_one: Polling {} socket(s)", waiting_sockets);
-        // let timeout = self.vpn_watchdog.get_poll_timeout();
         match poller.wait(events, None) {
             Ok(events_length) => info!("do_one: Found {} events", events_length),
             Err(e) => {
                 debug!("do_one: Poll timed out - {:?}", e);
-                // self.vpn_watchdog.handle_timeout();
                 return Result::Err(VpnError::Timeout);
             }
         };
@@ -557,7 +517,9 @@ impl AdVpn {
                         wosps_to_process.push(wosp);
                     }
                     None => {
-                        error!("do_one: Got event for wosp that doesn't exist in list! This should never happen.");
+                        error!(
+                            "do_one: Got event for wosp that doesn't exist in list! This should never happen."
+                        );
                         return Result::Err(VpnError::SocketPollFailure);
                     }
                 };
@@ -626,7 +588,6 @@ impl AdVpn {
             return Result::Ok(());
         }
 
-        self.vpn_watchdog.handle_packet(packet);
         dns_packet_proxy.handle_dns_request(self, packet);
 
         return Result::Ok(());
@@ -637,7 +598,8 @@ impl AdVpn {
         dns_packet_proxy: &DnsPacketProxy,
         wosp: WaitingOnSocketPacket,
     ) {
-        let mut response_payload = vec![MaybeUninit::<u8>::uninit(); Self::DNS_RESPONSE_PACKET_SIZE];
+        let mut response_payload =
+            vec![MaybeUninit::<u8>::uninit(); Self::DNS_RESPONSE_PACKET_SIZE];
 
         match wosp.socket.recv(response_payload.as_mut_slice()) {
             Ok(res) => {
@@ -724,122 +686,6 @@ impl AdVpn {
 
     fn queue_device_write(&mut self, packet: Vec<u8>) {
         self.device_writes.push_back(packet)
-    }
-}
-
-struct VpnWatchdog {
-    enabled: bool,
-    init_penalty: u64,
-    last_packet_sent: u128,
-    last_packet_received: u128,
-    poll_timeout: u64,
-    target_address: (IpAddr, u16),
-}
-
-impl VpnWatchdog {
-    // Polling is quadrupled on every success, and values range from 4s to 1h8m.
-    const POLL_TIMEOUT_START: u64 = 1000;
-    const POLL_TIMEOUT_END: u64 = 4096000;
-    const POLL_TIMEOUT_WAITING: u64 = 7000;
-    const POLL_TIMEOUT_GROW: u64 = 4;
-
-    // Reconnect penalty ranges from 0s to 5s, in increments of 200 ms.
-    const INIT_PENALTY_START: u64 = 0;
-    const INIT_PENALTY_END: u64 = 5000;
-    const INIT_PENALTY_INC: u64 = 200;
-
-    fn new(enabled: bool, target_address: (IpAddr, u16)) -> Self {
-        Self {
-            enabled,
-            init_penalty: Self::INIT_PENALTY_START,
-            last_packet_sent: 0,
-            last_packet_received: 0,
-            poll_timeout: VpnWatchdog::POLL_TIMEOUT_START,
-            target_address,
-        }
-    }
-
-    fn init(&self) {
-        if self.init_penalty > 0 {
-            thread::sleep(time::Duration::from_millis(self.init_penalty));
-        }
-    }
-
-    fn get_poll_timeout(&self) -> Option<Duration> {
-        return if !self.enabled {
-            None
-        } else if self.last_packet_received < self.last_packet_sent {
-            Some(Duration::from_millis(VpnWatchdog::POLL_TIMEOUT_WAITING))
-        } else {
-            Some(Duration::from_millis(self.poll_timeout))
-        };
-    }
-
-    fn handle_packet(&mut self, packet_data: &[u8]) {
-        if !self.enabled {
-            return;
-        }
-
-        debug!(
-            "handle_packet: Received packet of length {}",
-            packet_data.len()
-        );
-        self.last_packet_received = get_epoch_millis();
-    }
-
-    fn send_packet(&mut self) {
-        if !self.enabled {
-            return;
-        }
-
-        debug!(
-            "send_packet: Sending packet, poll timeout is {}",
-            self.poll_timeout
-        );
-        let result = UdpSocket::bind("[::]:53");
-        match result {
-            Ok(socket) => {
-                match socket.send_to(vec![].as_slice(), &self.target_address) {
-                    Ok(_) => debug!("send_packet: Successfully sent packet over UDP socket"),
-                    Err(e) => {
-                        error!(
-                            "send_packet: Failed to send packet over UDP socket! - {:?}",
-                            e
-                        );
-                        return;
-                    }
-                };
-                self.last_packet_sent = get_epoch_millis();
-            }
-            Err(e) => error!("send_packet: Failed to send watchdog packet! - {:?}", e),
-        };
-    }
-
-    fn handle_timeout(&mut self) -> bool {
-        if !self.enabled {
-            return false;
-        }
-
-        debug!(
-            "handleTimeout: Milliseconds elapsed between last receive and sent: {}",
-            self.last_packet_received
-        );
-
-        if self.last_packet_received < self.last_packet_sent && self.last_packet_sent != 0 {
-            self.init_penalty += Self::INIT_PENALTY_INC;
-            if self.init_penalty > Self::INIT_PENALTY_END {
-                self.init_penalty = Self::INIT_PENALTY_END;
-            }
-            return true;
-        }
-
-        self.poll_timeout *= Self::POLL_TIMEOUT_GROW;
-        if self.poll_timeout > Self::POLL_TIMEOUT_END {
-            self.poll_timeout = Self::POLL_TIMEOUT_END;
-        }
-
-        self.send_packet();
-        return false;
     }
 }
 
@@ -1279,7 +1125,10 @@ impl<'a> DnsPacketProxy<'a> {
                     std::net::SocketAddr::V6(destination_socket_address),
                 );
             } else {
-                warn!("handle_dns_request: Received destination address with unknown protocol! - {:?}", translated_destination_address);
+                warn!(
+                    "handle_dns_request: Received destination address with unknown protocol! - {:?}",
+                    translated_destination_address
+                );
             }
         } else {
             info!("handle_dns_request: DNS Name {} blocked!", dns_query_name);
@@ -1309,7 +1158,9 @@ impl<'a> DnsPacketProxy<'a> {
             let index = match destination_address.get(destination_address.len() - 1) {
                 Some(value) => value,
                 None => {
-                    debug!("translate_destination_address: Failed to get upstream index from destination address");
+                    debug!(
+                        "translate_destination_address: Failed to get upstream index from destination address"
+                    );
                     return None;
                 }
             };

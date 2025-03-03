@@ -68,8 +68,6 @@ fun StartScreen(
     listState: LazyGridState = rememberLazyGridState(),
     resumeOnStartup: Boolean,
     onResumeOnStartupClick: () -> Unit,
-    watchConnection: Boolean,
-    onWatchConnectionClick: () -> Unit,
     ipv6Support: Boolean,
     onIpv6SupportClick: () -> Unit,
     blockLog: Boolean,
@@ -160,12 +158,6 @@ fun StartScreen(
                         onCheckedChange = { onResumeOnStartupClick() },
                     )
                     SwitchListItem(
-                        title = stringResource(id = R.string.watchdog),
-                        details = stringResource(id = R.string.watchdog_description),
-                        checked = watchConnection,
-                        onCheckedChange = { onWatchConnectionClick() },
-                    )
-                    SwitchListItem(
                         title = stringResource(id = R.string.ipv6_support),
                         details = stringResource(id = R.string.ipv6_support_description),
                         checked = ipv6Support,
@@ -230,8 +222,6 @@ private fun StartScreenPreview() {
             modifier = Modifier.background(MaterialTheme.colorScheme.surface),
             resumeOnStartup = false,
             onResumeOnStartupClick = {},
-            watchConnection = false,
-            onWatchConnectionClick = {},
             ipv6Support = false,
             onIpv6SupportClick = {},
             status = VpnStatus.STOPPED,

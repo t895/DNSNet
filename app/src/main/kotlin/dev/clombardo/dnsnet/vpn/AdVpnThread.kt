@@ -102,8 +102,6 @@ class AdVpnThread(
     /* Upstream DNS servers, indexed by our IP */
     private val upstreamDnsServers = ArrayList<InetAddress>()
 
-    private var watchdogTarget: InetAddress? = null
-
     internal data class ThreadData(
         val thread: Thread,
         val vpnController: VpnController
@@ -204,10 +202,8 @@ class AdVpnThread(
             hostItems = config.hosts.items.map { it.toNative() },
             hostExceptions = config.hosts.exceptions.map { it.toNative() },
             upstreamDnsServers = upstreamDnsServers.map { it.address },
-            watchdogTargetAddress = watchdogTarget?.hostAddress ?: "",
             vpnFd = vpnFd,
             vpnController = threadData!!.vpnController,
-            watchdogEnabled = config.watchDog
         )
     }
 
@@ -229,14 +225,12 @@ class AdVpnThread(
             val alias = String.format(format!!, upstreamDnsServers.size + 1)
             logi("configure: Adding DNS Server $addr as $alias")
             builder.addDnsServer(alias).addRoute(alias, 32)
-            watchdogTarget = InetAddress.getByName(alias)
         } else if (addr is Inet6Address) {
             upstreamDnsServers.add(addr)
             ipv6Template!![ipv6Template.size - 1] = (upstreamDnsServers.size + 1).toByte()
             val i6addr = Inet6Address.getByAddress(ipv6Template)
             logi("configure: Adding DNS Server $addr as $i6addr")
             builder.addDnsServer(i6addr)
-            watchdogTarget = i6addr
         }
     }
 
