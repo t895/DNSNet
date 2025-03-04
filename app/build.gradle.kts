@@ -119,29 +119,17 @@ android {
         }
     }
 
-    signingConfigs {
-        create("default") {
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
-            storePassword = "android"
-            storeFile = file("$projectDir/debug.keystore")
-        }
-    }
-
     buildTypes {
         debug {
             val debug = ".debug"
             applicationIdSuffix = debug
             versionNameSuffix = debug
             resValue("string", "app_name", "DNSNet Debug")
-            signingConfig = signingConfigs.getByName("default")
         }
 
         release {
-            signingConfig = if (storeFilePath != null) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("default")
+            if (storeFilePath != null) {
+                signingConfig = signingConfigs.getByName("release")
             }
             isMinifyEnabled = true
             proguardFiles(
@@ -159,7 +147,7 @@ android {
                 getDefaultProguardFile("proguard-android.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("default")
+            signingConfig = signingConfigs.getByName("debug")
             resValue("string", "app_name", "DNSNet Benchmark")
         }
     }
