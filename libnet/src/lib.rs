@@ -198,7 +198,7 @@ impl<'a> GenericIpPacket<'a> {
         match &self.packet.net {
             Some(net) => match net {
                 NetSlice::Ipv4(value) => Some(value.header().to_header()),
-                NetSlice::Ipv6(_) => None,
+                _ => None,
             },
             None => None,
         }
@@ -207,8 +207,8 @@ impl<'a> GenericIpPacket<'a> {
     fn get_ipv6_header(&self) -> Option<Ipv6Header> {
         match &self.packet.net {
             Some(net) => match net {
-                NetSlice::Ipv4(_) => None,
                 NetSlice::Ipv6(value) => Some(value.header().to_header()),
+                _ => None,
             },
             None => None,
         }
