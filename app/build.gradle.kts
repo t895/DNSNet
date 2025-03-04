@@ -83,8 +83,8 @@ android {
         applicationId = "dev.clombardo.dnsnet"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 35
-        versionName = "1.1.1"
+        versionCode = 36
+        versionName = "1.1.2"
 
         ndk {
             abiFilters += listOf("x86_64", "x86", "arm64-v8a", "armeabi-v7a")
