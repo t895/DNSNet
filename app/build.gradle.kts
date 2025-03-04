@@ -27,6 +27,10 @@ cargo {
 
     pythonCommand = "python3"
 
+    // Required for reproducible builds on F-Droid
+    extraCargoBuildArguments =
+        listOf("--config", "build.rustflags = [ '--remap-path-prefix=\$HOME/.cargo=/rust/cargo' ]")
+
     val isDebug = gradle.startParameter.taskNames.any {
         it.lowercase().contains("debug")
     }
