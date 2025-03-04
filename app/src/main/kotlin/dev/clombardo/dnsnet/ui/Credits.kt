@@ -139,6 +139,69 @@ fun CreditsScreen(
                 )
             }
 
+            item {
+                LicenseListItem(
+                    title = stringResource(R.string.etherparse),
+                    licenseLink = stringResource(R.string.etherparse_license_link),
+                )
+            }
+
+            item {
+                LicenseListItem(
+                    title = stringResource(R.string.libc),
+                    licenseLink = stringResource(R.string.libc_license_link),
+                )
+            }
+
+            item {
+                LicenseListItem(
+                    title = stringResource(R.string.log),
+                    licenseLink = stringResource(R.string.log_license_link),
+                )
+            }
+
+            item {
+                LicenseListItem(
+                    title = stringResource(R.string.polling),
+                    licenseLink = stringResource(R.string.polling_license_link),
+                )
+            }
+
+            item {
+                LicenseListItem(
+                    title = stringResource(R.string.simple_dns),
+                    licenseLink = stringResource(R.string.simple_dns_license_link),
+                )
+            }
+
+            item {
+                LicenseListItem(
+                    title = stringResource(R.string.socket2),
+                    licenseLink = stringResource(R.string.socket2_license_link),
+                )
+            }
+
+            item {
+                LicenseListItem(
+                    title = stringResource(R.string.thiserror),
+                    licenseLink = stringResource(R.string.thiserror_license_link),
+                )
+            }
+
+            item {
+                LicenseListItem(
+                    title = stringResource(R.string.uniffi),
+                    licenseLink = stringResource(R.string.uniffi_license_link),
+                )
+            }
+
+            item {
+                LicenseListItem(
+                    title = stringResource(R.string.android_logger),
+                    licenseLink = stringResource(R.string.android_logger_license_link),
+                )
+            }
+
             items(artifacts) {
                 CreditListItem(it)
             }

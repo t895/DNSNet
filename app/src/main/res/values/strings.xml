@@ -144,11 +144,31 @@
     <string name="hosts_title">Filter hosts with files and exceptions</string>
     <string name="credits">Credits</string>
     <string name="open_license">Open license</string>
-    <string name="dns66_license_link" translatable="false">https://github.com/julian-klode/dns66/blob/main/COPYING</string>
-    <string name="adbuster_license_link" translatable="false">https://github.com/dbrodie/AdBuster/blob/master/License-GPLv3</string>
+    <string name="dns66_license_link" translatable="false">https://github.com/julian-klode/dns66/blob/890243fc916aabe2d73eef9d51f833d190d3bd84/COPYING</string>
+    <string name="adbuster_license_link" translatable="false">https://github.com/dbrodie/AdBuster/blob/8e49f4b952e5c11180290dc5dd42794ecf5fff93/License-GPLv3</string>
     <string name="search">Search</string>
     <string name="ascending">Ascending</string>
     <string name="descending">Descending</string>
     <string name="system_apps">System apps</string>
     <string name="logcat_written_successfully">Logcat written successfully</string>
+
+    <!-- Rust crate credits -->
+    <string name="etherparse" translatable="false">etherparse</string>
+    <string name="etherparse_license_link" translatable="false">https://github.com/JulianSchmid/etherparse/tree/v0.17.0</string>
+    <string name="libc" translatable="false">libc</string>
+    <string name="libc_license_link" translatable="false">https://github.com/rust-lang/libc/tree/0.2.170</string>
+    <string name="log" translatable="false">log</string>
+    <string name="log_license_link" translatable="false">https://github.com/rust-lang/log/tree/0.4.26</string>
+    <string name="polling" translatable="false">polling</string>
+    <string name="polling_license_link" translatable="false">https://github.com/smol-rs/polling/tree/v3.7.4</string>
+    <string name="simple_dns" translatable="false">simple-dns</string>
+    <string name="simple_dns_license_link" translatable="false">https://github.com/balliegojr/simple-dns</string>
+    <string name="socket2" translatable="false">socket2</string>
+    <string name="socket2_license_link" translatable="false">https://github.com/rust-lang/socket2/tree/60d118fa4724f756c31944c86dc1ecd5dfc4c9b7</string>
+    <string name="thiserror" translatable="false">thiserror</string>
+    <string name="thiserror_license_link" translatable="false">https://github.com/dtolnay/thiserror/tree/2.0.12</string>
+    <string name="uniffi" translatable="false">uniffi</string>
+    <string name="uniffi_license_link" translatable="false">https://github.com/mozilla/uniffi-rs/blob/v0.29.0/LICENSE</string>
+    <string name="android_logger" translatable="false">android_logger</string>
+    <string name="android_logger_license_link" translatable="false">https://github.com/rust-mobile/android_logger-rs/tree/0.14.1</string>
 </resources>
