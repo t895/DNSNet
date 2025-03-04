@@ -12,7 +12,6 @@
 package dev.clombardo.dnsnet
 
 import android.app.Activity
-import android.app.PendingIntent
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.VpnService.prepare
@@ -55,18 +54,16 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import dev.chrisbanes.haze.HazeDefaults
+import dev.chrisbanes.haze.HazeEffectScope
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.haze
-import dev.chrisbanes.haze.hazeChild
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
 import dev.clombardo.dnsnet.db.RuleDatabaseUpdateWorker
 import dev.clombardo.dnsnet.ui.App
 import dev.clombardo.dnsnet.ui.theme.Animation
 import dev.clombardo.dnsnet.ui.theme.DnsNetTheme
 import dev.clombardo.dnsnet.viewmodel.HomeViewModel
 import dev.clombardo.dnsnet.vpn.AdVpnService
-import dev.clombardo.dnsnet.vpn.AdVpnThread
-import dev.clombardo.dnsnet.vpn.Command
-import dev.clombardo.dnsnet.vpn.VpnStatus
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
@@ -145,7 +142,7 @@ class MainActivity : AppCompatActivity() {
                     val hazeState = remember { HazeState() }
 
                     App(
-                        modifier = Modifier.haze(hazeState),
+                        modifier = Modifier.hazeSource(hazeState),
                         vm = vm,
                         onRefreshHosts = ::refresh,
                         onLoadDefaults = {
@@ -177,18 +174,17 @@ class MainActivity : AppCompatActivity() {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(systemBarShadeHeight.dp)
-                                .hazeChild(
-                                    state = hazeState,
+                                .hazeEffect(state = hazeState,
                                     style = HazeDefaults.style(
                                         backgroundColor = MaterialTheme.colorScheme.surface,
                                         blurRadius = 1.dp,
                                     ),
-                                ) {
-                                    mask = Brush.verticalGradient(
-                                        0f to Color.White,
-                                        1f to Color.Transparent,
-                                    )
-                                },
+                                    block = fun HazeEffectScope.() {
+                                        mask = Brush.verticalGradient(
+                                            0f to Color.White,
+                                            1f to Color.Transparent,
+                                        )
+                                    }),
                         )
                     }
                 }
