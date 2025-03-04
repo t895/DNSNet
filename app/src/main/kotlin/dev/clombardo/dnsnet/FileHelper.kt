@@ -134,18 +134,24 @@ object FileHelper : AndroidFileHelper {
     }
 
     override fun getHostFd(host: String, mode: String): Int? {
-        return if (host.startsWith("content://")) {
-            applicationContext.contentResolver.openFileDescriptor(Uri.parse(host), mode)?.detachFd()
-        } else {
-            // This is not robust at all but it's all I need
-            val modeInt = when (mode) {
-                "r" -> ParcelFileDescriptor.MODE_READ_ONLY
-                "w" -> ParcelFileDescriptor.MODE_WRITE_ONLY
-                "rw" -> ParcelFileDescriptor.MODE_READ_WRITE
-                else -> return null
+        var descriptor: Int? = null
+        try {
+            descriptor = if (host.startsWith("content://")) {
+                applicationContext.contentResolver.openFileDescriptor(Uri.parse(host), mode)?.detachFd()
+            } else {
+                // This is not robust at all but it's all I need
+                val modeInt = when (mode) {
+                    "r" -> ParcelFileDescriptor.MODE_READ_ONLY
+                    "w" -> ParcelFileDescriptor.MODE_WRITE_ONLY
+                    "rw" -> ParcelFileDescriptor.MODE_READ_WRITE
+                    else -> return null
+                }
+                val itemFile = getItemFile(host) ?: return null
+                ParcelFileDescriptor.open(itemFile, modeInt).detachFd()
             }
-            val itemFile = getItemFile(host) ?: return null
-            ParcelFileDescriptor.open(itemFile, modeInt).detachFd()
+        } catch (e: Exception) {
+            loge("getHostFd: $host", e)
         }
+        return descriptor
     }
 }
