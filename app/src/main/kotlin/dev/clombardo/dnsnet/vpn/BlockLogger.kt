@@ -2,6 +2,7 @@ package dev.clombardo.dnsnet.vpn
 
 import dev.clombardo.dnsnet.DnsNetApplication.Companion.applicationContext
 import dev.clombardo.dnsnet.FileHelper
+import dev.clombardo.dnsnet.config
 import dev.clombardo.dnsnet.loge
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
@@ -86,6 +87,10 @@ data class BlockLogger(val connections: MutableMap<String, LoggedConnection> = H
     }
 
     override fun log(connectionName: String, allowed: Boolean) {
+        if (!config.blockLogging) {
+            return
+        }
+
         newConnection(
             name = connectionName,
             allowed = allowed,
