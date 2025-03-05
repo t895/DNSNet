@@ -67,7 +67,7 @@ class AdVpnThread(
 
         private const val PREFIX_LENGTH = 24
 
-        @Throws(IllegalStateException::class)
+        @Throws(NoNetworkException::class)
         private fun getDnsServers(context: Context): List<InetAddress> {
             val known = HashSet<InetAddress>()
             val out = ArrayList<InetAddress>()
@@ -75,7 +75,7 @@ class AdVpnThread(
             with(context.getSystemService(VpnService.CONNECTIVITY_SERVICE) as ConnectivityManager) {
                 // Seriously, Android? Seriously?
                 val activeInfo: NetworkInfo =
-                    activeNetworkInfo ?: throw IllegalStateException("No DNS Server")
+                    activeNetworkInfo ?: throw NoNetworkException("No active network")
 
                 for (nw in allNetworks) {
                     val ni: NetworkInfo = getNetworkInfo(nw) ?: continue
@@ -129,6 +129,7 @@ class AdVpnThread(
 
         // Tell the Rust code to stop
         threadData?.vpnController?.stop()
+        threadData?.thread?.interrupt()
         try {
             threadData?.thread?.join(2000)
         } catch (e: InterruptedException) {
@@ -157,14 +158,15 @@ class AdVpnThread(
                 // If the function returns, that means it was interrupted
                 runVpn()
                 break
-            } catch (e: IllegalStateException) {
-                // Configuration error. Try again immediately.
-                loge("Got configuration error - ${e.message}")
-                notify(VpnStatus.RECONNECTING)
-                continue
+            } catch (e: NoNetworkException) {
+                loge("No active network found. Waiting.", e)
+                notify(VpnStatus.WAITING_FOR_NETWORK)
             } catch (e: VpnException) {
                 // Internal error. Wait and try again.
-                loge("Got internal VPN exception - ${e.message}")
+                loge("Got internal VPN exception", e)
+                notify(VpnStatus.RECONNECTING_NETWORK_ERROR)
+            } catch (e: PrepareFailedException) {
+                loge("Failed to prepare VPN", e)
                 notify(VpnStatus.RECONNECTING_NETWORK_ERROR)
             }
 
@@ -190,11 +192,11 @@ class AdVpnThread(
         logi("Exiting")
     }
 
-    @Throws(IllegalStateException::class, VpnException::class)
+    @Throws(NoNetworkException::class, VpnException::class, PrepareFailedException::class)
     private fun runVpn() {
         // Authenticate and configure the virtual network interface.
         notify(VpnStatus.RUNNING)
-        val vpnFd = configure().detachFd()
+        val vpnFd = configure() ?: throw PrepareFailedException("Got null descriptor from system")
         runVpnNative(
             adVpnCallback = adVpnService,
             blockLoggerCallback = blockLoggerCallback,
@@ -202,7 +204,7 @@ class AdVpnThread(
             hostItems = config.hosts.items.map { it.toNative() },
             hostExceptions = config.hosts.exceptions.map { it.toNative() },
             upstreamDnsServers = upstreamDnsServers.map { it.address },
-            vpnFd = vpnFd,
+            vpnFd = vpnFd.detachFd(),
             vpnController = threadData!!.vpnController,
         )
     }
@@ -261,8 +263,8 @@ class AdVpnThread(
         }
     }
 
-    @Throws(IllegalStateException::class)
-    private fun configure(): ParcelFileDescriptor {
+    @Throws(NoNetworkException::class)
+    private fun configure(): ParcelFileDescriptor? {
         logd("Configuring")
 
         // Get the current DNS servers before starting the VPN
@@ -373,7 +375,7 @@ class AdVpnThread(
             .establish()
         logi("Configured")
 
-        return pfd!!
+        return pfd
     }
 
     fun hasIpV6Servers(config: Configuration, dnsServers: List<InetAddress>): Boolean {

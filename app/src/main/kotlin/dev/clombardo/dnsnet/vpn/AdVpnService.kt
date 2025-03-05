@@ -443,7 +443,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
     }
 
     private fun reconnect() {
-        if (status.value != VpnStatus.RUNNING) {
+        if (status.value != VpnStatus.RUNNING && status.value != VpnStatus.WAITING_FOR_NETWORK) {
             return
         }
 
