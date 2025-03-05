@@ -19,6 +19,12 @@ plugins {
 
 val libnet = "libnet"
 
+// Required for reproducible builds on F-Droid
+val remapCargo = listOf(
+    "--config",
+    "build.rustflags = [ '--remap-path-prefix=${System.getenv("HOME")}/.cargo=/rust/cargo' ]",
+)
+
 cargo {
     module = "../$libnet"
     libname = "net"
@@ -26,10 +32,6 @@ cargo {
     targets = listOf("arm64", "arm", "x86", "x86_64")
 
     pythonCommand = "python3"
-
-    // Required for reproducible builds on F-Droid
-    extraCargoBuildArguments =
-        listOf("--config", "build.rustflags = [ '--remap-path-prefix=${System.getenv("HOME")}/.cargo=/rust/cargo' ]")
 
     val isDebug = gradle.startParameter.taskNames.any {
         it.lowercase().contains("debug")
