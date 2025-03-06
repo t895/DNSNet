@@ -107,39 +107,49 @@ class AdVpnThread(
         val vpnController: VpnController
     )
 
-    private var threadData by atomic<ThreadData?>(null)
+    private var threadData: ThreadData? = null
+    private val threadLock = Object()
 
     fun startThread() {
-        if (threadData != null) {
-            logw("startThread: Thread wasn't stopped before starting a new one!")
-            return
-        }
+        synchronized(threadLock) {
+            if (threadData != null) {
+                logw("startThread: Thread wasn't stopped before starting a new one!")
+                return
+            }
 
-        logi("Starting Vpn Thread")
-        threadData = ThreadData(
-            thread = Thread(this, "AdVpnThread"),
-            vpnController = VpnController()
-        )
-        threadData!!.thread.start()
-        logi("Vpn Thread started")
+            logi("Starting Vpn Thread")
+            threadData = ThreadData(
+                thread = Thread(this, "AdVpnThread"),
+                vpnController = VpnController()
+            )
+            threadData!!.thread.start()
+            logi("Vpn Thread started")
+        }
     }
 
     fun stopThread() {
-        logi("Stopping Vpn Thread")
+        synchronized(threadLock) {
+            if (threadData == null) {
+                logw("stopThread: Thread already stopped")
+                return
+            }
 
-        // Tell the Rust code to stop
-        threadData?.vpnController?.stop()
-        threadData?.thread?.interrupt()
-        try {
-            threadData?.thread?.join(2000)
-        } catch (e: InterruptedException) {
-            logw("stopThread: Interrupted while joining thread", e)
-        }
-        if (threadData != null && threadData?.thread?.isAlive == true) {
-            logw("stopThread: Could not kill VPN thread, it is still alive")
-        } else {
-            threadData = null
-            logi("Vpn Thread stopped")
+            logi("Stopping Vpn Thread")
+
+            // Tell the Rust code to stop
+            threadData?.vpnController?.stop()
+            threadData?.thread?.interrupt()
+            try {
+                threadData?.thread?.join(2000)
+            } catch (e: InterruptedException) {
+                logw("stopThread: Interrupted while joining thread", e)
+            }
+            if (threadData != null && threadData?.thread?.isAlive == true) {
+                logw("stopThread: Could not kill VPN thread, it is still alive")
+            } else {
+                threadData = null
+                logi("Vpn Thread stopped")
+            }
         }
     }
 
@@ -168,6 +178,9 @@ class AdVpnThread(
             } catch (e: PrepareFailedException) {
                 loge("Failed to prepare VPN", e)
                 notify(VpnStatus.RECONNECTING_NETWORK_ERROR)
+            } catch (e: Exception) {
+                loge("Thread dropped. Stopping.", e)
+                break
             }
 
             if (System.currentTimeMillis() - connectTimeMillis >= RETRY_RESET_SEC * 1000) {
@@ -192,7 +205,12 @@ class AdVpnThread(
         logi("Exiting")
     }
 
-    @Throws(NoNetworkException::class, VpnException::class, PrepareFailedException::class)
+    @Throws(
+        NoNetworkException::class,
+        VpnException::class,
+        PrepareFailedException::class,
+        IllegalStateException::class
+    )
     private fun runVpn() {
         // Authenticate and configure the virtual network interface.
         notify(VpnStatus.RUNNING)
@@ -205,7 +223,7 @@ class AdVpnThread(
             hostExceptions = config.hosts.exceptions.map { it.toNative() },
             upstreamDnsServers = upstreamDnsServers.map { it.address },
             vpnFd = vpnFd.detachFd(),
-            vpnController = threadData!!.vpnController,
+            vpnController = threadData?.vpnController ?: throw IllegalStateException(),
         )
     }
 

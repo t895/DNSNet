@@ -27,13 +27,12 @@ private val TRANSPORT_NAMES: Array<String> = arrayOf(
 )
 
 data class NetworkDetails(
-    var default: Boolean,
     var networkId: Int,
     var transports: IntArray?,
 ) {
     override fun toString(): String {
         val builder = StringBuilder()
-        builder.append("NetworkDetails { default: $default, networkId: $networkId, ")
+        builder.append("NetworkDetails { networkId: $networkId, ")
         if (transports != null) {
             builder.append("transports: ")
             transports!!.forEach {
@@ -50,7 +49,6 @@ data class NetworkDetails(
 
         other as NetworkDetails
 
-        if (default != other.default) return false
         if (networkId != other.networkId) return false
         if (transports != null) {
             if (other.transports == null) return false
@@ -61,8 +59,7 @@ data class NetworkDetails(
     }
 
     override fun hashCode(): Int {
-        var result = default.hashCode()
-        result = 31 * result + networkId
+        var result = networkId.hashCode()
         result = 31 * result + (transports?.contentHashCode() ?: 0)
         return result
     }

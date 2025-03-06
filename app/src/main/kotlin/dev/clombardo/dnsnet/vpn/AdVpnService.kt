@@ -190,42 +190,89 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
 
     private val handler = Handler(Looper.myLooper()!!, this)
 
-    private var vpnThread = AdVpnThread(
+    private val vpnThread = AdVpnThread(
         adVpnService = this,
         notify = { status -> notify(status.ordinal) },
         blockLoggerCallback = logger,
     )
 
-    private var defaultNetwork: NetworkDetails? = null
-    private val connectedNetworks = mutableMapOf<String, NetworkDetails>()
+    internal data class NetworkState(
+        private var defaultNetwork: NetworkDetails? = null,
+        private val connectedNetworks: MutableMap<String, NetworkDetails> = mutableMapOf(),
+    ) {
+        private val networkLock = Object()
 
-    private fun printNetworks() {
-        logd("Networks")
-        connectedNetworks.entries.forEach {
-            logd(it.value.toString())
+        fun removeNetwork(networkDetails: NetworkDetails) {
+            synchronized(networkLock) {
+                connectedNetworks.remove(networkDetails.networkId.toString())
+                if (defaultNetwork == networkDetails) {
+                    defaultNetwork = null
+                }
+            }
+        }
+
+        fun getDefaultNetwork(): NetworkDetails? {
+            return synchronized(networkLock) { defaultNetwork?.copy() }
+        }
+
+        fun setDefaultNetwork(networkDetails: NetworkDetails) {
+            synchronized(networkLock) {
+                defaultNetwork = networkDetails
+                connectedNetworks[networkDetails.networkId.toString()] = networkDetails
+            }
+        }
+
+        fun dropDefaultNetwork() {
+            synchronized(networkLock) {
+                if (defaultNetwork != null) {
+                    connectedNetworks.remove(defaultNetwork!!.networkId.toString())
+                    defaultNetwork = null
+                }
+            }
+        }
+
+        fun getConnectedNetwork(networkId: String): NetworkDetails? {
+            return synchronized(networkLock) {
+                connectedNetworks[networkId]?.copy()
+            }
+        }
+
+        fun reset() {
+            synchronized(networkLock) {
+                defaultNetwork = null
+                connectedNetworks.clear()
+            }
+        }
+
+        override fun toString(): String {
+            return synchronized(networkLock) {
+                """
+                    Default network - ${defaultNetwork.toString()}
+                    Connected networks - $connectedNetworks
+                """.trimIndent()
+            }
         }
     }
 
+    private val networkState = NetworkState()
+
+    @Synchronized
     private fun onDefaultNetworkChanged(newNetwork: NetworkDetails?) {
-        connectedNetworks.entries.forEach { it.value.default = false }
         if (newNetwork == null) {
-            connectedNetworks.remove(defaultNetwork!!.networkId.toString())
-            defaultNetwork = null
-            printNetworks()
+            networkState.dropDefaultNetwork()
+            logd(networkState.toString())
             waitForNetVpn()
             return
         }
 
-        if (shouldReconnect(defaultNetwork, newNetwork)) {
+        if (shouldReconnect(networkState.getDefaultNetwork(), newNetwork)) {
             logi("Default network changed, reconnecting")
             reconnect()
         }
 
-        newNetwork.default = true
-        connectedNetworks[newNetwork.networkId.toString()] = newNetwork
-        defaultNetwork = newNetwork
+        networkState.setDefaultNetwork(newNetwork)
 
-        printNetworks()
+        logd(networkState.toString())
     }
 
     /**
@@ -270,17 +317,16 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
 
     private var connectivityChangedCallbackRegistered = atomic(false)
     private val connectivityChangedCallback = object : NetworkCallback() {
+        @Synchronized
         override fun onCapabilitiesChanged(
             network: Network,
             networkCapabilities: NetworkCapabilities
         ) {
             super.onCapabilitiesChanged(network, networkCapabilities)
-
             val networkId = network.toString()
-            val networkDetails = connectedNetworks[networkId]
+            val networkDetails = networkState.getConnectedNetwork(networkId)
             if (networkDetails == null) {
                 val newNetwork = NetworkDetails(
-                    default = true,
                     networkId = networkId.toInt(),
                     transports = networkCapabilities.getTransportTypes(),
                 )
@@ -288,7 +334,6 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
             } else {
                 onDefaultNetworkChanged(
                     networkDetails.copy(
-                        default = true,
                         networkId = networkId.toInt(),
                         transports = networkCapabilities.getTransportTypes(),
                     )
@@ -296,17 +341,19 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
             }
         }
 
+        @Synchronized
         override fun onLost(network: Network) {
             super.onLost(network)
             val networkString = network.toString()
-            val lostNetwork = connectedNetworks[networkString]
-            if (lostNetwork != null && defaultNetwork != null) {
-                if (lostNetwork.networkId == defaultNetwork!!.networkId) {
+            val lostNetwork = networkState.getConnectedNetwork(networkString)
+            if (lostNetwork != null) {
+                val defaultNetwork = networkState.getDefaultNetwork()
+                if (defaultNetwork != null && lostNetwork.networkId == defaultNetwork.networkId) {
                     onDefaultNetworkChanged(null)
                 }
+                networkState.removeNetwork(lostNetwork)
             }
-            connectedNetworks.remove(networkString)
-            printNetworks()
+            logd(networkState.toString())
         }
     }
 
@@ -316,8 +363,6 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
             return
         }
 
-        defaultNetwork = null
-        connectedNetworks.clear()
         getSystemService(ConnectivityManager::class.java)
             .registerDefaultNetworkCallback(connectivityChangedCallback)
     }
@@ -328,10 +373,10 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
             return
         }
 
-        defaultNetwork = null
-        connectedNetworks.clear()
         getSystemService(ConnectivityManager::class.java)
             .unregisterNetworkCallback(connectivityChangedCallback)
+
+        networkState.reset()
     }
 
     private val serviceNotificationBuilder =
