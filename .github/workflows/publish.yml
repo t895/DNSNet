@@ -40,6 +40,7 @@ jobs:
           rustup target add x86_64-linux-android i686-linux-android aarch64-linux-android armv7-linux-androideabi
           sed -i '/"run",/a\        *remapCargo.toTypedArray(),' build.gradle.kts
           sed -i "s|pythonCommand = \"python3\"|pythonCommand = \"python3\"\n    cargoCommand = \"$(which cargo)\"\n    rustcCommand = \"$(which rustc)\"\n    extraCargoBuildArguments = remapCargo|" build.gradle.kts
+          export RUSTFLAGS=--remap-path-prefix=$HOME/.cargo=/rust/cargo
           ./gradlew :app:assembleRelease
           ./gradlew :app:buildApksRelease
           ./gradlew :app:bundleRelease
