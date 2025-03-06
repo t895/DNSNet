@@ -38,7 +38,8 @@ jobs:
           echo "${{secrets.STORE_FILE}}" | base64 --decode > ${HOME}/keyfile.jks
           export STORE_FILE_PATH=${HOME}/keyfile.jks
           rustup target add x86_64-linux-android i686-linux-android aarch64-linux-android armv7-linux-androideabi
-          sed -i 's|"cargo",|"RUSTFLAGS=\\\"--remap-path-prefix=${System.getenv("HOME")}/.cargo=/rust/cargo\\\"\",\n        \"cargo\",|' build.gradle.kts
+          sed -i '/"run",/a\        *remapCargo.toTypedArray(),' build.gradle.kts
+          sed -i "s|pythonCommand = \"python3\"|pythonCommand = \"python3\"\n    cargoCommand = \"$(which cargo)\"\n    rustcCommand = \"$(which rustc)\"\n    extraCargoBuildArguments = remapCargo|" build.gradle.kts
           ./gradlew :app:assembleRelease
           ./gradlew :app:buildApksRelease
           ./gradlew :app:bundleRelease
