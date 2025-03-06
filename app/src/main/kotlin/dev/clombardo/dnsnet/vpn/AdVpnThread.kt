@@ -117,7 +117,7 @@ class AdVpnThread(
 
         logi("Starting Vpn Thread")
         threadData = ThreadData(
-            thread = Thread(this, this::class.java.simpleName),
+            thread = Thread(this, "AdVpnThread"),
             vpnController = VpnController()
         )
         threadData!!.thread.start()
