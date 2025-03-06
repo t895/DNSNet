@@ -27,6 +27,7 @@ import dev.clombardo.dnsnet.config
 import dev.clombardo.dnsnet.logd
 import dev.clombardo.dnsnet.logi
 import dev.clombardo.dnsnet.logv
+import dev.clombardo.dnsnet.vpn.AdVpnService
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -92,6 +93,8 @@ class RuleDatabaseUpdateWorker(
         }
         val end = System.currentTimeMillis()
         logd("doWork: end after ${end - start} milliseconds")
+
+        AdVpnService.restart(context)
 
         postExecute()
 
