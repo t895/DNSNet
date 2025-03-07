@@ -201,7 +201,7 @@ class AdVpnThread(
             }
         }
 
-        notify(VpnStatus.STOPPED)
+        notify(VpnStatus.STOPPING)
         logi("Exiting")
     }
 
