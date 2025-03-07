@@ -93,6 +93,7 @@ impl VpnController {
     }
 
     fn stop(&self) {
+        info!("VpnController::stop");
         self.should_stop
             .store(true, std::sync::atomic::Ordering::Relaxed);
         unsafe { libc::eventfd_write(self.signal_fd, 1) };
@@ -354,12 +355,12 @@ impl AdVpn {
 
     const DNS_RESPONSE_PACKET_SIZE: usize = 1024;
 
-    fn new(vpn_fd: RawFd, interrupt_flag: Arc<VpnController>) -> Self {
+    fn new(vpn_fd: RawFd, vpn_controller: Arc<VpnController>) -> Self {
         let vpn_file = unsafe { File::from_raw_fd(vpn_fd) };
 
         AdVpn {
             vpn_file,
-            vpn_controller: interrupt_flag,
+            vpn_controller,
             device_writes: VecDeque::new(),
             wosp_list: WospList::new(),
             ipv6_unspecified: SocketAddrV6::new(Ipv6Addr::UNSPECIFIED, 0, 0, 0),

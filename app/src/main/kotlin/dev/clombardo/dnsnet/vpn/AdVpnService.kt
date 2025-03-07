@@ -244,6 +244,55 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
             }
         }
 
+        /**
+         * Both the transports and network id used by a given [Network] and its [NetworkCapabilities]
+         * object can be different for the same network, so we need a specialized method to see the
+         * changes we care about.
+         * Specifically, we need to know when our default network has lost the
+         * [NetworkCapabilities.TRANSPORT_VPN] transport or one of the other transports have changed.
+         * However, we also want to ignore times that the default network goes from having the same
+         * transports as the previous network but now includes [NetworkCapabilities.TRANSPORT_VPN].
+         * This is because during VPN startup, the default network will receive an update to include the
+         * new constant. We can't just rely on checking for the same network id since that too will
+         * sometimes change for the same (effective) network.
+         */
+        fun shouldReconnect(newNetwork: NetworkDetails, currentStatus: VpnStatus): Boolean {
+            if (currentStatus == VpnStatus.WAITING_FOR_NETWORK) {
+                return true
+            }
+
+            synchronized(networkLock) {
+                val oldNetwork = defaultNetwork
+                if (oldNetwork == null && connectedNetworks.isEmpty()) {
+                    return false
+                } else if (oldNetwork == null) {
+                    return true
+                }
+
+                if (oldNetwork.transports == null && newNetwork.transports == null) {
+                    return false
+                }
+                if (oldNetwork.transports != null && newNetwork.transports == null) {
+                    return true
+                }
+                if (oldNetwork.transports == null && newNetwork.transports != null) {
+                    return true
+                }
+
+                val oldTransports = oldNetwork.transports!!.toMutableList()
+                val newTransports = newNetwork.transports!!.toMutableList()
+                val oldNetworkHasVpn = oldTransports.remove(NetworkCapabilities.TRANSPORT_VPN)
+                val newNetworkHasVpn = newTransports.remove(NetworkCapabilities.TRANSPORT_VPN)
+                if (oldNetworkHasVpn && !newNetworkHasVpn) {
+                    return true
+                }
+                if (!oldNetworkHasVpn && newNetworkHasVpn) {
+                    return false
+                }
+                return !oldNetwork.transports.contentEquals(newNetwork.transports)
+            }
+        }
+
         override fun toString(): String {
             return synchronized(networkLock) {
                 """
@@ -258,61 +307,26 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
 
     @Synchronized
     private fun onDefaultNetworkChanged(newNetwork: NetworkDetails?) {
+        logd("onDefaultNetworkChanged")
         if (newNetwork == null) {
+            logd("New network is null")
             networkState.dropDefaultNetwork()
             logd(networkState.toString())
-            waitForNetVpn()
+
+            // The thread will pause at the start and loop while waiting for a network
+            restartVpnThread()
             return
         }
 
-        if (shouldReconnect(networkState.getDefaultNetwork(), newNetwork)) {
+        if (networkState.shouldReconnect(newNetwork, status.value)) {
             logi("Default network changed, reconnecting")
             reconnect()
         }
 
+        logd("Setting new default network")
         networkState.setDefaultNetwork(newNetwork)
 
         logd(networkState.toString())
-    }
-
-    /**
-     * Both the transports and network id used by a given [Network] and its [NetworkCapabilities]
-     * object can be different for the same network, so we need a specialized method to see the
-     * changes we care about.
-     * Specifically, we need to know when our default network has lost the
-     * [NetworkCapabilities.TRANSPORT_VPN] transport or one of the other transports have changed.
-     * However, we also want to ignore times that the default network goes from having the same
-     * transports as the previous network but now includes [NetworkCapabilities.TRANSPORT_VPN].
-     * This is because during VPN startup, the default network will receive an update to include the
-     * new constant. We can't just rely on checking for the same network id since that too will
-     * sometimes change for the same (effective) network.
-     */
-    private fun shouldReconnect(oldNetwork: NetworkDetails?, newNetwork: NetworkDetails): Boolean {
-        if (oldNetwork == null) {
-            return false
-        }
-
-        if (oldNetwork.transports == null && newNetwork.transports == null) {
-            return false
-        }
-        if (oldNetwork.transports != null && newNetwork.transports == null) {
-            return true
-        }
-        if (oldNetwork.transports == null && newNetwork.transports != null) {
-            return true
-        }
-
-        val oldTransports = oldNetwork.transports!!.toMutableList()
-        val newTransports = newNetwork.transports!!.toMutableList()
-        val oldNetworkHasVpn = oldTransports.remove(NetworkCapabilities.TRANSPORT_VPN)
-        val newNetworkHasVpn = newTransports.remove(NetworkCapabilities.TRANSPORT_VPN)
-        if (oldNetworkHasVpn && !newNetworkHasVpn) {
-            return true
-        }
-        if (!oldNetworkHasVpn && newNetworkHasVpn) {
-            return false
-        }
-        return !oldNetwork.transports.contentEquals(newNetwork.transports)
     }
 
     private var connectivityChangedCallbackRegistered = atomic(false)
@@ -323,6 +337,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
             networkCapabilities: NetworkCapabilities
         ) {
             super.onCapabilitiesChanged(network, networkCapabilities)
+            logd("onCapabilitiesChanged")
             val networkId = network.toString()
             val networkDetails = networkState.getConnectedNetwork(networkId)
             if (networkDetails == null) {
@@ -344,6 +359,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         @Synchronized
         override fun onLost(network: Network) {
             super.onLost(network)
+            logd("onLost")
             val networkString = network.toString()
             val lostNetwork = networkState.getConnectedNetwork(networkString)
             if (lostNetwork != null) {
@@ -476,15 +492,6 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         vpnThread.stopThread()
         vpnThread.startThread()
         registerConnectivityChangedCallback()
-    }
-
-    private fun waitForNetVpn() {
-        if (status.value != VpnStatus.RUNNING) {
-            return
-        }
-
-        updateVpnStatus(VpnStatus.WAITING_FOR_NETWORK)
-        vpnThread.stopThread()
     }
 
     private fun reconnect() {
