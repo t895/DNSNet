@@ -506,6 +506,8 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
     private fun stopVpn() {
         logi("Stopping Service")
 
+        updateVpnStatus(VpnStatus.STOPPING)
+
         vpnThread.stopThread()
 
         logger.save()
