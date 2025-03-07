@@ -26,6 +26,9 @@ extern crate android_logger;
 
 uniffi::setup_scaffolding!();
 
+/// Initializes the logger for the Rust side of the VPN
+///
+/// This should be called before any other Rust functions in the Kotlin code
 #[uniffi::export]
 pub fn rust_init() {
     android_logger::init_once(
@@ -35,6 +38,10 @@ pub fn rust_init() {
     );
 }
 
+/// Entrypoint for starting the VPN from Kotlin
+///
+/// Runs the main loop for the service based on the descriptor given
+/// by the Android system.
 #[uniffi::export]
 pub fn run_vpn_native(
     ad_vpn_callback: Box<dyn AdVpnCallback>,
@@ -69,9 +76,12 @@ pub fn run_vpn_native(
     return result;
 }
 
+/// Holds a single-fire event file descriptor and boolean flag to stop the VPN
+///
+/// Meant to be created on the Kotlin side and passed to the main Rust loop
 #[derive(uniffi::Object)]
 pub struct VpnController {
-    signal_fd: i32,
+    event_fd: i32,
     should_stop: AtomicBool,
 }
 
@@ -80,7 +90,7 @@ impl VpnController {
     #[uniffi::constructor]
     fn new() -> Arc<Self> {
         Arc::new(VpnController {
-            signal_fd: unsafe {
+            event_fd: unsafe {
                 let result = libc::eventfd(0, 0);
                 if result != -1 { result } else { panic!() }
             },
@@ -88,21 +98,23 @@ impl VpnController {
         })
     }
 
+    /// Returns whether the VPN has been told to stop
     fn get_should_stop(&self) -> bool {
         return self.should_stop.load(std::sync::atomic::Ordering::Relaxed);
     }
 
+    /// Closes the event file descriptor and sets the stop flag so we can interrupt epoll and stop the VPN
     fn stop(&self) {
         info!("VpnController::stop");
         self.should_stop
             .store(true, std::sync::atomic::Ordering::Relaxed);
-        unsafe { libc::eventfd_write(self.signal_fd, 1) };
+        unsafe { libc::eventfd_write(self.event_fd, 1) };
     }
 }
 
 impl Drop for VpnController {
     fn drop(&mut self) {
-        unsafe { libc::close(self.signal_fd) };
+        unsafe { libc::close(self.event_fd) };
     }
 }
 
@@ -178,12 +190,15 @@ fn build_ip_packet_with_udp_payload(
     return Some(result);
 }
 
+/// Basic abstraction over a packet that lets us get a slice of a IPv4 or IPv6 header or payload
+/// without doing extra allocations
 #[derive(Debug)]
 struct GenericIpPacket<'a> {
     packet: SlicedPacket<'a>,
 }
 
 impl<'a> GenericIpPacket<'a> {
+    /// Creates a new GenericIpPacket from a raw IP packet byte array
     fn from_ip_packet(data: &'a [u8]) -> Option<Self> {
         match SlicedPacket::from_ip(data) {
             Ok(value) => Some(GenericIpPacket::new(value)),
@@ -195,6 +210,7 @@ impl<'a> GenericIpPacket<'a> {
         Self { packet }
     }
 
+    /// Gets a slice of the IPv4 header from the packet and returns None if the packet is not IPv4
     fn get_ipv4_header(&self) -> Option<Ipv4Header> {
         match &self.packet.net {
             Some(net) => match net {
@@ -205,6 +221,7 @@ impl<'a> GenericIpPacket<'a> {
         }
     }
 
+    /// Gets a slice of the IPv6 header from the packet and returns None if the packet is not IPv6
     fn get_ipv6_header(&self) -> Option<Ipv6Header> {
         match &self.packet.net {
             Some(net) => match net {
@@ -215,6 +232,7 @@ impl<'a> GenericIpPacket<'a> {
         }
     }
 
+    /// Gets a slice of the destination address from the packet header
     fn get_destination_address(&self) -> Option<Vec<u8>> {
         let ipv4_header = self.get_ipv4_header();
         if ipv4_header.is_some() {
@@ -229,6 +247,7 @@ impl<'a> GenericIpPacket<'a> {
         return None;
     }
 
+    /// Gets a slice of the UDP payload from the packet
     pub fn get_udp_packet(&self) -> Option<&UdpSlice> {
         match &self.packet.transport {
             Some(transport) => match transport {
@@ -240,6 +259,7 @@ impl<'a> GenericIpPacket<'a> {
     }
 }
 
+/// Takes the header information from the request packet and builds a new packet using it and the response payload
 fn build_response_packet(request_packet: &[u8], response_payload: &[u8]) -> Option<Vec<u8>> {
     let generic_request_packet = match GenericIpPacket::from_ip_packet(request_packet) {
         Some(value) => value,
@@ -285,6 +305,7 @@ fn build_response_packet(request_packet: &[u8], response_payload: &[u8]) -> Opti
     return None;
 }
 
+/// Convenience function to get the current time in milliseconds since the Unix epoch
 fn get_epoch_millis() -> u128 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -292,6 +313,7 @@ fn get_epoch_millis() -> u128 {
         .as_millis()
 }
 
+/// Represents the current status of the VPN (Mirrors the version in Kotlin)
 pub enum VpnStatus {
     Starting,
     Running,
@@ -316,6 +338,7 @@ impl VpnStatus {
     }
 }
 
+/// Represents the possible errors that can occur in the VPN and that will be passed back to Kotlin
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 #[uniffi(flat_error)]
 pub enum VpnError {
@@ -335,6 +358,7 @@ pub enum VpnError {
     Timeout,
 }
 
+/// Callback interface to be implemented by a Kotlin class and then passed into the main loop
 #[uniffi::export(callback_interface)]
 pub trait AdVpnCallback: Send + Sync {
     fn protect_raw_socket_fd(&self, socket_fd: i32) -> bool;
@@ -342,6 +366,7 @@ pub trait AdVpnCallback: Send + Sync {
     fn notify(&self, native_status: i32);
 }
 
+/// Main struct that holds the state of the VPN and runs the main loop
 struct AdVpn {
     vpn_file: File,
     vpn_controller: Arc<VpnController>,
@@ -351,6 +376,7 @@ struct AdVpn {
 }
 
 impl AdVpn {
+    /// Key for the VPN event in the poller
     const VPN_EVENT_KEY: usize = usize::MAX - 1;
 
     const DNS_RESPONSE_PACKET_SIZE: usize = 1024;
@@ -367,6 +393,18 @@ impl AdVpn {
         }
     }
 
+    /// Main loop for the VPN and tells the Kotlin side that we're running
+    ///
+    /// The general flow is as follows:
+    ///
+    /// 1. Poll the VPN file descriptor and the controller's event file descriptor
+    ///
+    /// 2. On an event, read a packet from the tunnel, translate its destination, create a socket to the real DNS server, and forward the packet
+    ///
+    /// 3. Poll the DNS sockets and once we get a response, translate the destination and send it back to the tunnel
+    ///
+    /// 4. The controller's event file descriptor may close during a loop iteration which will unblock the poller and then we'll return from the loop.
+    /// Alternatively, we may run into a problem during the loop where we'll return a [VpnError] which will appear as an exception in Kotlin.
     fn run(
         &mut self,
         android_vpn_callback: &Box<dyn AdVpnCallback>,
@@ -394,7 +432,7 @@ impl AdVpn {
         };
         unsafe {
             match poller.add(
-                self.vpn_controller.signal_fd,
+                self.vpn_controller.event_fd,
                 Event::readable(usize::MAX - 2),
             ) {
                 Ok(_) => {}
@@ -428,6 +466,7 @@ impl AdVpn {
         }
     }
 
+    /// One iteration of the main loop that polls the VPN, DNS sockets, and the controller's event file descriptor
     fn do_one(
         &mut self,
         poller: &Poller,
@@ -553,6 +592,7 @@ impl AdVpn {
         return Result::Ok(false);
     }
 
+    /// Writes a packet to the tunnel from the device_writes queue
     fn write_to_device(&mut self) -> Result<(), VpnError> {
         let device_write = match self.device_writes.pop_front() {
             Some(value) => value,
@@ -571,6 +611,7 @@ impl AdVpn {
         }
     }
 
+    /// Reads a packet from the tunnel and then handles a DNS request if there is one
     fn read_packet_from_device(
         &mut self,
         dns_packet_proxy: &mut DnsPacketProxy,
@@ -594,6 +635,7 @@ impl AdVpn {
         return Result::Ok(());
     }
 
+    /// Receives a raw DNS response from a socket and then passes it to the [DnsPacketProxy] to be handled
     fn handle_raw_dns_response(
         &mut self,
         dns_packet_proxy: &DnsPacketProxy,
@@ -627,6 +669,7 @@ impl AdVpn {
         };
     }
 
+    /// Forwards a packet to the real DNS server
     fn forward_packet(
         &mut self,
         android_vpn_service: &Box<dyn AdVpnCallback>,
@@ -680,16 +723,20 @@ impl AdVpn {
         return true;
     }
 
+    /// Evaluates whether a socket error is fatal or not
     fn eval_socket_error(error_code: i32) -> bool {
         error!("eval_socket_error: Cannot send message");
         return error_code != libc::ENETUNREACH || error_code != libc::EPERM;
     }
 
+    /// Adds a packet to the device_writes queue
     fn queue_device_write(&mut self, packet: Vec<u8>) {
         self.device_writes.push_back(packet)
     }
 }
 
+/// Struct that holds a socket that we're waiting on and it's associated packet.
+/// Additionally holds the time that we started waiting on it to see if we need to drop it.
 #[derive(Debug)]
 struct WaitingOnSocketPacket {
     socket: Socket,
@@ -711,6 +758,7 @@ impl WaitingOnSocketPacket {
     }
 }
 
+/// Holds a list of [WaitingOnSocketPacket]s and manages dropping sockets when they're too old
 struct WospList {
     list: VecDeque<WaitingOnSocketPacket>,
 }
@@ -748,11 +796,13 @@ impl WospList {
     }
 }
 
+/// Callback interface for accessing our hostfiles from the Android system
 #[uniffi::export(callback_interface)]
 pub trait AndroidFileHelper {
     fn get_host_fd(&self, host: String, mode: String) -> Option<i32>;
 }
 
+/// Represents the state of a host in the block list (Mirrors the version in Kotlin)
 #[derive(uniffi::Enum, PartialEq, PartialOrd, Debug)]
 pub enum NativeHostState {
     IGNORE,
@@ -760,6 +810,7 @@ pub enum NativeHostState {
     ALLOW,
 }
 
+/// Represents a host in the block list (Mirrors the version in Kotlin)
 #[derive(uniffi::Record, Debug)]
 pub struct NativeHost {
     title: String,
@@ -767,6 +818,7 @@ pub struct NativeHost {
     state: NativeHostState,
 }
 
+/// Holds the block list and manages the loading of the block list
 struct RuleDatabase {
     android_file_helper: Box<dyn AndroidFileHelper>,
     blocked_hosts: Arc<HashSet<String>>,
@@ -777,6 +829,7 @@ impl RuleDatabase {
     const IPV6_LOOPBACK: &'static str = "::1";
     const NO_ROUTE: &'static str = "0.0.0.0";
 
+    /// Parses a single line in a hostfile and returns the host if it's valid
     fn parse_line(line: &str) -> Option<String> {
         if line.trim().is_empty() {
             return None;
@@ -845,6 +898,7 @@ impl RuleDatabase {
         }
     }
 
+    /// Initializes the block list with the given hosts and exceptions
     fn initialize(&mut self, host_items: Vec<NativeHost>, host_exceptions: Vec<NativeHost>) {
         info!(
             "initialize: Loading block list with {} hosts and {} exceptions",
@@ -877,6 +931,7 @@ impl RuleDatabase {
         self.blocked_hosts = Arc::new(new_set);
     }
 
+    /// Loads a generic host (file or single host) and adds them to the block list
     fn load_item(&mut self, set: &mut HashSet<String>, host: &NativeHost) {
         if host.state == NativeHostState::IGNORE {
             return;
@@ -901,6 +956,7 @@ impl RuleDatabase {
         };
     }
 
+    /// Adds a single host to the block list
     fn add_host(&mut self, set: &mut HashSet<String>, state: &NativeHostState, data: String) {
         match state {
             NativeHostState::IGNORE => return,
@@ -909,6 +965,7 @@ impl RuleDatabase {
         };
     }
 
+    /// Loads a file of hosts and adds them to the block list
     fn load_file(
         &mut self,
         set: &mut HashSet<String>,
@@ -937,16 +994,20 @@ impl RuleDatabase {
         debug!("load_file: Loaded {} hosts from {}", count, &host.data);
     }
 
+    /// Checks if a host is blocked
     fn is_blocked(&self, host: &str) -> bool {
         self.blocked_hosts.contains(host)
     }
 }
 
+/// Callback interface for logging connections that we've blocked for the block logger
 #[uniffi::export(callback_interface)]
 pub trait BlockLoggerCallback: Send + Sync {
     fn log(&self, connection_name: String, allowed: bool);
 }
 
+
+/// Handler for DNS packets that accepts or blocks them based on our [RuleDatabase]
 struct DnsPacketProxy<'a> {
     android_vpn_callback: &'a Box<dyn AdVpnCallback>,
     block_logger_callback: Box<dyn BlockLoggerCallback>,
@@ -1005,6 +1066,7 @@ impl<'a> DnsPacketProxy<'a> {
         self.upstream_dns_servers = upstream_dns_servers;
     }
 
+    /// Handles a DNS response and forwards it to the tunnel with the translated destination
     fn handle_dns_response(
         &self,
         ad_vpn: &mut AdVpn,
@@ -1017,6 +1079,7 @@ impl<'a> DnsPacketProxy<'a> {
         };
     }
 
+    /// Parses a DNS request and forwards it to the real DNS server if it's allowed
     fn handle_dns_request(&mut self, ad_vpn: &mut AdVpn, packet_data: &[u8]) {
         let packet = match GenericIpPacket::from_ip_packet(packet_data) {
             Some(value) => value,
@@ -1154,6 +1217,7 @@ impl<'a> DnsPacketProxy<'a> {
         }
     }
 
+    /// Translates the destination address using our upstream servers as configured by the AdVpnThread
     fn translate_destination_address(&self, destination_address: &Vec<u8>) -> Option<Vec<u8>> {
         return if !self.upstream_dns_servers.is_empty() {
             let index = match destination_address.get(destination_address.len() - 1) {
