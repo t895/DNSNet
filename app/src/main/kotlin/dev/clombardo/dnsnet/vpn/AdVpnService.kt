@@ -42,7 +42,6 @@ import dev.clombardo.dnsnet.logd
 import dev.clombardo.dnsnet.logi
 import dev.clombardo.dnsnet.logw
 import dev.clombardo.dnsnet.vpn.VpnStatus.Companion.toVpnStatus
-import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import uniffi.net.AdVpnCallback
@@ -329,7 +328,8 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         logd(networkState.toString())
     }
 
-    private var connectivityChangedCallbackRegistered = atomic(false)
+    private var connectivityLock = Object()
+    private var connectivityChangedCallbackRegistered = false
     private val connectivityChangedCallback = object : NetworkCallback() {
         @Synchronized
         override fun onCapabilitiesChanged(
@@ -374,25 +374,39 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
     }
 
     private fun registerConnectivityChangedCallback() {
-        if (connectivityChangedCallbackRegistered.getAndSet(true)) {
-            logw("Connectivity changed callback already registered")
-            return
-        }
+        synchronized(connectivityLock) {
+            if (connectivityChangedCallbackRegistered) {
+                logw("Connectivity changed callback already registered")
+                return
+            }
 
-        getSystemService(ConnectivityManager::class.java)
-            .registerDefaultNetworkCallback(connectivityChangedCallback)
+            try {
+                getSystemService(ConnectivityManager::class.java)
+                    .registerDefaultNetworkCallback(connectivityChangedCallback)
+                connectivityChangedCallbackRegistered = true
+            } catch (e: Exception) {
+                logw("Failed to register connectivity changed callback", e)
+            }
+        }
     }
 
     private fun unregisterConnectivityChangedCallback() {
-        if (!connectivityChangedCallbackRegistered.getAndSet(false)) {
-            logw("Connectivity changed callback already unregistered")
-            return
+        synchronized(connectivityLock) {
+            if (!connectivityChangedCallbackRegistered) {
+                logw("Connectivity changed callback already unregistered")
+                return
+            }
+
+            try {
+                getSystemService(ConnectivityManager::class.java)
+                    .unregisterNetworkCallback(connectivityChangedCallback)
+                connectivityChangedCallbackRegistered = false
+            } catch (e: Exception) {
+                logw("Failed to unregister connectivity changed callback", e)
+            }
+
+            networkState.reset()
         }
-
-        getSystemService(ConnectivityManager::class.java)
-            .unregisterNetworkCallback(connectivityChangedCallback)
-
-        networkState.reset()
     }
 
     private val serviceNotificationBuilder =
