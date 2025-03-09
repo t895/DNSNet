@@ -31,7 +31,7 @@ class DnsNetApplication : Application() {
         super.onCreate()
         application = this
 
-        rustInit()
+        rustInit(debug = BuildConfig.DEBUG)
 
         NotificationChannels.onCreate(this)
 

@@ -30,10 +30,10 @@ uniffi::setup_scaffolding!();
 ///
 /// This should be called before any other Rust functions in the Kotlin code
 #[uniffi::export]
-pub fn rust_init() {
+pub fn rust_init(debug: bool) {
     android_logger::init_once(
         Config::default()
-            .with_max_level(LevelFilter::Trace) // limit log level
+            .with_max_level(if debug { LevelFilter::Trace } else { LevelFilter::Info }) // limit log level
             .with_tag("DNSNet Native"), // logs will show under mytag tag
     );
 }
