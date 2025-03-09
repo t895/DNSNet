@@ -580,16 +580,16 @@ fun ExpandableOptionsItem(
                 interactionSource = sharedInteractionSource,
             ) {
                 val iconRotation by animateFloatAsState(
-                    targetValue = if (expanded) 0f else 90f,
+                    targetValue = if (expanded) 180f else 0f,
                     label = "iconRotation",
                 )
                 Icon(
                     modifier = Modifier.rotate(iconRotation),
                     painter = rememberVectorPainter(Icons.Default.KeyboardArrowDown),
                     contentDescription = if (expanded) {
-                        stringResource(R.string.expanded)
+                        stringResource(R.string.collapse)
                     } else {
-                        stringResource(R.string.collapsed)
+                        stringResource(R.string.expand)
                     },
                 )
             }

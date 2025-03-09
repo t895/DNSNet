@@ -182,7 +182,6 @@ fun AppsScreen(
                         expanded = expanded,
                         title = stringResource(R.string.allowlist_defaults_title),
                         details = bypassOptions[bypassSelection.ordinal],
-                        sharedInteractionSource = remember { MutableInteractionSource() },
                         onExpandClick = { expanded = !expanded },
                     ) {
                         bypassOptions.forEachIndexed { i, option ->

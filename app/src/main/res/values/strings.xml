@@ -113,6 +113,8 @@
     <string name="more_options">More options</string>
     <string name="expanded">Expanded</string>
     <string name="collapsed">Collapsed</string>
+    <string name="expand">Expand</string>
+    <string name="collapse">Collapse</string>
     <string name="private_dns_error">Private DNS error</string>
     <string name="private_dns_error_description">When Private DNS is enabled, we are unable to make and block connections properly.\nYou need to disable it in network settings to continue.</string>
     <string name="open_settings">Open settings</string>
