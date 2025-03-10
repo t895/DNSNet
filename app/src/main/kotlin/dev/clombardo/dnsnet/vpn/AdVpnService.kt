@@ -383,10 +383,10 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
             try {
                 getSystemService(ConnectivityManager::class.java)
                     .registerDefaultNetworkCallback(connectivityChangedCallback)
-                connectivityChangedCallbackRegistered = true
             } catch (e: Exception) {
                 logw("Failed to register connectivity changed callback", e)
             }
+            connectivityChangedCallbackRegistered = true
         }
     }
 
@@ -400,10 +400,10 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
             try {
                 getSystemService(ConnectivityManager::class.java)
                     .unregisterNetworkCallback(connectivityChangedCallback)
-                connectivityChangedCallbackRegistered = false
             } catch (e: Exception) {
                 logw("Failed to unregister connectivity changed callback", e)
             }
+            connectivityChangedCallbackRegistered = false
 
             networkState.reset()
         }
