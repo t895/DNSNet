@@ -31,6 +31,7 @@ import android.os.Looper
 import android.os.Message
 import androidx.annotation.StringRes
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import dev.clombardo.dnsnet.DnsNetApplication.Companion.applicationContext
 import dev.clombardo.dnsnet.Intents
 import dev.clombardo.dnsnet.MainActivity
@@ -113,11 +114,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
                 return
             }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(getStartIntent())
-            } else {
-                context.startService(getStartIntent())
-            }
+            ContextCompat.startForegroundService(context, Intents.getStartVpnIntent())
         }
 
         fun start(context: Context) {
@@ -126,12 +123,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
                 return
             }
 
-            val intent = Intents.getStartVpnIntent()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
-            }
+            ContextCompat.startForegroundService(context, Intents.getStartVpnIntent())
         }
 
         fun stop(context: Context) {
@@ -140,7 +132,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
                 return
             }
 
-            context.startService(Intents.getStopVpnIntent())
+            ContextCompat.startForegroundService(context, Intents.getStopVpnIntent())
         }
 
         fun restart(context: Context) {
@@ -149,7 +141,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
                 return
             }
 
-            context.startService(Intents.getRestartVpnIntent())
+            ContextCompat.startForegroundService(context, Intents.getRestartVpnIntent())
         }
 
         private const val NOTIFICATION_ACTION_PENDING_INTENT_FLAGS =
@@ -162,11 +154,6 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
                 .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE,
         )
-
-        private fun getStartIntent() = Intent(applicationContext, AdVpnService::class.java).apply {
-            putExtra(NOTIFICATION_INTENT_TAG, getOpenMainActivityPendingIntent())
-            putExtra(COMMAND_TAG, Command.START.ordinal)
-        }
 
         private fun getPausePendingIntent() = PendingIntent.getService(
             applicationContext,
