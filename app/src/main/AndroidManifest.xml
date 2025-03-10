@@ -66,6 +66,15 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+        <receiver
+            android:name=".ActionReceiver"
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <action android:name="${applicationId}.START" />
+                <action android:name="${applicationId}.STOP" />
+            </intent-filter>
+        </receiver>
 
         <service
             android:name=".tile.DnsNetTileService"
