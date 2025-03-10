@@ -230,7 +230,7 @@ class MainActivity : AppCompatActivity() {
                 vm.onHostsFilesNotFound()
                 return
             }
-            startService(launcher)
+            tryStartService(launcher)
         }
     }
 
@@ -277,7 +277,7 @@ class MainActivity : AppCompatActivity() {
      * onActivityResult with either [Activity.RESULT_CANCELED]
      * or [Activity.RESULT_OK] for deny/allow respectively.
      */
-    private fun startService(launcher: ManagedActivityResultLauncher<Intent, ActivityResult>) {
+    private fun tryStartService(launcher: ManagedActivityResultLauncher<Intent, ActivityResult>) {
         logi("Attempting to connect")
         val intent = prepare(DnsNetApplication.applicationContext)
         if (intent != null) {
