@@ -26,11 +26,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
 import dev.clombardo.dnsnet.R
-
-enum class FilterMode {
-    Include,
-    Exclude,
-}
+import dev.clombardo.dnsnet.ui.state.FilterMode
 
 @Composable
 fun ListOptionItem(

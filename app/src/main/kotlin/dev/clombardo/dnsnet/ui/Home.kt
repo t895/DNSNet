@@ -495,6 +495,7 @@ fun App(
             vm.hideStatusBarShade()
             BlockLogScreen(
                 onNavigateUp = { onPopBackStack(it.id) },
+                listViewModel = viewModel(),
                 loggedConnections = vm.connectionsLog,
                 onCreateException = {
                     navController.navigate(
@@ -830,6 +831,7 @@ fun HomeScreen(
                 AppsScreen(
                     contentPadding = contentPadding + PaddingValues(ListPadding),
                     listState = appListState,
+                    listViewModel = viewModel(),
                     isRefreshing = isRefreshing,
                     onRefresh = { vm.populateAppList() },
                     bypassSelection = allowlistDefault,

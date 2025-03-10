@@ -9,7 +9,6 @@
 package dev.clombardo.dnsnet.ui
 
 import android.os.Parcelable
-import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
@@ -61,13 +60,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.aallam.similarity.Cosine
+import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.clombardo.dnsnet.NumberFormatterCompat
 import dev.clombardo.dnsnet.R
+import dev.clombardo.dnsnet.ui.state.BlockLogListState
 import dev.clombardo.dnsnet.ui.theme.Animation
 import dev.clombardo.dnsnet.ui.theme.ListPadding
 import dev.clombardo.dnsnet.ui.theme.ScrollUpIndicatorPadding
 import dev.clombardo.dnsnet.ui.theme.ScrollUpIndicatorSize
+import dev.clombardo.dnsnet.viewmodel.BlockLogListViewModel
 import dev.clombardo.dnsnet.vpn.LoggedConnection
 import kotlinx.parcelize.Parcelize
 
@@ -93,6 +94,7 @@ object BlockLog {
 fun BlockLog(
     modifier: Modifier = Modifier,
     listState: LazyListState,
+    listViewModel: BlockLogListViewModel,
     contentPadding: PaddingValues,
     loggedConnections: Map<String, LoggedConnection>,
     onCreateException: (LoggedConnectionState) -> Unit,
@@ -102,75 +104,11 @@ fun BlockLog(
     val allowedColor = MaterialTheme.colorScheme.onSurface
     val blockedColor = MaterialTheme.colorScheme.error
 
+    var searchWidgetExpanded by rememberSaveable { mutableStateOf(false) }
     var showModifyListSheet by rememberSaveable { mutableStateOf(false) }
 
-    var sortState by rememberSaveable { mutableStateOf(BlockLogSortState()) }
-    var filterState by rememberSaveable { mutableStateOf(BlockLogFilterState()) }
-    var searchValue by rememberSaveable { mutableStateOf("") }
-    val cosine = remember { Cosine() }
-
     val adjustedList by remember {
-        derivedStateOf {
-            val list = loggedConnections.map {
-                LoggedConnectionState(
-                    it.key,
-                    it.value.allowed,
-                    it.value.attempts,
-                    it.value.lastAttemptTime,
-                )
-            }
-
-            val sortedList = when (sortState.selectedType) {
-                BlockLogSortType.Alphabetical -> if (sortState.ascending) {
-                    list.sortedByDescending { it.hostname }
-                } else {
-                    list.sortedBy { it.hostname }
-                }
-
-                BlockLogSortType.LastConnected -> if (sortState.ascending) {
-                    list.sortedByDescending { it.lastAttemptTime }
-                } else {
-                    list.sortedBy { it.lastAttemptTime }
-                }
-
-                BlockLogSortType.Attempts -> if (sortState.ascending) {
-                    list.sortedByDescending { it.attempts }
-                } else {
-                    list.sortedBy { it.attempts }
-                }
-            }
-
-            val filteredList = sortedList.filter {
-                var result = true
-                filterState.filters.forEach { (type, mode) ->
-                    when (type) {
-                        BlockLogFilterType.Blocked -> {
-                            result = when (mode) {
-                                FilterMode.Include -> !it.allowed
-                                FilterMode.Exclude -> it.allowed
-                            }
-                        }
-                    }
-                }
-                result
-            }
-
-            if (searchValue.isEmpty()) {
-                filteredList
-            } else {
-                val adjustedSearchValue = searchValue.trim().lowercase()
-                filteredList.mapNotNull {
-                    val similarity = cosine.similarity(it.hostname, adjustedSearchValue)
-                    if (similarity > 0) {
-                        similarity to it
-                    } else {
-                        null
-                    }
-                }.sortedByDescending {
-                    it.first
-                }.map { it.second }
-            }
-        }
+        derivedStateOf { listViewModel.getList(loggedConnections) }
     }
 
     LazyColumn(
@@ -229,19 +167,18 @@ fun BlockLog(
                         autoCorrectEnabled = false,
                     )
                 }
-                var expanded by rememberSaveable { mutableStateOf(false) }
                 SearchWidget(
                     modifier = Modifier.weight(
                         weight = 1f,
                         fill = false
                     ),
-                    expanded = expanded,
-                    searchValue = searchValue,
-                    onSearchButtonClick = { expanded = true },
-                    onSearchValueChange = { searchValue = it },
+                    expanded = searchWidgetExpanded,
+                    searchValue = listViewModel.searchValue,
+                    onSearchButtonClick = { searchWidgetExpanded = true },
+                    onSearchValueChange = { listViewModel.searchValue = it },
                     onClearButtonClick = {
-                        expanded = false
-                        searchValue = ""
+                        searchWidgetExpanded = false
+                        listViewModel.searchValue = ""
                     },
                     keyboardOptions = keyboardOptions,
                 )
@@ -314,24 +251,12 @@ fun BlockLog(
                             Text(stringResource(R.string.sort))
                         },
                         pageContent = {
-                            BlockLogSortType.entries.forEach {
+                            BlockLogListState.SortType.entries.forEach {
                                 SortItem(
-                                    selected = sortState.selectedType == it,
-                                    ascending = sortState.ascending,
+                                    selected = listViewModel.sort.selectedType == it,
+                                    ascending = listViewModel.sort.ascending,
                                     label = stringResource(it.labelRes),
-                                    onClick = {
-                                        sortState = if (sortState.selectedType == it) {
-                                            BlockLogSortState(
-                                                selectedType = it,
-                                                ascending = !sortState.ascending,
-                                            )
-                                        } else {
-                                            BlockLogSortState(
-                                                selectedType = it,
-                                                ascending = true,
-                                            )
-                                        }
-                                    }
+                                    onClick = { listViewModel.onSortClick(it) }
                                 )
                             }
                         },
@@ -341,22 +266,11 @@ fun BlockLog(
                             Text(stringResource(R.string.filter))
                         },
                         pageContent = {
-                            BlockLogFilterType.entries.forEach {
+                            BlockLogListState.FilterType.entries.forEach {
                                 FilterItem(
                                     label = stringResource(it.labelRes),
-                                    mode = filterState.filters[it],
-                                    onClick = {
-                                        val newFilters = filterState.filters.toMutableMap()
-                                        val currentState = filterState.filters[it]
-                                        when (currentState) {
-                                            FilterMode.Include ->
-                                                newFilters[it] = FilterMode.Exclude
-
-                                            FilterMode.Exclude -> newFilters.remove(it)
-                                            null -> newFilters[it] = FilterMode.Include
-                                        }
-                                        filterState = BlockLogFilterState(newFilters)
-                                    }
+                                    mode = listViewModel.filter.filters[it],
+                                    onClick = { listViewModel.onFilterClick(it) }
                                 )
                             }
                         },
@@ -367,33 +281,13 @@ fun BlockLog(
     }
 }
 
-enum class BlockLogSortType(@StringRes val labelRes: Int) {
-    Attempts(R.string.attempts),
-    LastConnected(R.string.last_connected),
-    Alphabetical(R.string.alphabetical),
-}
-
-@Parcelize
-data class BlockLogSortState(
-    val selectedType: BlockLogSortType = BlockLogSortType.Attempts,
-    val ascending: Boolean = true,
-) : Parcelable
-
-enum class BlockLogFilterType(@StringRes val labelRes: Int) {
-    Blocked(R.string.blocked),
-}
-
-@Parcelize
-data class BlockLogFilterState(
-    val filters: Map<BlockLogFilterType, FilterMode> = emptyMap()
-) : Parcelable
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BlockLogScreen(
     modifier: Modifier = Modifier,
     onNavigateUp: () -> Unit,
     listState: LazyListState = rememberLazyListState(),
+    listViewModel: BlockLogListViewModel,
     loggedConnections: Map<String, LoggedConnection>,
     onCreateException: (LoggedConnectionState) -> Unit,
 ) {
@@ -421,6 +315,7 @@ fun BlockLogScreen(
             BlockLog(
                 contentPadding = contentPadding,
                 listState = listState,
+                listViewModel = listViewModel,
                 loggedConnections = loggedConnections,
                 onCreateException = onCreateException,
             )
@@ -443,6 +338,7 @@ fun BlockLogScreen(
 fun BlockLogScreenPreview() {
     BlockLogScreen(
         onNavigateUp = {},
+        listViewModel = viewModel(),
         loggedConnections = mapOf(
             "some.blocked.server" to LoggedConnection(false, 1, 0),
             "some.allowed.server" to LoggedConnection(false, 1, 0),

@@ -9,10 +9,7 @@
 package dev.clombardo.dnsnet.ui
 
 import android.content.pm.ApplicationInfo
-import android.os.Parcelable
-import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -52,36 +49,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.window.core.layout.WindowWidthSizeClass
 import coil3.compose.rememberAsyncImagePainter
-import com.aallam.similarity.Cosine
 import dev.clombardo.dnsnet.AllowListMode
 import dev.clombardo.dnsnet.AllowListMode.Companion.toAllowListMode
 import dev.clombardo.dnsnet.R
 import dev.clombardo.dnsnet.ui.navigation.NavigationBar
+import dev.clombardo.dnsnet.ui.state.AppListState
 import dev.clombardo.dnsnet.ui.theme.DnsNetTheme
 import dev.clombardo.dnsnet.ui.theme.ScrollUpIndicatorPadding
 import dev.clombardo.dnsnet.ui.theme.ScrollUpIndicatorSize
-import kotlinx.parcelize.Parcelize
-
-enum class AppListSortType(@StringRes val labelRes: Int) {
-    Alphabetical(R.string.alphabetical),
-}
-
-@Parcelize
-data class AppListSortState(
-    val selectedType: AppListSortType = AppListSortType.Alphabetical,
-    val ascending: Boolean = true,
-) : Parcelable
-
-enum class AppListFilterType(@StringRes val labelRes: Int) {
-    SystemApps(R.string.system_apps),
-}
-
-@Parcelize
-data class AppListFilterState(
-    val filters: Map<AppListFilterType, FilterMode> = emptyMap()
-) : Parcelable
+import dev.clombardo.dnsnet.viewmodel.AppListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,6 +68,7 @@ fun AppsScreen(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
     listState: LazyListState = rememberLazyListState(),
+    listViewModel: AppListViewModel,
     isRefreshing: Boolean,
     onRefresh: () -> Unit,
     bypassSelection: AllowListMode,
@@ -98,58 +78,8 @@ fun AppsScreen(
 ) {
     val pullToRefreshState = rememberPullToRefreshState()
 
-    var showModifyListSheet by rememberSaveable { mutableStateOf(false) }
-
-    var sortState by rememberSaveable { mutableStateOf(AppListSortState()) }
-    var filterState by rememberSaveable {
-        mutableStateOf(
-            AppListFilterState(mapOf(AppListFilterType.SystemApps to FilterMode.Exclude))
-        )
-    }
-    var searchValue by rememberSaveable { mutableStateOf("") }
-    val cosine = remember { Cosine() }
-
     val adjustedList by remember {
-        derivedStateOf {
-            val sortedList = when (sortState.selectedType) {
-                AppListSortType.Alphabetical -> if (sortState.ascending) {
-                    apps.sortedBy { it.label }
-                } else {
-                    apps.sortedByDescending { it.label }
-                }
-            }
-
-            val filteredList = sortedList.filter {
-                var result = true
-                filterState.filters.forEach { (type, mode) ->
-                    when (type) {
-                        AppListFilterType.SystemApps -> {
-                            result = when (mode) {
-                                FilterMode.Include -> it.isSystem
-                                FilterMode.Exclude -> !it.isSystem
-                            }
-                        }
-                    }
-                }
-                result
-            }
-
-            if (searchValue.isEmpty()) {
-                filteredList
-            } else {
-                val adjustedSearchValue = searchValue.trim().lowercase()
-                filteredList.mapNotNull {
-                    val similarity = cosine.similarity(it.label.lowercase(), adjustedSearchValue)
-                    if (similarity > 0) {
-                        similarity to it
-                    } else {
-                        null
-                    }
-                }.sortedByDescending {
-                    it.first
-                }.map { it.second }
-            }
-        }
+        derivedStateOf { listViewModel.getList(apps) }
     }
 
     PullToRefreshBox(
@@ -210,19 +140,18 @@ fun AppsScreen(
                             autoCorrectEnabled = false,
                         )
                     }
-                    var expanded by rememberSaveable { mutableStateOf(false) }
                     SearchWidget(
                         modifier = Modifier.weight(
                             weight = 1f,
                             fill = false
                         ),
-                        expanded = expanded,
-                        searchValue = searchValue,
-                        onSearchButtonClick = { expanded = true },
-                        onSearchValueChange = { searchValue = it },
+                        expanded = listViewModel.searchWidgetExpanded,
+                        searchValue = listViewModel.searchValue,
+                        onSearchButtonClick = { listViewModel.searchWidgetExpanded = true },
+                        onSearchValueChange = { listViewModel.searchValue = it },
                         onClearButtonClick = {
-                            expanded = false
-                            searchValue = ""
+                            listViewModel.searchWidgetExpanded = false
+                            listViewModel.searchValue = ""
                         },
                         keyboardOptions = keyboardOptions,
                     )
@@ -230,7 +159,7 @@ fun AppsScreen(
                     BasicTooltipIconButton(
                         icon = Icons.Default.FilterList,
                         contentDescription = stringResource(R.string.modify_list),
-                        onClick = { showModifyListSheet = true },
+                        onClick = { listViewModel.showModifyListSheet = true },
                     )
                 }
             }
@@ -284,9 +213,9 @@ fun AppsScreen(
     }
 
     var currentModifyListPage by rememberSaveable { mutableIntStateOf(0) }
-    if (showModifyListSheet) {
+    if (listViewModel.showModifyListSheet) {
         ModalBottomSheet(
-            onDismissRequest = { showModifyListSheet = false }
+            onDismissRequest = { listViewModel.showModifyListSheet = false }
         ) {
             MaterialHorizontalTabLayout(
                 initialPage = currentModifyListPage,
@@ -297,24 +226,12 @@ fun AppsScreen(
                             Text(stringResource(R.string.sort))
                         },
                         pageContent = {
-                            AppListSortType.entries.forEach {
+                            AppListState.SortType.entries.forEach {
                                 SortItem(
-                                    selected = sortState.selectedType == it,
-                                    ascending = sortState.ascending,
+                                    selected = listViewModel.sort.selectedType == it,
+                                    ascending = listViewModel.sort.ascending,
                                     label = stringResource(it.labelRes),
-                                    onClick = {
-                                        sortState = if (sortState.selectedType == it) {
-                                            AppListSortState(
-                                                selectedType = it,
-                                                ascending = !sortState.ascending,
-                                            )
-                                        } else {
-                                            AppListSortState(
-                                                selectedType = it,
-                                                ascending = true,
-                                            )
-                                        }
-                                    }
+                                    onClick = { listViewModel.onSortClick(it) }
                                 )
                             }
                         },
@@ -324,22 +241,11 @@ fun AppsScreen(
                             Text(stringResource(R.string.filter))
                         },
                         pageContent = {
-                            AppListFilterType.entries.forEach {
+                            AppListState.FilterType.entries.forEach {
                                 FilterItem(
                                     label = stringResource(it.labelRes),
-                                    mode = filterState.filters[it],
-                                    onClick = {
-                                        val newFilters = filterState.filters.toMutableMap()
-                                        val currentState = filterState.filters[it]
-                                        when (currentState) {
-                                            FilterMode.Include ->
-                                                newFilters[it] = FilterMode.Exclude
-
-                                            FilterMode.Exclude -> newFilters.remove(it)
-                                            null -> newFilters[it] = FilterMode.Include
-                                        }
-                                        filterState = AppListFilterState(newFilters)
-                                    }
+                                    mode = listViewModel.filter.filters[it],
+                                    onClick = { listViewModel.onFilterClick(it) }
                                 )
                             }
                         },
@@ -358,6 +264,7 @@ private fun AppsScreenPreview() {
             isRefreshing = false,
             onRefresh = {},
             apps = listOf(App(ApplicationInfo(), "Label", true, false)),
+            listViewModel = viewModel(),
             onAppClick = { _, _ -> },
             bypassSelection = AllowListMode.ON_VPN,
             onBypassSelection = {},
