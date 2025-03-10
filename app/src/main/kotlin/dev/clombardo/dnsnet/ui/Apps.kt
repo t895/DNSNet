@@ -294,7 +294,7 @@ fun AppsScreen(
                 pages = listOf(
                     TabLayoutContent(
                         tabContent = {
-                            Text("Sort")
+                            Text(stringResource(R.string.sort))
                         },
                         pageContent = {
                             AppListSortType.entries.forEach {
@@ -321,7 +321,7 @@ fun AppsScreen(
                     ),
                     TabLayoutContent(
                         tabContent = {
-                            Text("Filter")
+                            Text(stringResource(R.string.filter))
                         },
                         pageContent = {
                             AppListFilterType.entries.forEach {

@@ -311,7 +311,7 @@ fun BlockLog(
                 pages = listOf(
                     TabLayoutContent(
                         tabContent = {
-                            Text("Sort")
+                            Text(stringResource(R.string.sort))
                         },
                         pageContent = {
                             BlockLogSortType.entries.forEach {
@@ -338,7 +338,7 @@ fun BlockLog(
                     ),
                     TabLayoutContent(
                         tabContent = {
-                            Text("Filter")
+                            Text(stringResource(R.string.filter))
                         },
                         pageContent = {
                             BlockLogFilterType.entries.forEach {

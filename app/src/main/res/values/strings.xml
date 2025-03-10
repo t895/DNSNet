@@ -152,6 +152,8 @@
     <string name="ascending">Ascending</string>
     <string name="descending">Descending</string>
     <string name="system_apps">System apps</string>
+    <string name="filter">Filter</string>
+    <string name="sort">Sort</string>
     <string name="logcat_written_successfully">Logcat written successfully</string>
 
     <!-- Rust crate credits -->
