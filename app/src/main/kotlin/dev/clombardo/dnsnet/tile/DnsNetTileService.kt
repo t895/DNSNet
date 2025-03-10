@@ -78,7 +78,7 @@ class DnsNetTileService : TileService() {
             return
         }
 
-        if (AdVpnService.status.value != VpnStatus.STOPPED) {
+        if (AdVpnService.isRunning()) {
             AdVpnService.stop(applicationContext)
         } else {
             AdVpnService.start(applicationContext)
