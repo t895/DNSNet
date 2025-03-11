@@ -133,15 +133,19 @@ open class HomeDestination(
 object HomeDestinations {
     val entries = listOf(Start, Hosts, Apps, DNS)
 
+    @Parcelize
     @Serializable
     data object Start : HomeDestination(HomeDestinationIcon.Start, R.string.start_tab)
 
+    @Parcelize
     @Serializable
     data object Hosts : HomeDestination(HomeDestinationIcon.Hosts, R.string.hosts_tab)
 
+    @Parcelize
     @Serializable
     data object Apps : HomeDestination(HomeDestinationIcon.Apps, R.string.allowlist_tab)
 
+    @Parcelize
     @Serializable
     data object DNS : HomeDestination(HomeDestinationIcon.DNS, R.string.dns_tab)
 }
