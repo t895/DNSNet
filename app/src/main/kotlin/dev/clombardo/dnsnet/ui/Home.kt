@@ -10,7 +10,6 @@ package dev.clombardo.dnsnet.ui
 
 import android.annotation.SuppressLint
 import android.os.Build
-import android.os.Parcel
 import android.os.Parcelable
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContentTransitionScope
@@ -80,7 +79,6 @@ import dev.clombardo.dnsnet.HostState
 import dev.clombardo.dnsnet.R
 import dev.clombardo.dnsnet.config
 import dev.clombardo.dnsnet.db.RuleDatabaseUpdateWorker
-import dev.clombardo.dnsnet.ui.HomeDestinationIcon.Companion.toHomeDestinationIcon
 import dev.clombardo.dnsnet.ui.navigation.LayoutType
 import dev.clombardo.dnsnet.ui.navigation.NavigationScaffold
 import dev.clombardo.dnsnet.ui.theme.Animation
@@ -91,7 +89,6 @@ import dev.clombardo.dnsnet.ui.theme.VpnFabSize
 import dev.clombardo.dnsnet.viewmodel.HomeViewModel
 import dev.clombardo.dnsnet.vpn.AdVpnService
 import dev.clombardo.dnsnet.vpn.VpnStatus
-import kotlinx.parcelize.Parceler
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 
@@ -101,11 +98,6 @@ enum class HomeDestinationIcon(val icon: ImageVector) {
     Hosts(Icons.AutoMirrored.Filled.DriveFileMove),
     Apps(Icons.Default.Android),
     DNS(Icons.Default.Dns);
-
-    companion object {
-        fun Int.toHomeDestinationIcon(): HomeDestinationIcon =
-            HomeDestinationIcon.entries.firstOrNull { it.ordinal == this } ?: Start
-    }
 }
 
 @Parcelize
@@ -113,22 +105,7 @@ enum class HomeDestinationIcon(val icon: ImageVector) {
 open class HomeDestination(
     val iconEnum: HomeDestinationIcon,
     @StringRes val labelResId: Int,
-) : Parcelable {
-    companion object : Parceler<HomeDestination> {
-        override fun HomeDestination.write(parcel: Parcel, flags: Int) {
-            parcel.apply {
-                writeInt(iconEnum.ordinal)
-                writeInt(labelResId)
-            }
-        }
-
-        override fun create(parcel: Parcel): HomeDestination =
-            HomeDestination(
-                parcel.readInt().toHomeDestinationIcon(),
-                parcel.readInt(),
-            )
-    }
-}
+) : Parcelable
 
 object HomeDestinations {
     val entries = listOf(Start, Hosts, Apps, DNS)
