@@ -155,6 +155,7 @@
     <string name="filter">Filter</string>
     <string name="sort">Sort</string>
     <string name="logcat_written_successfully">Logcat written successfully</string>
+    <string name="failed_to_open_network_settings">Failed to open network settings</string>
 
     <!-- Rust crate credits -->
     <string name="etherparse" translatable="false">etherparse</string>

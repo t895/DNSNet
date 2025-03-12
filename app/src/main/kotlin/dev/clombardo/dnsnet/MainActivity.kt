@@ -269,7 +269,17 @@ class MainActivity : AppCompatActivity() {
         return linkProperties.isPrivateDnsActive || linkProperties.privateDnsServerName != null
     }
 
-    private fun openNetworkSettings() = startActivity(Intent(Settings.ACTION_WIRELESS_SETTINGS))
+    private fun openNetworkSettings() {
+        try {
+            startActivity(Intent(Settings.ACTION_WIRELESS_SETTINGS))
+        } catch (_: Exception) {
+            Toast.makeText(
+                this,
+                getString(R.string.failed_to_open_network_settings),
+                Toast.LENGTH_LONG,
+            ).show()
+        }
+    }
 
     /**
      * Starts the AdVpnService. If the user has not allowed this
