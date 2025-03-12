@@ -1,4 +1,8 @@
-DNS-Based Host Blocking for Android
+<div align="center">
+  <img src="assets/feature-graphic.png" alt="DNSNet feature graphic" width="66%"/>
+</div>
+
+DNSNet
 ===================================
 Based on DNS66, this projects aims to continue the goals of the original
 app with modern Android development practices.
@@ -6,6 +10,13 @@ app with modern Android development practices.
 This is a DNS-based host blocker for Android. In the default configuration,
 several widely-respected host files are used to block ads, malware, and other
 weird stuff.
+
+Screenshots
+===================================
+
+<div align="center">
+<img src="metadata/en-US/images/phoneScreenshots/start-p9p.png" width="20%" /> <img src="metadata/en-US/images/phoneScreenshots/hosts-p9p.png" width="20%" /> <img src="metadata/en-US/images/phoneScreenshots/apps-p9p.png" width="20%" /> <img src="metadata/en-US/images/phoneScreenshots/dns-p9p.png" width="20%" />
+</div>
 
 Installing
 ----------
@@ -22,21 +33,25 @@ Installing
 
 Or download the latest APK from the [Releases Section](https://github.com/t895/DNSNet/releases/latest).
 
-Using it
----------
-There's also no validation of input, so DNS servers that are not valid IPv4
-addresses are not rejected, neither are URLs for DNS server entries (we intend
-to support URLs in the future, so you can point the app to a remote list of
-servers).
-
 How it works
 ------------
-The app establishes a VPN service, with routes for all DNS servers diverted to
-it. The VPN service then intercepts the packages for the servers and forwards
-any DNS queries that are not blacklisted.
+The app establishes a "VPN (Virtual Private Network) service." Traditionally, these are intended to
+send internet traffic from your device to a remote server with the intent of anonymizing the source
+of your requests. In the case of DNSNet, this is not the case.
 
-Custom upstream DNS can be configured. If the feature is turned off, the
-current connection's DNS servers are used.
+DNSNet uses Android's "VPN service" API as a way to read and filter your internet traffic entirely
+on-device. It starts by getting access to a "tunnel" that provides your network requests. Then, it
+reads the hostname (e.g. google.com) of each DNS request. Finally, it blocks or allows each request
+based on the configuration as seen in the "Hosts" screen of the app.
+
+It's important to note that this approach is not perfect and has some notable downsides:
+* While this app has been tuned to be as efficient as possible, it is still a service that must run
+constantly and will have some battery cost over alternate methods of blocking through services like
+AdAway with root, Rethink, and others.
+* Since this runs as a "VPN service," you will be unable to run another "VPN service" alongside it
+since Android only allows for one at a time.
+
+For further information, see the [FAQ](https://github.com/t895/DNSNet/wiki/FAQ).
 
 Privacy Guarantee
 -----------------
@@ -55,6 +70,7 @@ Building
 You'll need a few things installed to get up and running
 - [Rust](https://www.rust-lang.org/tools/install)
 - [Python 3](https://www.python.org/downloads/)
+- Java 17+
 - [Android Studio](https://developer.android.com/studio) (Optionally)
 
 Add all of the Rust build targets
@@ -62,7 +78,7 @@ Add all of the Rust build targets
 rustup target add x86_64-linux-android i686-linux-android aarch64-linux-android armv7-linux-androideabi
 ```
 
-Then build
+Then run this in the root of the project to build the app
 ```bash
 ./gradlew assembleDebug
 ```
@@ -88,6 +104,8 @@ Code of Conduct
 ---------------
 Please note that this project is released with a Contributor Code of
 Conduct. By participating in this project you agree to abide by its terms.
+
+See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
 Authors
 -------
