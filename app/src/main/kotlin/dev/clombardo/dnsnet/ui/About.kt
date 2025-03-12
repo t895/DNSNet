@@ -8,20 +8,22 @@
 
 package dev.clombardo.dnsnet.ui
 
+import android.content.Context
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material3.Card
@@ -37,7 +39,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -45,6 +49,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import dev.clombardo.dnsnet.BuildConfig
 import dev.clombardo.dnsnet.R
+import dev.clombardo.dnsnet.logw
 import dev.clombardo.dnsnet.ui.theme.DnsNetTheme
 import dev.clombardo.dnsnet.ui.theme.ListPadding
 
@@ -88,21 +93,25 @@ fun About(
                 AboutText(text = stringResource(id = R.string.info_app_license))
 
                 val uriHandler = LocalUriHandler.current
+                val context = LocalContext.current
                 val websiteUri = Uri.parse(stringResource(id = R.string.website))
+                val faqUri = Uri.parse(stringResource(id = R.string.faq_link))
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     TooltipIconButton(
                         colors = IconButtonDefaults.filledIconButtonColors(),
                         painter = rememberVectorPainter(Icons.Default.Code),
                         contentDescription = stringResource(R.string.view_source_code),
-                        onClick = { uriHandler.openUri(websiteUri.toString()) },
+                        onClick = { uriHandler.tryOpenUri(context, websiteUri) },
                     )
-
-                    Spacer(Modifier.padding(horizontal = 8.dp))
-
+                    TooltipIconButton(
+                        colors = IconButtonDefaults.filledIconButtonColors(),
+                        painter = rememberVectorPainter(Icons.AutoMirrored.Filled.Help),
+                        contentDescription = stringResource(R.string.help),
+                        onClick = { uriHandler.tryOpenUri(context, faqUri) },
+                    )
                     TooltipIconButton(
                         colors = IconButtonDefaults.filledIconButtonColors(),
                         painter = rememberVectorPainter(Icons.Default.Description),
@@ -112,6 +121,20 @@ fun About(
                 }
             }
         }
+    }
+}
+
+/**
+ * This prevents a rare crash where a user does not have a web browser installed to open a link.
+ * This only happens when someone is messing around with root/custom roms but I'd prefer that they
+ * get a friendly error message instead of crashing.
+ */
+fun UriHandler.tryOpenUri(context: Context, uri: Uri) {
+    try {
+        openUri(uri.toString())
+    } catch (e: Exception) {
+        logw("Failed to open link: $uri", e)
+        Toast.makeText(context, R.string.failed_to_open_link, Toast.LENGTH_SHORT).show()
     }
 }
 
