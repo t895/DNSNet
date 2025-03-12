@@ -10,7 +10,7 @@ several widely-respected host files are used to block ads, malware, and other
 weird stuff.
 
 Screenshots
-===================================
+-----------
 
 <div align="center">
 <img src="metadata/en-US/images/phoneScreenshots/start-p9p.png" width="20%" /> <img src="metadata/en-US/images/phoneScreenshots/hosts-p9p.png" width="20%" /> <img src="metadata/en-US/images/phoneScreenshots/apps-p9p.png" width="20%" /> <img src="metadata/en-US/images/phoneScreenshots/dns-p9p.png" width="20%" />
