@@ -1,10 +1,8 @@
 <div align="center">
-  <img src="assets/feature-graphic.png" alt="DNSNet feature graphic" width="66%"/>
+  <img src="assets/feature-graphic.png" alt="DNSNet feature graphic" width="50%"/>
 </div>
 
-DNSNet
-===================================
-Based on DNS66, this projects aims to continue the goals of the original
+Based on DNS66, DNSNet aims to continue the goals of the original
 app with modern Android development practices.
 
 This is a DNS-based host blocker for Android. In the default configuration,
