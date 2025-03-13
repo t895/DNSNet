@@ -10,6 +10,8 @@
 
 package dev.clombardo.dnsnet.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -65,14 +67,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.PermissionStatus
-import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import dev.clombardo.dnsnet.R
 import dev.clombardo.dnsnet.tryOpenUri
@@ -98,7 +99,6 @@ open class SetupDestination {
     data object Notice : SetupDestination()
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun SetupScreen(
     modifier: Modifier = Modifier,
@@ -293,17 +293,31 @@ fun NoticeScreen(
         ) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 item {
-                    var permissionRequestComplete by rememberSaveable { mutableStateOf(false) }
+                    val context = LocalContext.current
+                    var permissionRequestComplete by rememberSaveable {
+                        mutableStateOf(
+                            ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.POST_NOTIFICATIONS
+                            ) == PackageManager.PERMISSION_GRANTED
+                        )
+                    }
+                    var permissionRequestEnabled by rememberSaveable {
+                        mutableStateOf(true)
+                    }
                     val notificationPermissionState =
-                        rememberPermissionState(android.Manifest.permission.POST_NOTIFICATIONS) {
-                            permissionRequestComplete = it
+                        rememberPermissionState(Manifest.permission.POST_NOTIFICATIONS) {
+                            if (it) {
+                                permissionRequestComplete = true
+                            } else {
+                                permissionRequestEnabled = false
+                            }
                         }
-                    permissionRequestComplete = notificationPermissionState.status.isGranted
                     InformationListItem(
                         icon = Icons.Default.Notifications,
                         title = stringResource(R.string.notifications),
                         text = stringResource(R.string.notification_permission_description),
-                        enabled = notificationPermissionState.status !is PermissionStatus.Denied,
+                        enabled = permissionRequestEnabled,
                         complete = permissionRequestComplete,
                         buttonText = stringResource(R.string.grant),
                         onButtonClick = { notificationPermissionState.launchPermissionRequest() },
@@ -490,7 +504,7 @@ fun InformationListItem(
                             .sizeIn(minWidth = 128.dp, maxWidth = 192.dp)
                             .graphicsLayer { alpha = buttonAlpha },
                         onClick = onButtonClick,
-                        enabled = !complete && enabled,
+                        enabled = enabled,
                     ) {
                         Text(text = buttonText)
                     }
