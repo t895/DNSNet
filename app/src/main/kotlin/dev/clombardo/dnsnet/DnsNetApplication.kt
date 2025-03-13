@@ -44,7 +44,7 @@ class DnsNetApplication : Application() {
                 }
                 .memoryCache {
                     MemoryCache.Builder()
-                        .maxSizePercent(applicationContext, 0.25)
+                        .maxSizePercent(applicationContext)
                         .build()
                 }
                 .diskCache {
