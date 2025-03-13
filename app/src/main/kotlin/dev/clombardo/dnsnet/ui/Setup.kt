@@ -113,15 +113,7 @@ fun SetupScreen(
             composable<SetupDestination.Greeting> {
                 GreetingScreen(
                     onGetStartedClick = {
-                        navController.navigate(SetupDestination.Notice) {
-                            // Pops all destinations on the backstack
-                            popUpTo(0) {
-                                saveState = true
-                                inclusive = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
+                        navController.popNavigate(SetupDestination.Notice)
                     },
                     animatedVisibilityScope = this,
                     sharedTransitionScope = this@SharedTransitionLayout,
