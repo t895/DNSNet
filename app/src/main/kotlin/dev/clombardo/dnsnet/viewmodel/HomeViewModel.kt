@@ -21,7 +21,6 @@ import dev.clombardo.dnsnet.Host
 import dev.clombardo.dnsnet.HostException
 import dev.clombardo.dnsnet.HostFile
 import dev.clombardo.dnsnet.HostState
-import dev.clombardo.dnsnet.Preferences
 import dev.clombardo.dnsnet.R
 import dev.clombardo.dnsnet.config
 import dev.clombardo.dnsnet.db.RuleDatabaseUpdateWorker
@@ -37,7 +36,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import java.io.InputStreamReader
-import java.util.Collections
 
 class HomeViewModel : ViewModel() {
     private val _showUpdateIncompleteDialog = MutableStateFlow(false)
@@ -348,21 +346,6 @@ class HomeViewModel : ViewModel() {
 
     fun onDismissFilePermissionDenied() {
         _showFilePermissionDeniedDialog.value = false
-    }
-
-    fun onNotificationPermissionNotGranted() {
-        if (!Preferences.NotificationPermissionDenied) {
-            _showNotificationPermissionDialog.value = true
-        }
-    }
-
-    fun onNotificationPermissionDenied() {
-        onDismissNotificationPermission()
-        Preferences.NotificationPermissionDenied = true
-    }
-
-    fun onDismissNotificationPermission() {
-        _showNotificationPermissionDialog.value = false
     }
 
     fun onVpnConfigurationFailure() {

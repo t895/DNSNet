@@ -18,6 +18,7 @@ import coil3.memory.MemoryCache
 import dev.clombardo.dnsnet.ui.image.AppImageFetcher
 import dev.clombardo.dnsnet.ui.image.AppImageKeyer
 import uniffi.net.rustInit
+import java.io.File
 
 var config = Configuration.load()
 
@@ -53,6 +54,13 @@ class DnsNetApplication : Application() {
                         .build()
                 }
                 .build()
+        }
+
+        // Prevent existing users (pre-1.1.9) from seeing the setup screen
+        if (File(applicationContext.filesDir, Configuration.DEFAULT_CONFIG_FILENAME).exists() ||
+            Preferences.NotificationPermissionActedUpon
+        ) {
+            Preferences.SetupComplete = true
         }
     }
 }

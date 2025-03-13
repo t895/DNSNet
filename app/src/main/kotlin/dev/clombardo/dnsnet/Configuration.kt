@@ -50,7 +50,7 @@ data class Configuration(
     var blockLogging: Boolean = false,
 ) {
     companion object {
-        private const val DEFAULT_CONFIG_FILENAME = "settings.json"
+        const val DEFAULT_CONFIG_FILENAME = "settings.json"
         private const val CONFIG_BACKUP_EXTENSION = ".bak"
 
         private const val VERSION = 1

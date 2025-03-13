@@ -76,6 +76,7 @@ import dev.clombardo.dnsnet.Host
 import dev.clombardo.dnsnet.HostException
 import dev.clombardo.dnsnet.HostFile
 import dev.clombardo.dnsnet.HostState
+import dev.clombardo.dnsnet.Preferences
 import dev.clombardo.dnsnet.R
 import dev.clombardo.dnsnet.config
 import dev.clombardo.dnsnet.db.RuleDatabaseUpdateWorker
@@ -140,6 +141,9 @@ open class TopLevelDestination {
 
     @Serializable
     data object Credits : TopLevelDestination()
+
+    @Serializable
+    data object Setup : TopLevelDestination()
 }
 
 object Home {
@@ -196,7 +200,6 @@ object Home {
 }
 
 @SuppressLint("RestrictedApi")
-@OptIn(ExperimentalPermissionsApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun App(
     modifier: Modifier = Modifier,
@@ -212,42 +215,6 @@ fun App(
     onUpdateRefreshWork: () -> Unit,
     onOpenNetworkSettings: () -> Unit,
 ) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        val notificationPermissionState =
-            rememberPermissionState(android.Manifest.permission.POST_NOTIFICATIONS) {
-                vm.onNotificationPermissionDenied()
-            }
-        LaunchedEffect(Unit) {
-            if (!notificationPermissionState.status.isGranted) {
-                vm.onNotificationPermissionNotGranted()
-            }
-        }
-
-        val showNotificationPermissionDialog by vm.showNotificationPermissionDialog.collectAsState()
-        if (showNotificationPermissionDialog) {
-            BasicDialog(
-                modifier = Modifier
-                    .semantics { testTagsAsResourceId = true }
-                    .testTag("notificationPermissionDialog"),
-                title = stringResource(R.string.notification_permission),
-                text = stringResource(R.string.notification_permission_description),
-                primaryButton = DialogButton(
-                    text = stringResource(android.R.string.ok),
-                    onClick = {
-                        notificationPermissionState.launchPermissionRequest()
-                        vm.onDismissNotificationPermission()
-                    },
-                ),
-                secondaryButton = DialogButton(
-                    modifier = Modifier.testTag("notificationPermissionDialog:cancel"),
-                    text = stringResource(android.R.string.cancel),
-                    onClick = { vm.onNotificationPermissionDenied() },
-                ),
-                onDismissRequest = {},
-            )
-        }
-    }
-
     val showUpdateIncompleteDialog by vm.showUpdateIncompleteDialog.collectAsState()
     if (showUpdateIncompleteDialog) {
         val messageText = StringBuilder(stringResource(R.string.update_incomplete_description))
@@ -363,23 +330,27 @@ fun App(
     }
 
     val navController = rememberNavController()
-    val onPopBackStack: (id: String) -> Unit = { id ->
-        if (navController.currentBackStack.value.size > 2) {
-            if (navController.currentBackStack.value.any { it.id == id }) {
-                navController.popBackStack()
-            }
-        }
-    }
-
     NavHost(
         modifier = modifier.background(MaterialTheme.colorScheme.surface),
         navController = navController,
-        startDestination = TopLevelDestination.Home,
+        startDestination = if (Preferences.SetupComplete) {
+            TopLevelDestination.Home
+        } else {
+            TopLevelDestination.Setup
+        },
         enterTransition = Home.TopLevelEnter,
         exitTransition = Home.TopLevelExit,
         popEnterTransition = Home.TopLevelPopEnter,
         popExitTransition = Home.TopLevelPopExit,
     ) {
+        composable<TopLevelDestination.Setup> {
+            SetupScreen(
+                onContinueClick = {
+                    navController.popNavigate(TopLevelDestination.Home)
+                    Preferences.SetupComplete = true
+                },
+            )
+        }
         composable<TopLevelDestination.Home> {
             vm.showStatusBarShade()
             val status by AdVpnService.status.collectAsState()
@@ -402,7 +373,7 @@ fun App(
             EditHostDestination(
                 host = host,
                 vm = vm,
-                onPopBackStack = { onPopBackStack(backstackEntry.id) },
+                onPopBackStack = { navController.tryPopBackstack(backstackEntry.id) },
                 onRestartService = onRestartService,
             )
         }
@@ -412,7 +383,7 @@ fun App(
             EditHostDestination(
                 host = host,
                 vm = vm,
-                onPopBackStack = { onPopBackStack(backstackEntry.id) },
+                onPopBackStack = { navController.tryPopBackstack(backstackEntry.id) },
                 onRestartService = onRestartService,
             )
         }
@@ -434,7 +405,7 @@ fun App(
                         onClick = {
                             vm.removeDnsServer(server)
                             vm.onDismissDeleteDnsServerWarning()
-                            onPopBackStack(backstackEntry.id)
+                            navController.tryPopBackstack(backstackEntry.id)
                             onRestartService()
                         },
                     ),
@@ -448,14 +419,14 @@ fun App(
 
             EditDnsScreen(
                 server = server,
-                onNavigateUp = { onPopBackStack(backstackEntry.id) },
+                onNavigateUp = { navController.tryPopBackstack(backstackEntry.id) },
                 onSave = { savedServer ->
                     if (server.title.isEmpty()) {
                         vm.addDnsServer(savedServer)
                     } else {
                         vm.replaceDnsServer(server, savedServer)
                     }
-                    onPopBackStack(backstackEntry.id)
+                    navController.tryPopBackstack(backstackEntry.id)
                     onRestartService()
                 },
                 onDelete = if (server.title.isEmpty()) {
@@ -468,14 +439,14 @@ fun App(
         composable<TopLevelDestination.About> {
             vm.hideStatusBarShade()
             AboutScreen(
-                onNavigateUp = { onPopBackStack(it.id) },
+                onNavigateUp = { navController.tryPopBackstack(it.id) },
                 onOpenCredits = { navController.navigate(TopLevelDestination.Credits) },
             )
         }
         composable<TopLevelDestination.BlockLog> {
             vm.hideStatusBarShade()
             BlockLogScreen(
-                onNavigateUp = { onPopBackStack(it.id) },
+                onNavigateUp = { navController.tryPopBackstack(it.id) },
                 listViewModel = viewModel(),
                 loggedConnections = vm.connectionsLog,
                 onCreateException = {
@@ -495,7 +466,7 @@ fun App(
         }
         composable<TopLevelDestination.Credits> {
             vm.hideStatusBarShade()
-            CreditsScreen { onPopBackStack(it.id) }
+            CreditsScreen { navController.tryPopBackstack(it.id) }
         }
     }
 }
@@ -599,15 +570,7 @@ fun HomeScreen(
     val setDestination = { newHomeDestination: HomeDestination ->
         if (currentDestination != newHomeDestination) {
             currentDestination = newHomeDestination
-            navController.navigate(newHomeDestination) {
-                // Pops all destinations on the backstack
-                popUpTo(0) {
-                    saveState = true
-                    inclusive = true
-                }
-                launchSingleTop = true
-                restoreState = true
-            }
+            navController.popNavigate(newHomeDestination)
         }
     }
 

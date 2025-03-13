@@ -8,9 +8,7 @@
 
 package dev.clombardo.dnsnet.ui
 
-import android.content.Context
 import android.net.Uri
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -49,7 +47,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import dev.clombardo.dnsnet.BuildConfig
 import dev.clombardo.dnsnet.R
-import dev.clombardo.dnsnet.logw
+import dev.clombardo.dnsnet.tryOpenUri
 import dev.clombardo.dnsnet.ui.theme.DnsNetTheme
 import dev.clombardo.dnsnet.ui.theme.ListPadding
 
@@ -121,20 +119,6 @@ fun About(
                 }
             }
         }
-    }
-}
-
-/**
- * This prevents a rare crash where a user does not have a web browser installed to open a link.
- * This only happens when someone is messing around with root/custom roms but I'd prefer that they
- * get a friendly error message instead of crashing.
- */
-fun UriHandler.tryOpenUri(context: Context, uri: Uri) {
-    try {
-        openUri(uri.toString())
-    } catch (e: Exception) {
-        logw("Failed to open link: $uri", e)
-        Toast.makeText(context, R.string.failed_to_open_link, Toast.LENGTH_SHORT).show()
     }
 }
 

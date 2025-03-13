@@ -17,7 +17,12 @@ private val preferences by lazy {
 }
 
 object Preferences {
-    var NotificationPermissionDenied by BooleanPreference("NotificationPermissionDenied", false)
+    /**
+     * Old preference that is no longer used to see if the user interacted with the notification
+     * permission dialog. Now it's just used to make sure that we don't show existing users the
+     * setup screen.
+     */
+    var NotificationPermissionActedUpon by BooleanPreference("NotificationPermissionDenied", false)
 
     /**
      * Tracks whether the VPN is running and is meant to tell the service if it was running when
@@ -25,6 +30,8 @@ object Preferences {
      * the user enabled "Resume on system start-up," the service is started.
      */
     var VpnIsActive by BooleanPreference("isActive", false)
+
+    var SetupComplete by BooleanPreference("setupComplete", false)
 }
 
 private interface Preference<T> {

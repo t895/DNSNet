@@ -159,6 +159,19 @@
     <string name="help">Help</string>
     <string name="faq_link" translatable="false">https://github.com/t895/DNSNet/wiki/FAQ</string>
     <string name="failed_to_open_link">Failed to open link</string>
+    <string name="welcome_to">Welcome to</string>
+    <string name="get_started">Get started</string>
+    <string name="notice">Notice</string>
+    <string name="notifications">Notifications</string>
+    <string name="notice_vpn_service">We use a \"VPN (Virtual Private Network) service\" to work. Traditionally VPNs reroute your internet traffic through a remote server, but this is not the case for DNSNet. This type of service is used as a way to filter your internet traffic with all processing done on-device. This also means that you will not be able to use any other \"VPN service\" at the same time as DNSNet.</string>
+    <string name="notice_vpn_service_learn_more_link" translatable="false">https://github.com/t895/DNSNet?tab=readme-ov-file#how-it-works</string>
+    <string name="notice_application">We block content based on the hostname (e.g. google.com) used to connect to a service. If a service is to load its main content and anything unwanted using the same hostname, we will not be able to block the unwanted content.</string>
+    <string name="notice_application_learn_more_link" translatable="false">https://github.com/t895/DNSNet/wiki/FAQ#dnsnet-isnt-blocking-content-in-this-app-why-isnt-it-working</string>
+    <string name="grant">Grant</string>
+    <string name="acknowledge">Acknowledge</string>
+    <string name="learn_more">Learn more</string>
+    <string name="complete">Complete</string>
+    <string name="button_continue">Continue</string>
 
     <!-- Rust crate credits -->
     <string name="etherparse" translatable="false">etherparse</string>
