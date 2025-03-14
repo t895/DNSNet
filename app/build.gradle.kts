@@ -233,8 +233,6 @@ dependencies {
 
     implementation(libs.string.similarity.kotlin)
 
-    implementation(libs.androidx.collection.ktx)
-
     implementation(libs.jna) {
         artifact {
             type = "aar"
