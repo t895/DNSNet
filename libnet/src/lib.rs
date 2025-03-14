@@ -1,12 +1,12 @@
 use std::{
-    collections::{HashSet, VecDeque},
+    collections::{HashMap, VecDeque},
     fs::File,
     io::{self, BufRead, Read, Write},
     mem::{self, MaybeUninit},
     net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6},
     os::fd::{AsRawFd, FromRawFd, RawFd},
     sync::{Arc, atomic::AtomicBool},
-    time::{SystemTime, UNIX_EPOCH},
+    time::{Duration, SystemTime, UNIX_EPOCH},
     usize,
 };
 
@@ -33,7 +33,11 @@ uniffi::setup_scaffolding!();
 pub fn rust_init(debug: bool) {
     android_logger::init_once(
         Config::default()
-            .with_max_level(if debug { LevelFilter::Trace } else { LevelFilter::Info }) // limit log level
+            .with_max_level(if debug {
+                LevelFilter::Trace
+            } else {
+                LevelFilter::Info
+            }) // limit log level
             .with_tag("DNSNet Native"), // logs will show under mytag tag
     );
 }
@@ -134,10 +138,7 @@ fn build_ipv4_packet_with_udp_payload(
         *source_address,
         *destination_address,
     ) {
-        Ok(value) => {
-            debug!("build_packet_v4: Successfully created Ipv4Header");
-            value
-        }
+        Ok(value) => value,
         Err(e) => {
             error!("build_packet_v4: Failed to create Ipv4Header! - {:?}", e);
             return None;
@@ -181,7 +182,7 @@ fn build_ip_packet_with_udp_payload(
     let udp_builder = builder.udp(source_port, destination_port);
     let mut result = Vec::<u8>::with_capacity(udp_builder.size(udp_payload.len()));
     match udp_builder.write(&mut result, &udp_payload) {
-        Ok(_) => debug!("build_packet: Successfully built packet"),
+        Ok(_) => {}
         Err(e) => {
             error!("build_packet: Failed to build packet! - {:?}", e);
             return None;
@@ -305,12 +306,19 @@ fn build_response_packet(request_packet: &[u8], response_payload: &[u8]) -> Opti
     return None;
 }
 
+/// Convenience function to get the [Duration] since the Unix epoch
+fn get_epoch() -> Duration {
+    SystemTime::now().duration_since(UNIX_EPOCH).unwrap()
+}
+
 /// Convenience function to get the current time in milliseconds since the Unix epoch
 fn get_epoch_millis() -> u128 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_millis()
+    get_epoch().as_millis()
+}
+
+/// Convenience function to get the current time in nanoseconds since the Unix epoch
+fn get_epoch_nanos() -> u128 {
+    get_epoch().as_nanos()
 }
 
 /// Represents the current status of the VPN (Mirrors the version in Kotlin)
@@ -572,12 +580,10 @@ impl AdVpn {
         }
 
         if write_to_device {
-            debug!("do_one: Write to device");
             self.write_to_device()?;
         }
 
         if read_from_device {
-            debug!("do_one: Read from device");
             self.read_packet_from_device(dns_packet_proxy, packet)?;
         }
 
@@ -645,12 +651,7 @@ impl AdVpn {
             vec![MaybeUninit::<u8>::uninit(); Self::DNS_RESPONSE_PACKET_SIZE];
 
         match wosp.socket.recv(response_payload.as_mut_slice()) {
-            Ok(res) => {
-                debug!(
-                    "handle_raw_dns_response: Successfully received reply with {} bytes",
-                    res
-                );
-
+            Ok(_) => {
                 let initialized_response_payload =
                     unsafe { mem::transmute::<_, Vec<u8>>(response_payload) };
                 dns_packet_proxy.handle_dns_response(
@@ -703,11 +704,7 @@ impl AdVpn {
 
         let destination_sockaddr = SockAddr::from(destination_address);
         match socket.send_to(packet, &destination_sockaddr) {
-            Ok(value) => {
-                debug!(
-                    "forward_packet: Successfully wrote {} bytes to socket",
-                    value
-                );
+            Ok(_) => {
                 self.wosp_list
                     .add(WaitingOnSocketPacket::new(socket, request_packet.to_vec()));
                 return true;
@@ -821,7 +818,8 @@ pub struct NativeHost {
 /// Holds the block list and manages the loading of the block list
 struct RuleDatabase {
     android_file_helper: Box<dyn AndroidFileHelper>,
-    blocked_hosts: Arc<HashSet<String>>,
+    hosts: HashMap<String, bool>,
+    patterns: HashMap<String, bool>,
 }
 
 impl RuleDatabase {
@@ -832,6 +830,11 @@ impl RuleDatabase {
     /// Parses a single line in a hostfile and returns the host if it's valid
     fn parse_line(line: &str) -> Option<String> {
         if line.trim().is_empty() {
+            return None;
+        }
+
+        // AdBlock Plus style hosts files use ## for extra functionality that we don't support
+        if line.contains("##") {
             return None;
         }
 
@@ -894,7 +897,8 @@ impl RuleDatabase {
     fn new(android_file_helper: Box<dyn AndroidFileHelper>) -> Self {
         RuleDatabase {
             android_file_helper,
-            blocked_hosts: Arc::new(HashSet::new()),
+            hosts: HashMap::new(),
+            patterns: HashMap::new(),
         }
     }
 
@@ -906,7 +910,8 @@ impl RuleDatabase {
             host_exceptions.len()
         );
 
-        let mut new_set: HashSet<String> = HashSet::new();
+        let mut new_hosts = HashMap::<String, bool>::new();
+        let mut new_patterns = HashMap::<String, bool>::new();
 
         let mut sorted_host_items = host_items
             .iter()
@@ -915,7 +920,7 @@ impl RuleDatabase {
         sorted_host_items.sort_by(|a, b| a.state.partial_cmp(&b.state).unwrap());
 
         for item in sorted_host_items.iter() {
-            self.load_item(&mut new_set, item);
+            self.load_item(&mut new_hosts, &mut new_patterns, item);
         }
 
         let mut sorted_host_exceptions = host_exceptions
@@ -925,14 +930,31 @@ impl RuleDatabase {
         sorted_host_exceptions.sort_by(|a, b| a.state.partial_cmp(&b.state).unwrap());
 
         for exception in sorted_host_exceptions {
-            self.add_host(&mut new_set, &exception.state, exception.data.clone());
+            self.add_host(
+                &mut new_hosts,
+                &mut new_patterns,
+                &exception.state,
+                exception.data.clone(),
+            );
         }
 
-        self.blocked_hosts = Arc::new(new_set);
+        self.hosts = new_hosts;
+        self.patterns = new_patterns;
+
+        info!(
+            "initialize: Loaded {} hosts and {} patterns",
+            self.hosts.len(),
+            self.patterns.len()
+        );
     }
 
     /// Loads a generic host (file or single host) and adds them to the block list
-    fn load_item(&mut self, set: &mut HashSet<String>, host: &NativeHost) {
+    fn load_item(
+        &mut self,
+        new_blocked_hosts: &mut HashMap<String, bool>,
+        new_blocked_patterns: &mut HashMap<String, bool>,
+        host: &NativeHost,
+    ) {
         if host.state == NativeHostState::IGNORE {
             return;
         }
@@ -944,31 +966,101 @@ impl RuleDatabase {
             Some(value) => {
                 let file = unsafe { File::from_raw_fd(value) };
                 let lines: io::Lines<io::BufReader<File>> = io::BufReader::new(file).lines();
-                self.load_file(set, &host, lines);
+                self.load_file(new_blocked_hosts, new_blocked_patterns, &host, lines);
             }
             None => {
                 warn!(
                     "Failed to open {}. Attempting to add as single host.",
                     host.data
                 );
-                self.add_host(set, &host.state, host.data.clone());
+                self.add_host(
+                    new_blocked_hosts,
+                    new_blocked_patterns,
+                    &host.state,
+                    host.data.clone(),
+                );
             }
         };
     }
 
     /// Adds a single host to the block list
-    fn add_host(&mut self, set: &mut HashSet<String>, state: &NativeHostState, data: String) {
+    fn add_host(
+        &mut self,
+        new_hosts: &mut HashMap<String, bool>,
+        new_patterns: &mut HashMap<String, bool>,
+        state: &NativeHostState,
+        data: String,
+    ) {
+        match data.get(..2) {
+            Some(first_two_chars) => {
+                // Star pseudo-wildcard style e.g. *.example.com
+                if first_two_chars.chars().nth(0).unwrap() == '*' {
+                    // Ignore the *. at the start of a pseudo-wildcard host
+                    match data.get(2..data.len()) {
+                        Some(value) => {
+                            match state {
+                                NativeHostState::IGNORE => {}
+                                NativeHostState::DENY => {
+                                    new_patterns.insert(value.to_owned(), true);
+                                }
+                                NativeHostState::ALLOW => {
+                                    new_patterns.insert(value.to_owned(), false);
+                                }
+                            };
+                        }
+                        None => {}
+                    };
+                    return;
+                } else if first_two_chars == "||" {
+                    // AdBlock Plus style pseudo-wildcard e.g. ||example.com^
+                    match data.chars().last() {
+                        Some(last_char) => {
+                            if last_char == '^' {
+                                match data.get(2..data.len() - 1) {
+                                    Some(value) => {
+                                        match state {
+                                            NativeHostState::IGNORE => {}
+                                            NativeHostState::DENY => {
+                                                new_patterns.insert(value.to_owned(), true);
+                                            }
+                                            NativeHostState::ALLOW => {
+                                                new_patterns.insert(value.to_owned(), false);
+                                            }
+                                        };
+                                    }
+                                    None => {}
+                                };
+                            }
+                        }
+                        None => {}
+                    };
+                    return;
+                }
+            }
+            None => return,
+        };
+
+        // Reject invalid characters in hostname
+        if !data
+            .chars()
+            .all(|c| c.is_alphanumeric() || c == '.' || c == '-')
+        {
+            return;
+        }
+
+        // Plain host e.g. example.com
         match state {
             NativeHostState::IGNORE => return,
-            NativeHostState::DENY => set.insert(data),
-            NativeHostState::ALLOW => set.remove(&data),
+            NativeHostState::DENY => new_hosts.insert(data, true),
+            NativeHostState::ALLOW => new_hosts.insert(data, false),
         };
     }
 
     /// Loads a file of hosts and adds them to the block list
     fn load_file(
         &mut self,
-        set: &mut HashSet<String>,
+        new_hosts: &mut HashMap<String, bool>,
+        new_patterns: &mut HashMap<String, bool>,
         host: &NativeHost,
         lines: io::Lines<io::BufReader<File>>,
     ) {
@@ -978,7 +1070,7 @@ impl RuleDatabase {
                 Ok(value) => {
                     let data = Self::parse_line(value.as_str());
                     if data.is_some() {
-                        self.add_host(set, &host.state, data.unwrap());
+                        self.add_host(new_hosts, new_patterns, &host.state, data.unwrap());
                     }
                     count += 1;
                 }
@@ -996,7 +1088,21 @@ impl RuleDatabase {
 
     /// Checks if a host is blocked
     fn is_blocked(&self, host: &str) -> bool {
-        self.blocked_hosts.contains(host)
+        if let Some(value) = self.hosts.get(host) {
+            return *value;
+        } else {
+            let mut sub_host = host.to_owned();
+            for split in host.split('.') {
+                if let Some(value) = self.patterns.get(&sub_host) {
+                    return *value;
+                }
+                sub_host = sub_host.replace(&(split.to_owned() + "."), "");
+                if !sub_host.contains('.') {
+                    break;
+                }
+            }
+            return false;
+        }
     }
 }
 
@@ -1005,7 +1111,6 @@ impl RuleDatabase {
 pub trait BlockLoggerCallback: Send + Sync {
     fn log(&self, connection_name: String, allowed: bool);
 }
-
 
 /// Handler for DNS packets that accepts or blocks them based on our [RuleDatabase]
 struct DnsPacketProxy<'a> {
@@ -1206,7 +1311,7 @@ impl<'a> DnsPacketProxy<'a> {
 
             let mut wire = Vec::<u8>::new();
             match dns_packet.write_to(&mut wire) {
-                Ok(_) => debug!("Packet written to wire successfully!"),
+                Ok(_) => {}
                 Err(e) => {
                     error!("Failed to write DNS packet to wire! - {:?}", e);
                     return;
