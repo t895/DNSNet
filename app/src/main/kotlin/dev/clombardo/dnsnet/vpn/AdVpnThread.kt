@@ -140,16 +140,12 @@ class AdVpnThread(
             threadData?.vpnController?.stop()
             threadData?.thread?.interrupt()
             try {
-                threadData?.thread?.join(2000)
+                threadData?.thread?.join()
             } catch (e: InterruptedException) {
                 logw("stopThread: Interrupted while joining thread", e)
             }
-            if (threadData != null && threadData?.thread?.isAlive == true) {
-                logw("stopThread: Could not kill VPN thread, it is still alive")
-            } else {
-                threadData = null
-                logi("Vpn Thread stopped")
-            }
+            threadData = null
+            logi("Vpn Thread stopped")
         }
     }
 
