@@ -28,10 +28,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.core.net.toUri
 import dev.clombardo.dnsnet.R
+import dev.clombardo.dnsnet.tryOpenUri
 import dev.clombardo.dnsnet.ui.theme.ListPadding
 import io.github.usefulness.licensee.Artifact
 import io.github.usefulness.licensee.LicenseeForAndroid
@@ -44,12 +47,13 @@ fun LicenseListItem(
     licenseLink: String,
 ) {
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current
     ContentSetting(
         modifier = modifier.roundedClickable(
             enabled = true,
             interactionSource = remember { MutableInteractionSource() },
             role = Role.Button,
-            onClick = { uriHandler.openUri(licenseLink) },
+            onClick = { uriHandler.tryOpenUri(context, licenseLink.toUri()) },
         ),
         title = title,
         details = details,
