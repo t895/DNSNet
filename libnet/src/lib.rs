@@ -682,13 +682,17 @@ impl AdVpn {
             Ok(value) => value,
             Err(e) => {
                 error!("forward_packet: Failed to create socket! - {:?}", e);
-                let os_error = e.raw_os_error();
-                if os_error.is_some() {
-                    return Self::eval_socket_error(os_error.unwrap());
-                }
                 return false;
             }
         };
+
+        match socket.set_nonblocking(true) {
+            Ok(_) => {},
+            Err(e) => {
+                error!("forward_packet: Failed to set socket to non-blocking! - {:?}", e);
+                return false;
+            }
+        }
 
         // Packets to be sent to the real DNS server will need to be protected from the VPN
         if !android_vpn_service.protect_raw_socket_fd(socket.as_raw_fd()) {
