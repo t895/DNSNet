@@ -13,7 +13,6 @@ package dev.clombardo.dnsnet.ui
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
-import android.os.Parcelable
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -70,17 +69,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
 import dev.clombardo.dnsnet.R
 import dev.clombardo.dnsnet.tryOpenUri
 import dev.clombardo.dnsnet.ui.theme.DnsNetTheme
-import kotlinx.parcelize.Parcelize
-import kotlinx.serialization.Serializable
 
 object Setup {
     const val KEY_ICON = "icon"
@@ -90,57 +84,6 @@ object Setup {
     val padding
         @Composable
         get() = WindowInsets.systemBars.union(WindowInsets.displayCutout)
-}
-
-@Parcelize
-@Serializable
-open class SetupDestination : Parcelable {
-    @Parcelize
-    @Serializable
-    data object Greeting : SetupDestination()
-
-    @Parcelize
-    @Serializable
-    data object Notice : SetupDestination()
-}
-
-@Composable
-fun SetupScreen(
-    modifier: Modifier = Modifier,
-    onContinueClick: () -> Unit,
-) {
-    SharedTransitionLayout(modifier = modifier) {
-        val navController = rememberNavController()
-        NavHost(
-            navController = navController,
-            startDestination = SetupDestination.Greeting,
-        ) {
-            composable<SetupDestination.Greeting> {
-                GreetingScreen(
-                    onGetStartedClick = {
-                        navController.popNavigate(SetupDestination.Notice)
-                    },
-                    animatedVisibilityScope = this,
-                    sharedTransitionScope = this@SharedTransitionLayout,
-                )
-            }
-            composable<SetupDestination.Notice> {
-                NoticeScreen(
-                    onContinueClick = onContinueClick,
-                    animatedVisibilityScope = this,
-                    sharedTransitionScope = this@SharedTransitionLayout,
-                )
-            }
-        }
-    }
-}
-
-@Preview
-@Composable
-private fun SetupScreenPreview() {
-    DnsNetTheme {
-        SetupScreen(onContinueClick = {})
-    }
 }
 
 @Composable

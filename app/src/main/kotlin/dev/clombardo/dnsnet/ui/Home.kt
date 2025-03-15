@@ -9,13 +9,14 @@
 package dev.clombardo.dnsnet.ui
 
 import android.annotation.SuppressLint
-import android.os.Build
 import android.os.Parcelable
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -40,21 +41,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -67,9 +64,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import androidx.window.core.layout.WindowWidthSizeClass
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
-import com.google.accompanist.permissions.rememberPermissionState
 import dev.clombardo.dnsnet.DnsNetApplication.Companion.applicationContext
 import dev.clombardo.dnsnet.DnsServer
 import dev.clombardo.dnsnet.Host
@@ -130,7 +124,7 @@ object HomeDestinations {
 
 @Parcelize
 @Serializable
-open class TopLevelDestination: Parcelable {
+sealed class TopLevelDestination : Parcelable {
     @Parcelize
     @Serializable
     data object About : TopLevelDestination()
@@ -149,7 +143,11 @@ open class TopLevelDestination: Parcelable {
 
     @Parcelize
     @Serializable
-    data object Setup : TopLevelDestination()
+    data object Greeting : TopLevelDestination()
+
+    @Parcelize
+    @Serializable
+    data object Notice : TopLevelDestination()
 }
 
 object Home {
@@ -205,6 +203,7 @@ object Home {
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @SuppressLint("RestrictedApi")
 @Composable
 fun App(
@@ -335,144 +334,164 @@ fun App(
         )
     }
 
-    val navController = rememberNavController()
-    NavHost(
-        modifier = modifier.background(MaterialTheme.colorScheme.surface),
-        navController = navController,
-        startDestination = if (Preferences.SetupComplete) {
-            TopLevelDestination.Home
-        } else {
-            TopLevelDestination.Setup
-        },
-        enterTransition = Home.TopLevelEnter,
-        exitTransition = Home.TopLevelExit,
-        popEnterTransition = Home.TopLevelPopEnter,
-        popExitTransition = Home.TopLevelPopExit,
-    ) {
-        composable<TopLevelDestination.Setup> {
-            SetupScreen(
-                onContinueClick = {
-                    navController.popNavigate(TopLevelDestination.Home)
-                    Preferences.SetupComplete = true
-                },
-            )
-        }
-        composable<TopLevelDestination.Home> {
-            vm.showStatusBarShade()
-            val status by AdVpnService.status.collectAsState()
-            HomeScreen(
-                vm = vm,
-                topLevelNavController = navController,
-                status = status,
-                onRefreshHosts = onRefreshHosts,
-                onImport = onImport,
-                onExport = onExport,
-                onShareLogcat = onShareLogcat,
-                onTryToggleService = onTryToggleService,
-                onRestartService = onRestartService,
-                onUpdateRefreshWork = onUpdateRefreshWork,
-            )
-        }
-        composable<HostFile> { backstackEntry ->
-            vm.hideStatusBarShade()
-            val host = backstackEntry.toRoute<HostFile>()
-            EditHostDestination(
-                host = host,
-                vm = vm,
-                onPopBackStack = { navController.tryPopBackstack(backstackEntry.id) },
-                onRestartService = onRestartService,
-            )
-        }
-        composable<HostException> { backstackEntry ->
-            vm.hideStatusBarShade()
-            val host = backstackEntry.toRoute<HostException>()
-            EditHostDestination(
-                host = host,
-                vm = vm,
-                onPopBackStack = { navController.tryPopBackstack(backstackEntry.id) },
-                onRestartService = onRestartService,
-            )
-        }
-        composable<DnsServer> { backstackEntry ->
-            vm.hideStatusBarShade()
-            val server = backstackEntry.toRoute<DnsServer>()
-
-            val showDeleteDnsServerWarningDialog by
-            vm.showDeleteDnsServerWarningDialog.collectAsState()
-            if (showDeleteDnsServerWarningDialog) {
-                BasicDialog(
-                    title = stringResource(R.string.warning),
-                    text = stringResource(
-                        R.string.permanently_delete_warning_description,
-                        server.title
-                    ),
-                    primaryButton = DialogButton(
-                        text = stringResource(R.string.action_delete),
-                        onClick = {
-                            vm.removeDnsServer(server)
-                            vm.onDismissDeleteDnsServerWarning()
-                            navController.tryPopBackstack(backstackEntry.id)
-                            onRestartService()
-                        },
-                    ),
-                    secondaryButton = DialogButton(
-                        text = stringResource(android.R.string.cancel),
-                        onClick = { vm.onDismissDeleteDnsServerWarning() },
-                    ),
-                    onDismissRequest = { vm.onDismissDeleteDnsServerWarning() },
+    SharedTransitionLayout {
+        val navController = rememberNavController()
+        NavHost(
+            modifier = modifier.background(MaterialTheme.colorScheme.surface),
+            navController = navController,
+            startDestination = TopLevelDestination.Home,
+            enterTransition = Home.TopLevelEnter,
+            exitTransition = Home.TopLevelExit,
+            popEnterTransition = Home.TopLevelPopEnter,
+            popExitTransition = Home.TopLevelPopExit,
+        ) {
+            composable<TopLevelDestination.Greeting> {
+                vm.hideStatusBarShade()
+                GreetingScreen(
+                    onGetStartedClick = {
+                        navController.popNavigate(TopLevelDestination.Notice)
+                    },
+                    animatedVisibilityScope = this@composable,
+                    sharedTransitionScope = this@SharedTransitionLayout,
                 )
             }
+            composable<TopLevelDestination.Notice> {
+                vm.showStatusBarShade()
+                NoticeScreen(
+                    onContinueClick = {
+                        Preferences.SetupComplete = true
+                        navController.popNavigate(TopLevelDestination.Home)
+                    },
+                    animatedVisibilityScope = this@composable,
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                )
+            }
+            composable<TopLevelDestination.Home> {
+                if (!Preferences.SetupComplete && !vm.setupShown) {
+                    vm.setupShown = true
+                    navController.navigate(TopLevelDestination.Greeting)
+                }
 
-            EditDnsScreen(
-                server = server,
-                onNavigateUp = { navController.tryPopBackstack(backstackEntry.id) },
-                onSave = { savedServer ->
-                    if (server.title.isEmpty()) {
-                        vm.addDnsServer(savedServer)
-                    } else {
-                        vm.replaceDnsServer(server, savedServer)
-                    }
-                    navController.tryPopBackstack(backstackEntry.id)
-                    onRestartService()
-                },
-                onDelete = if (server.title.isEmpty()) {
-                    null
-                } else {
-                    { vm.onDeleteDnsServerWarning() }
-                },
-            )
-        }
-        composable<TopLevelDestination.About> {
-            vm.hideStatusBarShade()
-            AboutScreen(
-                onNavigateUp = { navController.tryPopBackstack(it.id) },
-                onOpenCredits = { navController.navigate(TopLevelDestination.Credits) },
-            )
-        }
-        composable<TopLevelDestination.BlockLog> {
-            vm.hideStatusBarShade()
-            BlockLogScreen(
-                onNavigateUp = { navController.tryPopBackstack(it.id) },
-                listViewModel = viewModel(),
-                loggedConnections = vm.connectionsLog,
-                onCreateException = {
-                    navController.navigate(
-                        HostException(
-                            title = "",
-                            data = it.hostname,
-                            state = if (it.allowed) {
-                                HostState.DENY
-                            } else {
-                                HostState.ALLOW
-                            },
-                        )
+                if (!navController.containsRoute<TopLevelDestination.Greeting>() &&
+                    !navController.containsRoute<TopLevelDestination.Notice>()
+                ) {
+                    vm.showStatusBarShade()
+                    val status by AdVpnService.status.collectAsState()
+                    HomeScreen(
+                        vm = vm,
+                        topLevelNavController = navController,
+                        status = status,
+                        onRefreshHosts = onRefreshHosts,
+                        onImport = onImport,
+                        onExport = onExport,
+                        onShareLogcat = onShareLogcat,
+                        onTryToggleService = onTryToggleService,
+                        onRestartService = onRestartService,
+                        onUpdateRefreshWork = onUpdateRefreshWork,
                     )
-                },
-            )
-        }
-        composable<TopLevelDestination.Credits> {
-            vm.hideStatusBarShade()
-            CreditsScreen { navController.tryPopBackstack(it.id) }
+                }
+            }
+            composable<HostFile> { backstackEntry ->
+                vm.hideStatusBarShade()
+                val host = backstackEntry.toRoute<HostFile>()
+                EditHostDestination(
+                    host = host,
+                    vm = vm,
+                    onPopBackStack = { navController.tryPopBackstack(backstackEntry.id) },
+                    onRestartService = onRestartService,
+                )
+            }
+            composable<HostException> { backstackEntry ->
+                vm.hideStatusBarShade()
+                val host = backstackEntry.toRoute<HostException>()
+                EditHostDestination(
+                    host = host,
+                    vm = vm,
+                    onPopBackStack = { navController.tryPopBackstack(backstackEntry.id) },
+                    onRestartService = onRestartService,
+                )
+            }
+            composable<DnsServer> { backstackEntry ->
+                vm.hideStatusBarShade()
+                val server = backstackEntry.toRoute<DnsServer>()
+
+                val showDeleteDnsServerWarningDialog by
+                vm.showDeleteDnsServerWarningDialog.collectAsState()
+                if (showDeleteDnsServerWarningDialog) {
+                    BasicDialog(
+                        title = stringResource(R.string.warning),
+                        text = stringResource(
+                            R.string.permanently_delete_warning_description,
+                            server.title
+                        ),
+                        primaryButton = DialogButton(
+                            text = stringResource(R.string.action_delete),
+                            onClick = {
+                                vm.removeDnsServer(server)
+                                vm.onDismissDeleteDnsServerWarning()
+                                navController.tryPopBackstack(backstackEntry.id)
+                                onRestartService()
+                            },
+                        ),
+                        secondaryButton = DialogButton(
+                            text = stringResource(android.R.string.cancel),
+                            onClick = { vm.onDismissDeleteDnsServerWarning() },
+                        ),
+                        onDismissRequest = { vm.onDismissDeleteDnsServerWarning() },
+                    )
+                }
+
+                EditDnsScreen(
+                    server = server,
+                    onNavigateUp = { navController.tryPopBackstack(backstackEntry.id) },
+                    onSave = { savedServer ->
+                        if (server.title.isEmpty()) {
+                            vm.addDnsServer(savedServer)
+                        } else {
+                            vm.replaceDnsServer(server, savedServer)
+                        }
+                        navController.tryPopBackstack(backstackEntry.id)
+                        onRestartService()
+                    },
+                    onDelete = if (server.title.isEmpty()) {
+                        null
+                    } else {
+                        { vm.onDeleteDnsServerWarning() }
+                    },
+                )
+            }
+            composable<TopLevelDestination.About> {
+                vm.hideStatusBarShade()
+                AboutScreen(
+                    onNavigateUp = { navController.tryPopBackstack(it.id) },
+                    onOpenCredits = { navController.navigate(TopLevelDestination.Credits) },
+                )
+            }
+            composable<TopLevelDestination.BlockLog> {
+                vm.hideStatusBarShade()
+                BlockLogScreen(
+                    onNavigateUp = { navController.tryPopBackstack(it.id) },
+                    listViewModel = viewModel(),
+                    loggedConnections = vm.connectionsLog,
+                    onCreateException = {
+                        navController.navigate(
+                            HostException(
+                                title = "",
+                                data = it.hostname,
+                                state = if (it.allowed) {
+                                    HostState.DENY
+                                } else {
+                                    HostState.ALLOW
+                                },
+                            )
+                        )
+                    },
+                )
+            }
+            composable<TopLevelDestination.Credits> {
+                vm.hideStatusBarShade()
+                CreditsScreen { navController.tryPopBackstack(it.id) }
+            }
         }
     }
 }

@@ -13,6 +13,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.clombardo.dnsnet.DnsNetApplication.Companion.applicationContext
@@ -37,7 +38,9 @@ import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
-class HomeViewModel : ViewModel() {
+class HomeViewModel(
+    private val savedStateHandle: SavedStateHandle
+) : ViewModel() {
     private val _showUpdateIncompleteDialog = MutableStateFlow(false)
     val showUpdateIncompleteDialog = _showUpdateIncompleteDialog.asStateFlow()
 
@@ -62,9 +65,6 @@ class HomeViewModel : ViewModel() {
 
     private val _showFilePermissionDeniedDialog = MutableStateFlow(false)
     val showFilePermissionDeniedDialog = _showFilePermissionDeniedDialog.asStateFlow()
-
-    private val _showNotificationPermissionDialog = MutableStateFlow(false)
-    val showNotificationPermissionDialog = _showNotificationPermissionDialog.asStateFlow()
 
     private val _showVpnConfigurationFailureDialog = MutableStateFlow(false)
     val showVpnConfigurationFailureDialog = _showVpnConfigurationFailureDialog.asStateFlow()
@@ -94,6 +94,12 @@ class HomeViewModel : ViewModel() {
     val isWritingLogcat = _isWritingLogcat.asStateFlow()
 
     private var logcatLock = atomic(false)
+
+    var setupShown: Boolean = savedStateHandle.get<Boolean>(KEY_SETUP_SHOWN) == true
+        set(value) {
+            savedStateHandle[KEY_SETUP_SHOWN] = value
+            field = value
+        }
 
     init {
         _connectionsLog.putAll(AdVpnService.logger.connections)
@@ -448,5 +454,9 @@ class HomeViewModel : ViewModel() {
             logcatLock.getAndSet(false)
             _isWritingLogcat.value = false
         }
+    }
+
+    companion object {
+        const val KEY_SETUP_SHOWN = "setupShown"
     }
 }

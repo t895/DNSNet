@@ -11,6 +11,7 @@ package dev.clombardo.dnsnet.ui
 import android.annotation.SuppressLint
 import androidx.navigation.NavController
 import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavDestination.Companion.hasRoute
 
 /**
  * Wrapper around [NavController.popBackStack] that prevents you from popping every item in the backstack.
@@ -43,3 +44,12 @@ fun <T : Any> NavController.popNavigate(route: T) {
         restoreState = true
     }
 }
+
+/**
+ * Checks if the current backstack contains a typed route.
+ *
+ * @param T Type of route to search for
+ */
+@SuppressLint("RestrictedApi")
+inline fun <reified T : Any> NavController.containsRoute(): Boolean =
+    currentBackStack.value.any { it.destination.hasRoute<T>() }
