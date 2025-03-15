@@ -209,7 +209,6 @@ class AdVpnThread(
     )
     private fun runVpn() {
         // Authenticate and configure the virtual network interface.
-        notify(VpnStatus.RUNNING)
         val vpnFd = configure() ?: throw PrepareFailedException("Got null descriptor from system")
         runVpnNative(
             adVpnCallback = adVpnService,
