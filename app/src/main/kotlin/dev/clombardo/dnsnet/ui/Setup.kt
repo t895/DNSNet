@@ -13,6 +13,7 @@ package dev.clombardo.dnsnet.ui
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Parcelable
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -78,6 +79,7 @@ import com.google.accompanist.permissions.rememberPermissionState
 import dev.clombardo.dnsnet.R
 import dev.clombardo.dnsnet.tryOpenUri
 import dev.clombardo.dnsnet.ui.theme.DnsNetTheme
+import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 
 object Setup {
@@ -90,11 +92,14 @@ object Setup {
         get() = WindowInsets.systemBars.union(WindowInsets.displayCutout)
 }
 
+@Parcelize
 @Serializable
-open class SetupDestination {
+open class SetupDestination : Parcelable {
+    @Parcelize
     @Serializable
     data object Greeting : SetupDestination()
 
+    @Parcelize
     @Serializable
     data object Notice : SetupDestination()
 }

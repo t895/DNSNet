@@ -128,20 +128,26 @@ object HomeDestinations {
     data object DNS : HomeDestination(HomeDestinationIcon.DNS, R.string.dns_tab)
 }
 
+@Parcelize
 @Serializable
-open class TopLevelDestination {
+open class TopLevelDestination: Parcelable {
+    @Parcelize
     @Serializable
     data object About : TopLevelDestination()
 
+    @Parcelize
     @Serializable
     data object Home : TopLevelDestination()
 
+    @Parcelize
     @Serializable
     data object BlockLog : TopLevelDestination()
 
+    @Parcelize
     @Serializable
     data object Credits : TopLevelDestination()
 
+    @Parcelize
     @Serializable
     data object Setup : TopLevelDestination()
 }
