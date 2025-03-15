@@ -77,7 +77,7 @@ class RuleDatabaseUpdateWorker(
         config.hosts.items.forEach {
             val update = RuleDatabaseItemUpdate(context, this@RuleDatabaseUpdateWorker, it)
             if (update.shouldDownload()) {
-                val job = async { update.run() }
+                val job = async(context = coroutineContext) { update.run() }
                 job.start()
                 jobs.add(job)
             }
