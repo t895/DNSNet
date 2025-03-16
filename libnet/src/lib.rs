@@ -839,11 +839,17 @@ enum RuleDatabaseError {
     Interrupted,
 }
 
+/// Whether a single host should be denied or allowed
+enum HostnameAction {
+    Deny,
+    Allow,
+}
+
 /// Holds the block list and manages the loading of the block list
 struct RuleDatabase {
     android_file_helper: Box<dyn AndroidFileHelper>,
-    hosts: HashMap<String, bool>,
-    patterns: HashMap<String, bool>,
+    hosts: HashMap<String, HostnameAction>,
+    patterns: HashMap<String, HostnameAction>,
 }
 
 impl RuleDatabase {
@@ -939,8 +945,8 @@ impl RuleDatabase {
             host_exceptions.len()
         );
 
-        let mut new_hosts = HashMap::<String, bool>::new();
-        let mut new_patterns = HashMap::<String, bool>::new();
+        let mut new_hosts = HashMap::<String, HostnameAction>::new();
+        let mut new_patterns = HashMap::<String, HostnameAction>::new();
 
         let mut sorted_host_items = host_items
             .iter()
@@ -1004,8 +1010,8 @@ impl RuleDatabase {
     fn load_item(
         &mut self,
         vpn_controller: &Arc<VpnController>,
-        new_blocked_hosts: &mut HashMap<String, bool>,
-        new_blocked_patterns: &mut HashMap<String, bool>,
+        new_blocked_hosts: &mut HashMap<String, HostnameAction>,
+        new_blocked_patterns: &mut HashMap<String, HostnameAction>,
         host: &NativeHost,
     ) -> Result<(), RuleDatabaseError> {
         if host.state == NativeHostState::IGNORE {
@@ -1064,8 +1070,8 @@ impl RuleDatabase {
     fn add_host(
         &mut self,
         vpn_controller: &Arc<VpnController>,
-        new_hosts: &mut HashMap<String, bool>,
-        new_patterns: &mut HashMap<String, bool>,
+        new_hosts: &mut HashMap<String, HostnameAction>,
+        new_patterns: &mut HashMap<String, HostnameAction>,
         state: &NativeHostState,
         data: String,
     ) -> Result<(), RuleDatabaseError> {
@@ -1083,10 +1089,10 @@ impl RuleDatabase {
                             match state {
                                 NativeHostState::IGNORE => {}
                                 NativeHostState::DENY => {
-                                    new_patterns.insert(value.to_owned(), true);
+                                    new_patterns.insert(value.to_owned(), HostnameAction::Deny);
                                 }
                                 NativeHostState::ALLOW => {
-                                    new_patterns.insert(value.to_owned(), false);
+                                    new_patterns.insert(value.to_owned(), HostnameAction::Allow);
                                 }
                             };
                             Ok(())
@@ -1103,10 +1109,10 @@ impl RuleDatabase {
                                         match state {
                                             NativeHostState::IGNORE => {}
                                             NativeHostState::DENY => {
-                                                new_patterns.insert(value.to_owned(), true);
+                                                new_patterns.insert(value.to_owned(), HostnameAction::Deny);
                                             }
                                             NativeHostState::ALLOW => {
-                                                new_patterns.insert(value.to_owned(), false);
+                                                new_patterns.insert(value.to_owned(), HostnameAction::Allow);
                                             }
                                         };
                                         Ok(())
@@ -1135,10 +1141,10 @@ impl RuleDatabase {
         match state {
             NativeHostState::IGNORE => {},
             NativeHostState::DENY => {
-                new_hosts.insert(data, true);
+                new_hosts.insert(data, HostnameAction::Deny);
             }
             NativeHostState::ALLOW => {
-                new_hosts.insert(data, false);
+                new_hosts.insert(data, HostnameAction::Allow);
             }
         };
         return Ok(());
@@ -1148,8 +1154,8 @@ impl RuleDatabase {
     fn load_file(
         &mut self,
         vpn_controller: &Arc<VpnController>,
-        new_hosts: &mut HashMap<String, bool>,
-        new_patterns: &mut HashMap<String, bool>,
+        new_hosts: &mut HashMap<String, HostnameAction>,
+        new_patterns: &mut HashMap<String, HostnameAction>,
         host: &NativeHost,
         lines: io::Lines<io::BufReader<File>>,
     ) -> Result<(), RuleDatabaseError> {
@@ -1193,12 +1199,18 @@ impl RuleDatabase {
     /// Checks if a host is blocked
     fn is_blocked(&self, host: &str) -> bool {
         if let Some(value) = self.hosts.get(host) {
-            return *value;
+            return match value {
+                HostnameAction::Deny => true,
+                HostnameAction::Allow => false,
+            };
         } else {
             let mut sub_host = host.to_owned();
             for split in host.split('.') {
                 if let Some(value) = self.patterns.get(&sub_host) {
-                    return *value;
+                    return match value {
+                        HostnameAction::Deny => true,
+                        HostnameAction::Allow => false,
+                    };
                 }
                 sub_host = sub_host.replace(&(split.to_owned() + "."), "");
                 if !sub_host.contains('.') {
