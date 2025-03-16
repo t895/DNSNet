@@ -429,12 +429,19 @@ impl AdVpn {
             block_logger_callback,
             android_file_helper,
         );
-        dns_packet_proxy.initialize(
+        match dns_packet_proxy.initialize(
             &self.vpn_controller,
             host_items,
             host_exceptions,
             upstream_dns_servers,
-        );
+        ) {
+            Ok(_) => {},
+            Err(error) => {
+                match error {
+                    DnsPacketProxyError::Interrupted => return Ok(()),
+                }
+            },
+        };
 
         let poller = match Poller::new() {
             Ok(value) => value,
@@ -827,6 +834,11 @@ pub struct NativeHost {
     state: NativeHostState,
 }
 
+enum RuleDatabaseError {
+    BadHostFormat,
+    Interrupted,
+}
+
 /// Holds the block list and manages the loading of the block list
 struct RuleDatabase {
     android_file_helper: Box<dyn AndroidFileHelper>,
@@ -920,7 +932,7 @@ impl RuleDatabase {
         vpn_controller: &Arc<VpnController>,
         host_items: Vec<NativeHost>,
         host_exceptions: Vec<NativeHost>,
-    ) {
+    ) -> Result<(), RuleDatabaseError> {
         info!(
             "initialize: Loading block list with {} hosts and {} exceptions",
             host_items.len(),
@@ -937,11 +949,20 @@ impl RuleDatabase {
         sorted_host_items.sort_by(|a, b| a.state.partial_cmp(&b.state).unwrap());
 
         for item in sorted_host_items.iter() {
-            let interrupted =
-                !self.load_item(vpn_controller, &mut new_hosts, &mut new_patterns, item);
-            if interrupted {
-                return;
-            }
+            match self.load_item(
+                vpn_controller,
+                &mut new_hosts,
+                &mut new_patterns,
+                item
+            ) {
+                Ok(_) => {},
+                Err(error) => {
+                    match error {
+                        RuleDatabaseError::BadHostFormat => {},
+                        RuleDatabaseError::Interrupted => return Err(error),
+                    }
+                },
+            };
         }
 
         let mut sorted_host_exceptions = host_exceptions
@@ -951,16 +972,21 @@ impl RuleDatabase {
         sorted_host_exceptions.sort_by(|a, b| a.state.partial_cmp(&b.state).unwrap());
 
         for exception in sorted_host_exceptions {
-            let interrupted = !self.add_host(
+            match self.add_host(
                 vpn_controller,
                 &mut new_hosts,
                 &mut new_patterns,
                 &exception.state,
                 exception.data.clone(),
-            );
-            if interrupted {
-                return;
-            }
+            ) {
+                Ok(_) => {},
+                Err(error) => {
+                    match error {
+                        RuleDatabaseError::BadHostFormat => {},
+                        RuleDatabaseError::Interrupted => return Err(error),
+                    }
+                },
+            };
         }
 
         self.hosts = new_hosts;
@@ -971,21 +997,19 @@ impl RuleDatabase {
             self.hosts.len(),
             self.patterns.len()
         );
+        return Ok(());
     }
 
     /// Loads a generic host (file or single host) and adds them to the block list
-    ///
-    /// Returns true regardless of successfully adding the host item or not.
-    /// Returns false if the [VpnController] indicates that we were stopped by the user.
     fn load_item(
         &mut self,
         vpn_controller: &Arc<VpnController>,
         new_blocked_hosts: &mut HashMap<String, bool>,
         new_blocked_patterns: &mut HashMap<String, bool>,
         host: &NativeHost,
-    ) -> bool {
+    ) -> Result<(), RuleDatabaseError> {
         if host.state == NativeHostState::IGNORE {
-            return true;
+            return Err(RuleDatabaseError::Interrupted);
         }
 
         match self
@@ -995,41 +1019,48 @@ impl RuleDatabase {
             Some(value) => {
                 let file = unsafe { File::from_raw_fd(value) };
                 let lines: io::Lines<io::BufReader<File>> = io::BufReader::new(file).lines();
-                let interrupted = !self.load_file(
+                match self.load_file(
                     vpn_controller,
                     new_blocked_hosts,
                     new_blocked_patterns,
                     &host,
                     lines,
-                );
-                if interrupted {
-                    return false;
-                }
+                ) {
+                    Ok(_) => {},
+                    Err(error) => {
+                        match error {
+                            RuleDatabaseError::BadHostFormat => {},
+                            RuleDatabaseError::Interrupted => return Err(error),
+                        }
+                    },
+                };
             }
             None => {
                 warn!(
                     "Failed to open {}. Attempting to add as single host.",
                     host.data
                 );
-                let interrupted = !self.add_host(
+                match self.add_host(
                     vpn_controller,
                     new_blocked_hosts,
                     new_blocked_patterns,
                     &host.state,
                     host.data.clone(),
-                );
-                if interrupted {
-                    return false;
-                }
+                ) {
+                    Ok(_) => {},
+                    Err(error) => {
+                        match error {
+                            RuleDatabaseError::BadHostFormat => {},
+                            RuleDatabaseError::Interrupted => return Err(error),
+                        }
+                    },
+                };
             }
         };
-        return true;
+        return Ok(());
     }
 
     /// Adds a single host to the block list
-    ///
-    /// Returns true regardless of successfully adding the host or not.
-    /// Returns false if the [VpnController] indicates that we were stopped by the user.
     fn add_host(
         &mut self,
         vpn_controller: &Arc<VpnController>,
@@ -1037,9 +1068,9 @@ impl RuleDatabase {
         new_patterns: &mut HashMap<String, bool>,
         state: &NativeHostState,
         data: String,
-    ) -> bool {
+    ) -> Result<(), RuleDatabaseError> {
         if vpn_controller.get_should_stop() {
-            return false;
+            return Err(RuleDatabaseError::Interrupted);
         }
 
         match data.get(..2) {
@@ -1047,7 +1078,7 @@ impl RuleDatabase {
                 // Star pseudo-wildcard style e.g. *.example.com
                 if first_two_chars.chars().nth(0).unwrap() == '*' {
                     // Ignore the *. at the start of a pseudo-wildcard host
-                    match data.get(2..data.len()) {
+                    return match data.get(2..data.len()) {
                         Some(value) => {
                             match state {
                                 NativeHostState::IGNORE => {}
@@ -1058,16 +1089,16 @@ impl RuleDatabase {
                                     new_patterns.insert(value.to_owned(), false);
                                 }
                             };
+                            Ok(())
                         }
-                        None => {}
+                        None => Err(RuleDatabaseError::BadHostFormat),
                     };
-                    return true;
                 } else if first_two_chars == "||" {
                     // AdBlock Plus style pseudo-wildcard e.g. ||example.com^
                     match data.chars().last() {
                         Some(last_char) => {
                             if last_char == '^' {
-                                match data.get(2..data.len() - 1) {
+                                return match data.get(2..data.len() - 1) {
                                     Some(value) => {
                                         match state {
                                             NativeHostState::IGNORE => {}
@@ -1078,17 +1109,18 @@ impl RuleDatabase {
                                                 new_patterns.insert(value.to_owned(), false);
                                             }
                                         };
+                                        Ok(())
                                     }
-                                    None => {}
+                                    None => Err(RuleDatabaseError::BadHostFormat),
                                 };
                             }
                         }
-                        None => {}
+                        None => return Err(RuleDatabaseError::BadHostFormat),
                     };
-                    return true;
+                    return Err(RuleDatabaseError::BadHostFormat);
                 }
             }
-            None => return true,
+            None => return Err(RuleDatabaseError::BadHostFormat),
         };
 
         // Reject invalid characters in hostname
@@ -1096,22 +1128,23 @@ impl RuleDatabase {
             .chars()
             .all(|c| c.is_alphanumeric() || c == '.' || c == '-')
         {
-            return true;
+            return Err(RuleDatabaseError::BadHostFormat);
         }
 
         // Plain host e.g. example.com
         match state {
-            NativeHostState::IGNORE => return true,
-            NativeHostState::DENY => new_hosts.insert(data, true),
-            NativeHostState::ALLOW => new_hosts.insert(data, false),
+            NativeHostState::IGNORE => {},
+            NativeHostState::DENY => {
+                new_hosts.insert(data, true);
+            }
+            NativeHostState::ALLOW => {
+                new_hosts.insert(data, false);
+            }
         };
-        return true;
+        return Ok(());
     }
 
     /// Loads a file of hosts and adds them to the block list
-    ///
-    /// Returns true regardless of successfully loading the hostfile or not.
-    /// Returns false if the [VpnController] indicates that we were stopped by the user.
     fn load_file(
         &mut self,
         vpn_controller: &Arc<VpnController>,
@@ -1119,23 +1152,28 @@ impl RuleDatabase {
         new_patterns: &mut HashMap<String, bool>,
         host: &NativeHost,
         lines: io::Lines<io::BufReader<File>>,
-    ) -> bool {
+    ) -> Result<(), RuleDatabaseError> {
         let mut count = 0;
         for line in lines {
             match line {
                 Ok(value) => {
                     let data = Self::parse_line(value.as_str());
                     if data.is_some() {
-                        let interrupted = !self.add_host(
+                        match self.add_host(
                             vpn_controller,
                             new_hosts,
                             new_patterns,
                             &host.state,
                             data.unwrap(),
-                        );
-                        if interrupted {
-                            return false;
-                        }
+                        ) {
+                            Ok(_) => {},
+                            Err(error) => {
+                                match error {
+                                    RuleDatabaseError::BadHostFormat => {},
+                                    RuleDatabaseError::Interrupted => return Err(error),
+                                };
+                            }
+                        };
                     }
                     count += 1;
                 }
@@ -1144,12 +1182,12 @@ impl RuleDatabase {
                         "load_file: Error while reading {} after {} lines - {:?}",
                         &host.data, count, e
                     );
-                    return true;
+                    return Err(RuleDatabaseError::BadHostFormat);
                 }
             }
         }
         debug!("load_file: Loaded {} hosts from {}", count, &host.data);
-        return true;
+        return Ok(());
     }
 
     /// Checks if a host is blocked
@@ -1176,6 +1214,10 @@ impl RuleDatabase {
 #[uniffi::export(callback_interface)]
 pub trait BlockLoggerCallback: Send + Sync {
     fn log(&self, connection_name: String, allowed: bool);
+}
+
+enum DnsPacketProxyError {
+    Interrupted,
 }
 
 /// Handler for DNS packets that accepts or blocks them based on our [RuleDatabase]
@@ -1233,10 +1275,18 @@ impl<'a> DnsPacketProxy<'a> {
         host_items: Vec<NativeHost>,
         host_exceptions: Vec<NativeHost>,
         upstream_dns_servers: Vec<Vec<u8>>,
-    ) {
-        self.rule_database
-            .initialize(vpn_controller, host_items, host_exceptions);
+    ) -> Result<(), DnsPacketProxyError> {
+        match self.rule_database.initialize(vpn_controller, host_items, host_exceptions) {
+            Ok(_) => {},
+            Err(error) => {
+                match error {
+                    RuleDatabaseError::BadHostFormat => {},
+                    RuleDatabaseError::Interrupted => return Err(DnsPacketProxyError::Interrupted),
+                }
+            },
+        };
         self.upstream_dns_servers = upstream_dns_servers;
+        return Ok(());
     }
 
     /// Handles a DNS response and forwards it to the tunnel with the translated destination
