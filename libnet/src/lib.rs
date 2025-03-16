@@ -937,9 +937,9 @@ impl RuleDatabase {
         sorted_host_items.sort_by(|a, b| a.state.partial_cmp(&b.state).unwrap());
 
         for item in sorted_host_items.iter() {
-            let interruped =
-                self.load_item(vpn_controller, &mut new_hosts, &mut new_patterns, item);
-            if interruped {
+            let interrupted =
+                !self.load_item(vpn_controller, &mut new_hosts, &mut new_patterns, item);
+            if interrupted {
                 return;
             }
         }
