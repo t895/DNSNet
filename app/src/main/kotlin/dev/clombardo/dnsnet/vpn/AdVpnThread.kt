@@ -153,12 +153,11 @@ class AdVpnThread(
     override fun run() {
         logi("Starting")
 
-        notify(VpnStatus.STARTING)
-
         var retryTimeout = MIN_RETRY_TIME
         // Try connecting the vpn continuously
         while (true) {
             val connectTimeMillis: Long = System.currentTimeMillis()
+            notify(VpnStatus.STARTING)
 
             try {
                 // If the function returns, that means it was interrupted

@@ -468,7 +468,79 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         vpnThread.startThread()
     }
 
+    private fun checkStatusTransition(old: VpnStatus, new: VpnStatus): Boolean {
+        if (old == new) {
+            return true
+        }
+
+        return when (old) {
+            VpnStatus.STOPPED -> {
+                when (new) {
+                    VpnStatus.STARTING -> true
+                    else -> false
+                }
+            }
+
+            VpnStatus.STOPPING -> {
+                when (new) {
+                    VpnStatus.RUNNING,
+                    VpnStatus.STARTING,
+                    VpnStatus.WAITING_FOR_NETWORK,
+                    VpnStatus.STOPPED -> true
+
+                    else -> false
+                }
+            }
+
+            VpnStatus.STARTING -> {
+                when (new) {
+                    VpnStatus.WAITING_FOR_NETWORK,
+                    VpnStatus.RECONNECTING_NETWORK_ERROR,
+                    VpnStatus.RUNNING -> true
+                    else -> false
+                }
+            }
+
+            VpnStatus.WAITING_FOR_NETWORK -> {
+                when (new) {
+                    VpnStatus.STARTING -> true
+                    else -> false
+                }
+            }
+
+            VpnStatus.RECONNECTING -> {
+                when (new) {
+                    VpnStatus.STOPPING -> true
+                    else -> false
+                }
+            }
+
+            VpnStatus.RECONNECTING_NETWORK_ERROR -> {
+                when (new) {
+                    VpnStatus.STARTING -> true
+                    else -> false
+                }
+            }
+
+            VpnStatus.RUNNING -> {
+                when (new) {
+                    VpnStatus.STOPPING,
+                    VpnStatus.WAITING_FOR_NETWORK,
+                    VpnStatus.RECONNECTING,
+                    VpnStatus.RECONNECTING_NETWORK_ERROR -> true
+
+                    else -> false
+                }
+            }
+        }
+    }
+
     private fun updateVpnStatus(newStatus: VpnStatus, paused: Boolean = false) {
+        if (!checkStatusTransition(status.value, newStatus)) {
+            logw("Attempted invalid status transition! Ignoring. - ${status.value} -> $newStatus")
+            return
+        }
+
         when (newStatus) {
             VpnStatus.STARTING -> {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
