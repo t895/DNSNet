@@ -477,15 +477,13 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
                         runningServiceNotificationBuilder.build()
                     )
                 }
-                registerConnectivityChangedCallback()
             }
 
-            VpnStatus.RUNNING,
-            VpnStatus.WAITING_FOR_NETWORK,
-            VpnStatus.RECONNECTING,
-            VpnStatus.RECONNECTING_NETWORK_ERROR -> registerConnectivityChangedCallback()
+            VpnStatus.RUNNING -> registerConnectivityChangedCallback()
 
-            VpnStatus.STOPPING, VpnStatus.STOPPED -> unregisterConnectivityChangedCallback()
+            VpnStatus.STOPPING -> unregisterConnectivityChangedCallback()
+
+            else -> {}
         }
 
         with(getSystemService(NotificationManager::class.java)) {
