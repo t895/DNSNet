@@ -479,6 +479,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
                 }
             }
 
+            VpnStatus.WAITING_FOR_NETWORK,
             VpnStatus.RUNNING -> registerConnectivityChangedCallback()
 
             VpnStatus.STOPPING -> unregisterConnectivityChangedCallback()
