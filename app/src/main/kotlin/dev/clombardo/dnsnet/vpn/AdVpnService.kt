@@ -587,7 +587,6 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         unregisterConnectivityChangedCallback()
         vpnThread.stopThread()
         vpnThread.startThread()
-        registerConnectivityChangedCallback()
     }
 
     private fun reconnect() {
