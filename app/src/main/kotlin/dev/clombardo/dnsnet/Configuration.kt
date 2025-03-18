@@ -257,23 +257,6 @@ data class HostFile(
 ) : Host {
     fun isDownloadable(): Boolean =
         data.startsWith("https://") || data.startsWith("http://")
-
-    companion object : Parceler<HostFile> {
-        override fun HostFile.write(parcel: Parcel, flags: Int) {
-            parcel.apply {
-                writeString(title)
-                writeString(data)
-                writeInt(state.ordinal)
-            }
-        }
-
-        override fun create(parcel: Parcel): HostFile =
-            HostFile(
-                parcel.readString() ?: "",
-                parcel.readString() ?: "",
-                parcel.readInt().toHostState(),
-            )
-    }
 }
 
 @Parcelize
@@ -282,24 +265,7 @@ data class HostException(
     override var title: String = "",
     @SerialName("hostname") override var data: String = "",
     override var state: HostState = HostState.IGNORE,
-) : Host {
-    companion object : Parceler<HostException> {
-        override fun HostException.write(parcel: Parcel, flags: Int) {
-            parcel.apply {
-                writeString(title)
-                writeString(data)
-                writeInt(state.ordinal)
-            }
-        }
-
-        override fun create(parcel: Parcel): HostException =
-            HostException(
-                parcel.readString() ?: "",
-                parcel.readString() ?: "",
-                parcel.readInt().toHostState(),
-            )
-    }
-}
+) : Host
 
 @Serializable
 data class Hosts(
