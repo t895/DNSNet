@@ -47,6 +47,7 @@ import dev.clombardo.dnsnet.vpn.VpnStatus.Companion.toVpnStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import uniffi.net.AdVpnCallback
+import uniffi.net.RuleDatabase
 
 enum class VpnStatus {
     STARTING,
@@ -175,10 +176,13 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
 
     private val handler = Handler(Looper.myLooper()!!, this)
 
+    private val ruleDatabase = RuleDatabase()
+
     private val vpnThread = AdVpnThread(
         adVpnService = this,
         notify = { status -> notify(status.ordinal) },
         blockLoggerCallback = logger,
+        ruleDatabase = ruleDatabase,
     )
 
     internal data class NetworkState(

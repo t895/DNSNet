@@ -43,7 +43,11 @@ import dev.clombardo.dnsnet.loge
 import dev.clombardo.dnsnet.logi
 import dev.clombardo.dnsnet.logw
 import kotlinx.atomicfu.atomic
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import uniffi.net.BlockLoggerCallback
+import uniffi.net.NativeHost
+import uniffi.net.RuleDatabase
 import uniffi.net.VpnController
 import uniffi.net.VpnException
 import uniffi.net.runVpnNative
@@ -56,6 +60,7 @@ class AdVpnThread(
     private val adVpnService: AdVpnService,
     private val notify: (VpnStatus) -> Unit,
     private val blockLoggerCallback: BlockLoggerCallback,
+    private val ruleDatabase: RuleDatabase,
 ) : Runnable {
     companion object {
         private const val MIN_RETRY_TIME = 5
@@ -120,7 +125,7 @@ class AdVpnThread(
             logi("Starting Vpn Thread")
             threadData = ThreadData(
                 thread = Thread(this, "AdVpnThread"),
-                vpnController = VpnController()
+                vpnController = VpnController(),
             )
             threadData!!.thread.start()
             logi("Vpn Thread started")
@@ -152,6 +157,13 @@ class AdVpnThread(
     @Synchronized
     override fun run() {
         logi("Starting")
+
+        ruleDatabase.initialize(
+            androidFileHelper = FileHelper,
+            vpnController = threadData?.vpnController ?: throw IllegalStateException(),
+            hostItems = config.hosts.items.map { it.toNative() },
+            hostExceptions = config.hosts.exceptions.map { it.toNative() },
+        )
 
         var retryTimeout = MIN_RETRY_TIME
         // Try connecting the vpn continuously
@@ -212,12 +224,10 @@ class AdVpnThread(
         runVpnNative(
             adVpnCallback = adVpnService,
             blockLoggerCallback = blockLoggerCallback,
-            androidFileHelper = FileHelper,
-            hostItems = config.hosts.items.map { it.toNative() },
-            hostExceptions = config.hosts.exceptions.map { it.toNative() },
             upstreamDnsServers = upstreamDnsServers.map { it.address },
             vpnFd = vpnFd.detachFd(),
             vpnController = threadData?.vpnController ?: throw IllegalStateException(),
+            ruleDatabase = ruleDatabase,
         )
     }
 

@@ -5,7 +5,7 @@ use std::{
     mem::{self, MaybeUninit},
     net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6},
     os::fd::{AsRawFd, FromRawFd, RawFd},
-    sync::{Arc, atomic::AtomicBool},
+    sync::{atomic::AtomicBool, Arc, RwLock},
     time::{Duration, SystemTime, UNIX_EPOCH},
     usize,
 };
@@ -50,30 +50,16 @@ pub fn rust_init(debug: bool) {
 pub fn run_vpn_native(
     ad_vpn_callback: Box<dyn AdVpnCallback>,
     block_logger_callback: Box<dyn BlockLoggerCallback>,
-    android_file_helper: Box<dyn AndroidFileHelper>,
-    host_items: Vec<NativeHost>,
-    host_exceptions: Vec<NativeHost>,
     upstream_dns_servers: Vec<Vec<u8>>,
     vpn_fd: i32,
     vpn_controller: Arc<VpnController>,
+    rule_database: Arc<RuleDatabase>,
 ) -> Result<(), VpnError> {
-    info!(
-        "run_vpn_native: Starting VPN with parameters\n\
-        host_items: {:?}\n\
-        host_exceptions: {:?}\n\
-        upstream_dns_servers: {:?}\n\
-        vpn_fd: {}",
-        host_items, host_exceptions, upstream_dns_servers, vpn_fd
-    );
-
     let mut vpn = AdVpn::new(vpn_fd, vpn_controller);
-
     let result = vpn.run(
-        &ad_vpn_callback,
+        ad_vpn_callback,
         block_logger_callback,
-        android_file_helper,
-        host_items,
-        host_exceptions,
+        rule_database,
         upstream_dns_servers,
     );
     info!("run_vpn_native: Stopped");
@@ -415,33 +401,19 @@ impl AdVpn {
     /// Alternatively, we may run into a problem during the loop where we'll return a [VpnError] which will appear as an exception in Kotlin.
     fn run(
         &mut self,
-        android_vpn_callback: &Box<dyn AdVpnCallback>,
+        android_vpn_callback: Box<dyn AdVpnCallback>,
         block_logger_callback: Box<dyn BlockLoggerCallback>,
-        android_file_helper: Box<dyn AndroidFileHelper>,
-        host_items: Vec<NativeHost>,
-        host_exceptions: Vec<NativeHost>,
+        rule_database: Arc<RuleDatabase>,
         upstream_dns_servers: Vec<Vec<u8>>,
     ) -> Result<(), VpnError> {
         let mut packet = vec![0u8; i16::MAX as usize];
 
         let mut dns_packet_proxy = DnsPacketProxy::new(
-            android_vpn_callback,
+            &android_vpn_callback,
             block_logger_callback,
-            android_file_helper,
-        );
-        match dns_packet_proxy.initialize(
-            &self.vpn_controller,
-            host_items,
-            host_exceptions,
+            rule_database,
             upstream_dns_servers,
-        ) {
-            Ok(_) => {},
-            Err(error) => {
-                match error {
-                    DnsPacketProxyError::Interrupted => return Ok(()),
-                }
-            },
-        };
+        );
 
         let poller = match Poller::new() {
             Ok(value) => value,
@@ -834,9 +806,17 @@ pub struct NativeHost {
     state: NativeHostState,
 }
 
+#[derive(Debug, thiserror::Error, uniffi::Error)]
+#[uniffi(flat_error)]
 enum RuleDatabaseError {
+    #[error("Bad host format")]
     BadHostFormat,
+
+    #[error("Interrupted by VpnController")]
     Interrupted,
+
+    #[error("Failed to acquire lock on hosts structures")]
+    LockError,
 }
 
 /// Whether a single host should be denied or allowed
@@ -846,95 +826,28 @@ enum HostnameAction {
 }
 
 /// Holds the block list and manages the loading of the block list
-struct RuleDatabase {
-    android_file_helper: Box<dyn AndroidFileHelper>,
-    hosts: HashMap<String, HostnameAction>,
-    patterns: HashMap<String, HostnameAction>,
+#[derive(uniffi::Object)]
+pub struct RuleDatabase {
+    initialized: AtomicBool,
+    hosts: RwLock<HashMap<String, HostnameAction>>,
+    patterns: RwLock<HashMap<String, HostnameAction>>,
 }
 
+#[uniffi::export]
 impl RuleDatabase {
-    const IPV4_LOOPBACK: &'static str = "127.0.0.1";
-    const IPV6_LOOPBACK: &'static str = "::1";
-    const NO_ROUTE: &'static str = "0.0.0.0";
-
-    /// Parses a single line in a hostfile and returns the host if it's valid
-    fn parse_line(line: &str) -> Option<String> {
-        if line.trim().is_empty() {
-            return None;
-        }
-
-        // AdBlock Plus style hosts files use ## for extra functionality that we don't support
-        if line.contains("##") {
-            return None;
-        }
-
-        let mut end_of_line = match line.find('#') {
-            Some(index) => index,
-            None => line.len(),
-        };
-
-        let mut start_of_host = 0;
-
-        match line.find(Self::IPV4_LOOPBACK) {
-            Some(index) => {
-                start_of_host += index + Self::IPV4_LOOPBACK.len();
-            }
-            None => {}
-        };
-
-        if start_of_host == 0 {
-            match line.find(Self::IPV6_LOOPBACK) {
-                Some(index) => {
-                    start_of_host += index + Self::IPV6_LOOPBACK.len();
-                }
-                None => {}
-            }
-        }
-
-        if start_of_host == 0 {
-            match line.find(Self::NO_ROUTE) {
-                Some(index) => {
-                    start_of_host += index + Self::NO_ROUTE.len();
-                }
-                None => {}
-            }
-        }
-
-        if start_of_host >= end_of_line {
-            return None;
-        }
-
-        while start_of_host < end_of_line
-            && line.chars().nth(start_of_host).unwrap().is_whitespace()
-        {
-            start_of_host += 1;
-        }
-
-        while start_of_host > end_of_line
-            && line.chars().nth(end_of_line - 1).unwrap().is_whitespace()
-        {
-            end_of_line -= 1;
-        }
-
-        let host = (&line[start_of_host..end_of_line]).to_lowercase();
-        if host.is_empty() || host.contains(char::is_whitespace) {
-            return None;
-        }
-
-        return Some(host);
-    }
-
-    fn new(android_file_helper: Box<dyn AndroidFileHelper>) -> Self {
+    #[uniffi::constructor]
+    fn new() -> Self {
         RuleDatabase {
-            android_file_helper,
-            hosts: HashMap::new(),
-            patterns: HashMap::new(),
+            initialized: AtomicBool::new(false),
+            hosts: RwLock::new(HashMap::new()),
+            patterns: RwLock::new(HashMap::new()),
         }
     }
 
     /// Initializes the block list with the given hosts and exceptions
     fn initialize(
-        &mut self,
+        &self,
+        android_file_helper: Box<dyn AndroidFileHelper>,
         vpn_controller: &Arc<VpnController>,
         host_items: Vec<NativeHost>,
         host_exceptions: Vec<NativeHost>,
@@ -945,8 +858,8 @@ impl RuleDatabase {
             host_exceptions.len()
         );
 
-        let mut new_hosts = HashMap::<String, HostnameAction>::new();
-        let mut new_patterns = HashMap::<String, HostnameAction>::new();
+        let mut hosts = HashMap::<String, HostnameAction>::new();
+        let mut patterns = HashMap::<String, HostnameAction>::new();
 
         let mut sorted_host_items = host_items
             .iter()
@@ -955,10 +868,11 @@ impl RuleDatabase {
         sorted_host_items.sort_by(|a, b| a.state.partial_cmp(&b.state).unwrap());
 
         for item in sorted_host_items.iter() {
-            match self.load_item(
+            match load_item(
+                &android_file_helper,
                 vpn_controller,
-                &mut new_hosts,
-                &mut new_patterns,
+                &mut hosts,
+                &mut patterns,
                 item
             ) {
                 Ok(_) => {},
@@ -966,6 +880,7 @@ impl RuleDatabase {
                     match error {
                         RuleDatabaseError::BadHostFormat => {},
                         RuleDatabaseError::Interrupted => return Err(error),
+                        RuleDatabaseError::LockError => {},
                     }
                 },
             };
@@ -978,10 +893,10 @@ impl RuleDatabase {
         sorted_host_exceptions.sort_by(|a, b| a.state.partial_cmp(&b.state).unwrap());
 
         for exception in sorted_host_exceptions {
-            match self.add_host(
+            match add_host(
                 vpn_controller,
-                &mut new_hosts,
-                &mut new_patterns,
+                &mut hosts,
+                &mut patterns,
                 &exception.state,
                 exception.data.clone(),
             ) {
@@ -990,223 +905,96 @@ impl RuleDatabase {
                     match error {
                         RuleDatabaseError::BadHostFormat => {},
                         RuleDatabaseError::Interrupted => return Err(error),
+                        RuleDatabaseError::LockError => {},
                     }
                 },
             };
         }
 
-        self.hosts = new_hosts;
-        self.patterns = new_patterns;
+        let mut hosts_guard = match self.hosts.write() {
+            Ok(value) => value,
+            Err(e) => {
+                error!("initialize: Failed to get write lock for hosts - {:?}", e);
+                return Err(RuleDatabaseError::LockError);
+            }
+        };
+        let mut patterns_guard = match self.patterns.write() {
+            Ok(value) => value,
+            Err(e) => {
+                error!("initialize: Failed to get write lock for patterns - {:?}", e);
+                return Err(RuleDatabaseError::LockError);
+            }
+        };
+
+        *hosts_guard = hosts;
+        *patterns_guard = patterns;
 
         info!(
             "initialize: Loaded {} hosts and {} patterns",
-            self.hosts.len(),
-            self.patterns.len()
+            hosts_guard.len(),
+            patterns_guard.len()
         );
+        self.initialized.store(true, std::sync::atomic::Ordering::Relaxed);
         return Ok(());
     }
 
-    /// Loads a generic host (file or single host) and adds them to the block list
-    fn load_item(
-        &mut self,
-        vpn_controller: &Arc<VpnController>,
-        new_blocked_hosts: &mut HashMap<String, HostnameAction>,
-        new_blocked_patterns: &mut HashMap<String, HostnameAction>,
-        host: &NativeHost,
-    ) -> Result<(), RuleDatabaseError> {
-        if host.state == NativeHostState::IGNORE {
-            return Err(RuleDatabaseError::Interrupted);
-        }
-
-        match self
-            .android_file_helper
-            .get_host_fd(host.data.clone(), String::from("r"))
-        {
-            Some(value) => {
-                let file = unsafe { File::from_raw_fd(value) };
-                let lines: io::Lines<io::BufReader<File>> = io::BufReader::new(file).lines();
-                match self.load_file(
-                    vpn_controller,
-                    new_blocked_hosts,
-                    new_blocked_patterns,
-                    &host,
-                    lines,
-                ) {
-                    Ok(_) => {},
-                    Err(error) => {
-                        match error {
-                            RuleDatabaseError::BadHostFormat => {},
-                            RuleDatabaseError::Interrupted => return Err(error),
-                        }
-                    },
-                };
-            }
-            None => {
-                warn!(
-                    "Failed to open {}. Attempting to add as single host.",
-                    host.data
-                );
-                match self.add_host(
-                    vpn_controller,
-                    new_blocked_hosts,
-                    new_blocked_patterns,
-                    &host.state,
-                    host.data.clone(),
-                ) {
-                    Ok(_) => {},
-                    Err(error) => {
-                        match error {
-                            RuleDatabaseError::BadHostFormat => {},
-                            RuleDatabaseError::Interrupted => return Err(error),
-                        }
-                    },
-                };
+    fn unload(&self) -> Result<(), RuleDatabaseError> {
+        self.initialized.store(false, std::sync::atomic::Ordering::Relaxed);
+        let mut hosts = match self.hosts.write() {
+            Ok(value) => value,
+            Err(e) => {
+                error!("initialize: Failed to get write lock for hosts - {:?}", e);
+                return Err(RuleDatabaseError::LockError);
             }
         };
+        let mut patterns = match self.patterns.write() {
+            Ok(value) => value,
+            Err(e) => {
+                error!("initialize: Failed to get write lock for patterns - {:?}", e);
+                return Err(RuleDatabaseError::LockError);
+            }
+        };
+        hosts.clear();
+        patterns.clear();
         return Ok(());
     }
 
-    /// Adds a single host to the block list
-    fn add_host(
-        &mut self,
-        vpn_controller: &Arc<VpnController>,
-        new_hosts: &mut HashMap<String, HostnameAction>,
-        new_patterns: &mut HashMap<String, HostnameAction>,
-        state: &NativeHostState,
-        data: String,
-    ) -> Result<(), RuleDatabaseError> {
-        if vpn_controller.get_should_stop() {
-            return Err(RuleDatabaseError::Interrupted);
+    fn wait_for_init(&self) {
+        loop {
+            if self.initialized.load(std::sync::atomic::Ordering::Relaxed) {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(100));
         }
-
-        match data.get(..2) {
-            Some(first_two_chars) => {
-                // Star pseudo-wildcard style e.g. *.example.com
-                if first_two_chars.chars().nth(0).unwrap() == '*' {
-                    // Ignore the *. at the start of a pseudo-wildcard host
-                    return match data.get(2..data.len()) {
-                        Some(value) => {
-                            match state {
-                                NativeHostState::IGNORE => {}
-                                NativeHostState::DENY => {
-                                    new_patterns.insert(value.to_owned(), HostnameAction::Deny);
-                                }
-                                NativeHostState::ALLOW => {
-                                    new_patterns.insert(value.to_owned(), HostnameAction::Allow);
-                                }
-                            };
-                            Ok(())
-                        }
-                        None => Err(RuleDatabaseError::BadHostFormat),
-                    };
-                } else if first_two_chars == "||" {
-                    // AdBlock Plus style pseudo-wildcard e.g. ||example.com^
-                    match data.chars().last() {
-                        Some(last_char) => {
-                            if last_char == '^' {
-                                return match data.get(2..data.len() - 1) {
-                                    Some(value) => {
-                                        match state {
-                                            NativeHostState::IGNORE => {}
-                                            NativeHostState::DENY => {
-                                                new_patterns.insert(value.to_owned(), HostnameAction::Deny);
-                                            }
-                                            NativeHostState::ALLOW => {
-                                                new_patterns.insert(value.to_owned(), HostnameAction::Allow);
-                                            }
-                                        };
-                                        Ok(())
-                                    }
-                                    None => Err(RuleDatabaseError::BadHostFormat),
-                                };
-                            }
-                        }
-                        None => return Err(RuleDatabaseError::BadHostFormat),
-                    };
-                    return Err(RuleDatabaseError::BadHostFormat);
-                }
-            }
-            None => return Err(RuleDatabaseError::BadHostFormat),
-        };
-
-        // Reject invalid characters in hostname
-        if !data
-            .chars()
-            .all(|c| c.is_alphanumeric() || c == '.' || c == '-')
-        {
-            return Err(RuleDatabaseError::BadHostFormat);
-        }
-
-        // Plain host e.g. example.com
-        match state {
-            NativeHostState::IGNORE => {},
-            NativeHostState::DENY => {
-                new_hosts.insert(data, HostnameAction::Deny);
-            }
-            NativeHostState::ALLOW => {
-                new_hosts.insert(data, HostnameAction::Allow);
-            }
-        };
-        return Ok(());
-    }
-
-    /// Loads a file of hosts and adds them to the block list
-    fn load_file(
-        &mut self,
-        vpn_controller: &Arc<VpnController>,
-        new_hosts: &mut HashMap<String, HostnameAction>,
-        new_patterns: &mut HashMap<String, HostnameAction>,
-        host: &NativeHost,
-        lines: io::Lines<io::BufReader<File>>,
-    ) -> Result<(), RuleDatabaseError> {
-        let mut count = 0;
-        for line in lines {
-            match line {
-                Ok(value) => {
-                    let data = Self::parse_line(value.as_str());
-                    if data.is_some() {
-                        match self.add_host(
-                            vpn_controller,
-                            new_hosts,
-                            new_patterns,
-                            &host.state,
-                            data.unwrap(),
-                        ) {
-                            Ok(_) => {},
-                            Err(error) => {
-                                match error {
-                                    RuleDatabaseError::BadHostFormat => {},
-                                    RuleDatabaseError::Interrupted => return Err(error),
-                                };
-                            }
-                        };
-                    }
-                    count += 1;
-                }
-                Err(e) => {
-                    error!(
-                        "load_file: Error while reading {} after {} lines - {:?}",
-                        &host.data, count, e
-                    );
-                    return Err(RuleDatabaseError::BadHostFormat);
-                }
-            }
-        }
-        debug!("load_file: Loaded {} hosts from {}", count, &host.data);
-        return Ok(());
     }
 
     /// Checks if a host is blocked
     fn is_blocked(&self, host: &str) -> bool {
-        if let Some(value) = self.hosts.get(host) {
+        let hosts = match self.hosts.read() {
+            Ok(value) => value,
+            Err(e) => {
+                error!("is_blocked: Failed to get read lock for hosts - {:?}", e);
+                return false;
+            }
+        };
+
+        if let Some(value) = hosts.get(host) {
             return match value {
                 HostnameAction::Deny => true,
                 HostnameAction::Allow => false,
             };
         } else {
+            let patterns = match self.patterns.read() {
+                Ok(value) => value,
+                Err(e) => {
+                    error!("is_blocked: Failed to get read lock for patterns - {:?}", e);
+                    return false;
+                }
+            };
+
             let mut sub_host = host.to_owned();
             for split in host.split('.') {
-                if let Some(value) = self.patterns.get(&sub_host) {
+                if let Some(value) = patterns.get(&sub_host) {
                     return match value {
                         HostnameAction::Deny => true,
                         HostnameAction::Allow => false,
@@ -1222,21 +1010,278 @@ impl RuleDatabase {
     }
 }
 
+const IPV4_LOOPBACK: &'static str = "127.0.0.1";
+const IPV6_LOOPBACK: &'static str = "::1";
+const NO_ROUTE: &'static str = "0.0.0.0";
+
+/// Parses a single line in a hostfile and returns the host if it's valid
+fn parse_line(line: &str) -> Option<String> {
+    if line.trim().is_empty() {
+        return None;
+    }
+
+    // AdBlock Plus style hosts files use ## for extra functionality that we don't support
+    if line.contains("##") {
+        return None;
+    }
+
+    let mut end_of_line = match line.find('#') {
+        Some(index) => index,
+        None => line.len(),
+    };
+
+    let mut start_of_host = 0;
+
+    match line.find(IPV4_LOOPBACK) {
+        Some(index) => {
+            start_of_host += index + IPV4_LOOPBACK.len();
+        }
+        None => {}
+    };
+
+    if start_of_host == 0 {
+        match line.find(IPV6_LOOPBACK) {
+            Some(index) => {
+                start_of_host += index + IPV6_LOOPBACK.len();
+            }
+            None => {}
+        }
+    }
+
+    if start_of_host == 0 {
+        match line.find(NO_ROUTE) {
+            Some(index) => {
+                start_of_host += index + NO_ROUTE.len();
+            }
+            None => {}
+        }
+    }
+
+    if start_of_host >= end_of_line {
+        return None;
+    }
+
+    while start_of_host < end_of_line
+        && line.chars().nth(start_of_host).unwrap().is_whitespace()
+    {
+        start_of_host += 1;
+    }
+
+    while start_of_host > end_of_line
+        && line.chars().nth(end_of_line - 1).unwrap().is_whitespace()
+    {
+        end_of_line -= 1;
+    }
+
+    let host = (&line[start_of_host..end_of_line]).to_lowercase();
+    if host.is_empty() || host.contains(char::is_whitespace) {
+        return None;
+    }
+
+    return Some(host);
+}
+
+/// Loads a generic host (file or single host) and adds them to the block list
+fn load_item(
+    android_file_helper: &Box<dyn AndroidFileHelper>,
+    vpn_controller: &Arc<VpnController>,
+    hosts: &mut HashMap<String, HostnameAction>,
+    patterns: &mut HashMap<String, HostnameAction>,
+    host: &NativeHost,
+) -> Result<(), RuleDatabaseError> {
+    if host.state == NativeHostState::IGNORE {
+        return Err(RuleDatabaseError::Interrupted);
+    }
+
+    match android_file_helper
+        .get_host_fd(host.data.clone(), String::from("r"))
+    {
+        Some(value) => {
+            let file = unsafe { File::from_raw_fd(value) };
+            let lines: io::Lines<io::BufReader<File>> = io::BufReader::new(file).lines();
+            match load_file(
+                vpn_controller,
+                hosts,
+                patterns,
+                &host,
+                lines,
+            ) {
+                Ok(_) => {},
+                Err(error) => {
+                    match error {
+                        RuleDatabaseError::BadHostFormat => {},
+                        RuleDatabaseError::Interrupted => return Err(error),
+                        RuleDatabaseError::LockError => {},
+                    }
+                },
+            };
+        }
+        None => {
+            warn!(
+                "Failed to open {}. Attempting to add as single host.",
+                host.data
+            );
+            match add_host(
+                vpn_controller,
+                hosts,
+                patterns,
+                &host.state,
+                host.data.clone(),
+            ) {
+                Ok(_) => {},
+                Err(error) => {
+                    match error {
+                        RuleDatabaseError::BadHostFormat => {},
+                        RuleDatabaseError::Interrupted => return Err(error),
+                        RuleDatabaseError::LockError => {},
+                    }
+                },
+            };
+        }
+    };
+    return Ok(());
+}
+
+/// Adds a single host to the block list
+fn add_host(
+    vpn_controller: &Arc<VpnController>,
+    hosts: &mut HashMap<String, HostnameAction>,
+    patterns: &mut HashMap<String, HostnameAction>,
+    state: &NativeHostState,
+    data: String,
+) -> Result<(), RuleDatabaseError> {
+    if vpn_controller.get_should_stop() {
+        return Err(RuleDatabaseError::Interrupted);
+    }
+
+    match data.get(..2) {
+        Some(first_two_chars) => {
+            // Star pseudo-wildcard style e.g. *.example.com
+            if first_two_chars.chars().nth(0).unwrap() == '*' {
+                // Ignore the *. at the start of a pseudo-wildcard host
+                return match data.get(2..data.len()) {
+                    Some(value) => {
+                        match state {
+                            NativeHostState::IGNORE => {}
+                            NativeHostState::DENY => {
+                                patterns.insert(value.to_owned(), HostnameAction::Deny);
+                            }
+                            NativeHostState::ALLOW => {
+                                patterns.insert(value.to_owned(), HostnameAction::Allow);
+                            }
+                        };
+                        Ok(())
+                    }
+                    None => Err(RuleDatabaseError::BadHostFormat),
+                };
+            } else if first_two_chars == "||" {
+                // AdBlock Plus style pseudo-wildcard e.g. ||example.com^
+                match data.chars().last() {
+                    Some(last_char) => {
+                        if last_char == '^' {
+                            return match data.get(2..data.len() - 1) {
+                                Some(value) => {
+                                    match state {
+                                        NativeHostState::IGNORE => {}
+                                        NativeHostState::DENY => {
+                                            patterns.insert(value.to_owned(), HostnameAction::Deny);
+                                        }
+                                        NativeHostState::ALLOW => {
+                                            patterns.insert(value.to_owned(), HostnameAction::Allow);
+                                        }
+                                    };
+                                    Ok(())
+                                }
+                                None => Err(RuleDatabaseError::BadHostFormat),
+                            };
+                        }
+                    }
+                    None => return Err(RuleDatabaseError::BadHostFormat),
+                };
+                return Err(RuleDatabaseError::BadHostFormat);
+            }
+        }
+        None => return Err(RuleDatabaseError::BadHostFormat),
+    };
+
+    // Reject invalid characters in hostname
+    if !data
+        .chars()
+        .all(|c| c.is_alphanumeric() || c == '.' || c == '-')
+    {
+        return Err(RuleDatabaseError::BadHostFormat);
+    }
+
+    // Plain host e.g. example.com
+    match state {
+        NativeHostState::IGNORE => {},
+        NativeHostState::DENY => {
+            hosts.insert(data, HostnameAction::Deny);
+        }
+        NativeHostState::ALLOW => {
+            hosts.insert(data, HostnameAction::Allow);
+        }
+    };
+    return Ok(());
+}
+
+/// Loads a file of hosts and adds them to the block list
+fn load_file(
+    vpn_controller: &Arc<VpnController>,
+    hosts: &mut HashMap<String, HostnameAction>,
+    patterns: &mut HashMap<String, HostnameAction>,
+    host: &NativeHost,
+    lines: io::Lines<io::BufReader<File>>,
+) -> Result<(), RuleDatabaseError> {
+    let mut count = 0;
+    for line in lines {
+        match line {
+            Ok(value) => {
+                let data = parse_line(value.as_str());
+                if data.is_some() {
+                    match add_host(
+                        vpn_controller,
+                        hosts,
+                        patterns,
+                        &host.state,
+                        data.unwrap(),
+                    ) {
+                        Ok(_) => {},
+                        Err(error) => {
+                            match error {
+                                RuleDatabaseError::BadHostFormat => {},
+                                RuleDatabaseError::Interrupted => return Err(error),
+                                RuleDatabaseError::LockError => {},
+                            };
+                        }
+                    };
+                }
+                count += 1;
+            }
+            Err(e) => {
+                error!(
+                    "load_file: Error while reading {} after {} lines - {:?}",
+                    &host.data, count, e
+                );
+                return Err(RuleDatabaseError::BadHostFormat);
+            }
+        }
+    }
+    debug!("load_file: Loaded {} hosts from {}", count, &host.data);
+    return Ok(());
+}
+
 /// Callback interface for logging connections that we've blocked for the block logger
 #[uniffi::export(callback_interface)]
 pub trait BlockLoggerCallback: Send + Sync {
     fn log(&self, connection_name: String, allowed: bool);
 }
 
-enum DnsPacketProxyError {
-    Interrupted,
-}
-
 /// Handler for DNS packets that accepts or blocks them based on our [RuleDatabase]
 struct DnsPacketProxy<'a> {
     android_vpn_callback: &'a Box<dyn AdVpnCallback>,
     block_logger_callback: Box<dyn BlockLoggerCallback>,
-    rule_database: RuleDatabase,
+    rule_database: Arc<RuleDatabase>,
     upstream_dns_servers: Vec<Vec<u8>>,
     negative_cache_record: ResourceRecord<'a>,
 }
@@ -1248,7 +1293,8 @@ impl<'a> DnsPacketProxy<'a> {
     fn new(
         android_vpn_callback: &'a Box<dyn AdVpnCallback>,
         block_logger_callback: Box<dyn BlockLoggerCallback>,
-        android_file_helper: Box<dyn AndroidFileHelper>,
+        rule_database: Arc<RuleDatabase>,
+        upstream_dns_servers: Vec<Vec<u8>>,
     ) -> Self {
         let name = match Name::new(Self::INVALID_HOSTNAME) {
             Ok(value) => value,
@@ -1275,30 +1321,10 @@ impl<'a> DnsPacketProxy<'a> {
         DnsPacketProxy {
             android_vpn_callback,
             block_logger_callback,
-            rule_database: RuleDatabase::new(android_file_helper),
-            upstream_dns_servers: Vec::new(),
+            rule_database,
+            upstream_dns_servers,
             negative_cache_record,
         }
-    }
-
-    fn initialize(
-        &mut self,
-        vpn_controller: &Arc<VpnController>,
-        host_items: Vec<NativeHost>,
-        host_exceptions: Vec<NativeHost>,
-        upstream_dns_servers: Vec<Vec<u8>>,
-    ) -> Result<(), DnsPacketProxyError> {
-        match self.rule_database.initialize(vpn_controller, host_items, host_exceptions) {
-            Ok(_) => {},
-            Err(error) => {
-                match error {
-                    RuleDatabaseError::BadHostFormat => {},
-                    RuleDatabaseError::Interrupted => return Err(DnsPacketProxyError::Interrupted),
-                }
-            },
-        };
-        self.upstream_dns_servers = upstream_dns_servers;
-        return Ok(());
     }
 
     /// Handles a DNS response and forwards it to the tunnel with the translated destination
