@@ -1000,7 +1000,7 @@ impl RuleDatabase {
                         HostnameAction::Allow => false,
                     };
                 }
-                sub_host = sub_host.replace(&(split.to_owned() + "."), "");
+                sub_host = sub_host.replacen(&(split.to_owned() + "."), "", 1);
                 if !sub_host.contains('.') {
                     break;
                 }
