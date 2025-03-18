@@ -91,6 +91,8 @@ android {
         ndk {
             abiFilters += listOf("x86_64", "x86", "arm64-v8a", "armeabi-v7a")
         }
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     ndkVersion = "28.0.13004108"
@@ -238,6 +240,9 @@ dependencies {
             type = "aar"
         }
     }
+
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
 }
 
 licensee {
