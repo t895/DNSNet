@@ -303,6 +303,7 @@ fn get_epoch_millis() -> u128 {
 }
 
 /// Convenience function to get the current time in nanoseconds since the Unix epoch
+#[allow(dead_code)]
 fn get_epoch_nanos() -> u128 {
     get_epoch().as_nanos()
 }
