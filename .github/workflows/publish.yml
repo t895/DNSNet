@@ -12,29 +12,31 @@ jobs:
     permissions:
       contents: write
     steps:
-     - name: Checkout
-       uses: actions/checkout@v4
-       with:
-         submodules: recursive
-     - name: Set up Java
-       uses: actions/setup-java@v4
-       with:
-         distribution: 'temurin'
-         java-version: '17'
-     - name: Set up Rust
-       uses: actions-rust-lang/setup-rust-toolchain@v1
-     - name: Set up Python
-       uses: actions/setup-python@v5
-       with:
-         python-version: '3.13'
-     - name: Give execution permissions to the gradle wrapper
-       run: chmod +x ./gradlew
-     - name: Build
-       env:
-         KEY_ALIAS: ${{secrets.KEY_ALIAS}}
-         KEY_PASSWORD: ${{secrets.KEY_PASSWORD}}
-         STORE_PASSWORD: ${{secrets.KEY_PASSWORD}}
-       run: |
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Gradle cache
+        uses: gradle/actions/setup-gradle@v3
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Give execution permissions to the gradle wrapper
+        run: chmod +x ./gradlew
+      - name: Build
+        env:
+          KEY_ALIAS: ${{secrets.KEY_ALIAS}}
+          KEY_PASSWORD: ${{secrets.KEY_PASSWORD}}
+          STORE_PASSWORD: ${{secrets.KEY_PASSWORD}}
+        run: |
           echo "${{secrets.STORE_FILE}}" | base64 --decode > ${HOME}/keyfile.jks
           export STORE_FILE_PATH=${HOME}/keyfile.jks
           rustup target add x86_64-linux-android i686-linux-android aarch64-linux-android armv7-linux-androideabi
@@ -42,7 +44,7 @@ jobs:
           ./gradlew :app:assembleRelease
           ./gradlew :app:buildApksRelease
           ./gradlew :app:bundleRelease
-     - name: Release
-       uses: ncipollo/release-action@v1
-       with:
-         artifacts: "./**/app-release.apk,./**/app-release.apks,./**/app-release.aab"
+      - name: Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "./**/app-release.apk,./**/app-release.apks,./**/app-release.aab"
