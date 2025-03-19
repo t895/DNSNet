@@ -5,7 +5,8 @@ use std::{
     mem::{self, MaybeUninit},
     net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6},
     os::fd::{AsRawFd, FromRawFd, RawFd},
-    sync::{atomic::AtomicBool, Arc, RwLock},
+    sync::{Arc, RwLock, atomic::AtomicBool},
+    thread,
     time::{Duration, SystemTime, UNIX_EPOCH},
     usize,
 };
@@ -791,6 +792,58 @@ pub trait AndroidFileHelper {
     fn get_host_fd(&self, host: String, mode: String) -> Option<i32>;
 }
 
+/// Holds a few flags to tell the [RuleDatabase] what to do from the Kotlin side
+#[derive(uniffi::Object)]
+pub struct RuleDatabaseController {
+    initialized: AtomicBool,
+    reloading: AtomicBool,
+    should_stop: AtomicBool,
+}
+
+#[uniffi::export]
+impl RuleDatabaseController {
+    #[uniffi::constructor]
+    fn new() -> Self {
+        RuleDatabaseController {
+            initialized: AtomicBool::new(false),
+            reloading: AtomicBool::new(false),
+            should_stop: AtomicBool::new(false),
+        }
+    }
+
+    fn set_initialized(&self) {
+        self.initialized
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    /// Returns whether the database has been initialized for the first time
+    fn is_initialized(&self) -> bool {
+        return self.initialized.load(std::sync::atomic::Ordering::Relaxed);
+    }
+
+    fn get_should_stop(&self) -> bool {
+        return self.should_stop.load(std::sync::atomic::Ordering::Relaxed);
+    }
+
+    /// Tells the database that this controller is attached to that it should stop reloading
+    ///
+    /// This is reset to false when the database is told to initialize
+    fn set_should_stop(&self, value: bool) {
+        self.should_stop
+            .store(value, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    fn set_reloading(&self, value: bool) {
+        self.reloading
+            .store(value, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    /// Returns whether the database is currently reloading
+    fn is_reloading(&self) -> bool {
+        return self.reloading.load(std::sync::atomic::Ordering::Relaxed);
+    }
+}
+
 /// Represents the state of a host in the block list (Mirrors the version in Kotlin)
 #[derive(uniffi::Enum, PartialEq, PartialOrd, Debug)]
 pub enum NativeHostState {
@@ -829,7 +882,7 @@ enum HostnameAction {
 /// Holds the block list and manages the loading of the block list
 #[derive(uniffi::Object)]
 pub struct RuleDatabase {
-    initialized: AtomicBool,
+    controller: Arc<RuleDatabaseController>,
     hosts: RwLock<HashMap<String, HostnameAction>>,
     patterns: RwLock<HashMap<String, HostnameAction>>,
 }
@@ -837,9 +890,9 @@ pub struct RuleDatabase {
 #[uniffi::export]
 impl RuleDatabase {
     #[uniffi::constructor]
-    fn new() -> Self {
+    fn new(controller: Arc<RuleDatabaseController>) -> Self {
         RuleDatabase {
-            initialized: AtomicBool::new(false),
+            controller,
             hosts: RwLock::new(HashMap::new()),
             patterns: RwLock::new(HashMap::new()),
         }
@@ -849,10 +902,23 @@ impl RuleDatabase {
     fn initialize(
         &self,
         android_file_helper: Box<dyn AndroidFileHelper>,
-        vpn_controller: &Arc<VpnController>,
         host_items: Vec<NativeHost>,
         host_exceptions: Vec<NativeHost>,
     ) -> Result<(), RuleDatabaseError> {
+        if self
+            .controller
+            .reloading
+            .fetch_or(true, std::sync::atomic::Ordering::Relaxed)
+        {
+            return Ok(());
+        }
+        if self
+            .controller
+            .should_stop
+            .fetch_or(false, std::sync::atomic::Ordering::Relaxed)
+        {
+            return Ok(());
+        }
         info!(
             "initialize: Loading block list with {} hosts and {} exceptions",
             host_items.len(),
@@ -871,18 +937,16 @@ impl RuleDatabase {
         for item in sorted_host_items.iter() {
             match load_item(
                 &android_file_helper,
-                vpn_controller,
+                &self.controller,
                 &mut hosts,
                 &mut patterns,
-                item
+                item,
             ) {
-                Ok(_) => {},
-                Err(error) => {
-                    match error {
-                        RuleDatabaseError::BadHostFormat => {},
-                        RuleDatabaseError::Interrupted => return Err(error),
-                        RuleDatabaseError::LockError => {},
-                    }
+                Ok(_) => {}
+                Err(error) => match error {
+                    RuleDatabaseError::BadHostFormat => {}
+                    RuleDatabaseError::Interrupted => return Err(error),
+                    RuleDatabaseError::LockError => {}
                 },
             };
         }
@@ -895,19 +959,17 @@ impl RuleDatabase {
 
         for exception in sorted_host_exceptions {
             match add_host(
-                vpn_controller,
+                &self.controller,
                 &mut hosts,
                 &mut patterns,
                 &exception.state,
                 exception.data.clone(),
             ) {
-                Ok(_) => {},
-                Err(error) => {
-                    match error {
-                        RuleDatabaseError::BadHostFormat => {},
-                        RuleDatabaseError::Interrupted => return Err(error),
-                        RuleDatabaseError::LockError => {},
-                    }
+                Ok(_) => {}
+                Err(error) => match error {
+                    RuleDatabaseError::BadHostFormat => {}
+                    RuleDatabaseError::Interrupted => return Err(error),
+                    RuleDatabaseError::LockError => {}
                 },
             };
         }
@@ -922,7 +984,10 @@ impl RuleDatabase {
         let mut patterns_guard = match self.patterns.write() {
             Ok(value) => value,
             Err(e) => {
-                error!("initialize: Failed to get write lock for patterns - {:?}", e);
+                error!(
+                    "initialize: Failed to get write lock for patterns - {:?}",
+                    e
+                );
                 return Err(RuleDatabaseError::LockError);
             }
         };
@@ -935,37 +1000,24 @@ impl RuleDatabase {
             hosts_guard.len(),
             patterns_guard.len()
         );
-        self.initialized.store(true, std::sync::atomic::Ordering::Relaxed);
+        self.controller.set_reloading(false);
+        self.controller.set_initialized();
         return Ok(());
     }
 
-    fn unload(&self) -> Result<(), RuleDatabaseError> {
-        self.initialized.store(false, std::sync::atomic::Ordering::Relaxed);
-        let mut hosts = match self.hosts.write() {
-            Ok(value) => value,
-            Err(e) => {
-                error!("initialize: Failed to get write lock for hosts - {:?}", e);
-                return Err(RuleDatabaseError::LockError);
-            }
-        };
-        let mut patterns = match self.patterns.write() {
-            Ok(value) => value,
-            Err(e) => {
-                error!("initialize: Failed to get write lock for patterns - {:?}", e);
-                return Err(RuleDatabaseError::LockError);
-            }
-        };
-        hosts.clear();
-        patterns.clear();
-        return Ok(());
-    }
-
-    fn wait_for_init(&self) {
+    /// Blocks the current thread until the database has been reloaded or told to stop
+    fn wait_on_init(&self) {
         loop {
-            if self.initialized.load(std::sync::atomic::Ordering::Relaxed) {
+            if self.controller.is_initialized() {
                 break;
             }
-            std::thread::sleep(std::time::Duration::from_millis(100));
+            if !self.controller.is_reloading() {
+                break;
+            }
+            if self.controller.get_should_stop() {
+                break;
+            }
+            thread::sleep(Duration::from_millis(100));
         }
     }
 
@@ -1062,14 +1114,11 @@ fn parse_line(line: &str) -> Option<String> {
         return None;
     }
 
-    while start_of_host < end_of_line
-        && line.chars().nth(start_of_host).unwrap().is_whitespace()
-    {
+    while start_of_host < end_of_line && line.chars().nth(start_of_host).unwrap().is_whitespace() {
         start_of_host += 1;
     }
 
-    while start_of_host > end_of_line
-        && line.chars().nth(end_of_line - 1).unwrap().is_whitespace()
+    while start_of_host > end_of_line && line.chars().nth(end_of_line - 1).unwrap().is_whitespace()
     {
         end_of_line -= 1;
     }
@@ -1085,7 +1134,7 @@ fn parse_line(line: &str) -> Option<String> {
 /// Loads a generic host (file or single host) and adds them to the block list
 fn load_item(
     android_file_helper: &Box<dyn AndroidFileHelper>,
-    vpn_controller: &Arc<VpnController>,
+    controller: &Arc<RuleDatabaseController>,
     hosts: &mut HashMap<String, HostnameAction>,
     patterns: &mut HashMap<String, HostnameAction>,
     host: &NativeHost,
@@ -1094,26 +1143,16 @@ fn load_item(
         return Err(RuleDatabaseError::Interrupted);
     }
 
-    match android_file_helper
-        .get_host_fd(host.data.clone(), String::from("r"))
-    {
+    match android_file_helper.get_host_fd(host.data.clone(), String::from("r")) {
         Some(value) => {
             let file = unsafe { File::from_raw_fd(value) };
             let lines: io::Lines<io::BufReader<File>> = io::BufReader::new(file).lines();
-            match load_file(
-                vpn_controller,
-                hosts,
-                patterns,
-                &host,
-                lines,
-            ) {
-                Ok(_) => {},
-                Err(error) => {
-                    match error {
-                        RuleDatabaseError::BadHostFormat => {},
-                        RuleDatabaseError::Interrupted => return Err(error),
-                        RuleDatabaseError::LockError => {},
-                    }
+            match load_file(controller, hosts, patterns, &host, lines) {
+                Ok(_) => {}
+                Err(error) => match error {
+                    RuleDatabaseError::BadHostFormat => {}
+                    RuleDatabaseError::Interrupted => return Err(error),
+                    RuleDatabaseError::LockError => {}
                 },
             };
         }
@@ -1122,20 +1161,12 @@ fn load_item(
                 "Failed to open {}. Attempting to add as single host.",
                 host.data
             );
-            match add_host(
-                vpn_controller,
-                hosts,
-                patterns,
-                &host.state,
-                host.data.clone(),
-            ) {
-                Ok(_) => {},
-                Err(error) => {
-                    match error {
-                        RuleDatabaseError::BadHostFormat => {},
-                        RuleDatabaseError::Interrupted => return Err(error),
-                        RuleDatabaseError::LockError => {},
-                    }
+            match add_host(controller, hosts, patterns, &host.state, host.data.clone()) {
+                Ok(_) => {}
+                Err(error) => match error {
+                    RuleDatabaseError::BadHostFormat => {}
+                    RuleDatabaseError::Interrupted => return Err(error),
+                    RuleDatabaseError::LockError => {}
                 },
             };
         }
@@ -1145,13 +1176,13 @@ fn load_item(
 
 /// Adds a single host to the block list
 fn add_host(
-    vpn_controller: &Arc<VpnController>,
+    controller: &Arc<RuleDatabaseController>,
     hosts: &mut HashMap<String, HostnameAction>,
     patterns: &mut HashMap<String, HostnameAction>,
     state: &NativeHostState,
     data: String,
 ) -> Result<(), RuleDatabaseError> {
-    if vpn_controller.get_should_stop() {
+    if controller.get_should_stop() {
         return Err(RuleDatabaseError::Interrupted);
     }
 
@@ -1188,7 +1219,8 @@ fn add_host(
                                             patterns.insert(value.to_owned(), HostnameAction::Deny);
                                         }
                                         NativeHostState::ALLOW => {
-                                            patterns.insert(value.to_owned(), HostnameAction::Allow);
+                                            patterns
+                                                .insert(value.to_owned(), HostnameAction::Allow);
                                         }
                                     };
                                     Ok(())
@@ -1215,7 +1247,7 @@ fn add_host(
 
     // Plain host e.g. example.com
     match state {
-        NativeHostState::IGNORE => {},
+        NativeHostState::IGNORE => {}
         NativeHostState::DENY => {
             hosts.insert(data, HostnameAction::Deny);
         }
@@ -1228,7 +1260,7 @@ fn add_host(
 
 /// Loads a file of hosts and adds them to the block list
 fn load_file(
-    vpn_controller: &Arc<VpnController>,
+    controller: &Arc<RuleDatabaseController>,
     hosts: &mut HashMap<String, HostnameAction>,
     patterns: &mut HashMap<String, HostnameAction>,
     host: &NativeHost,
@@ -1240,19 +1272,13 @@ fn load_file(
             Ok(value) => {
                 let data = parse_line(value.as_str());
                 if data.is_some() {
-                    match add_host(
-                        vpn_controller,
-                        hosts,
-                        patterns,
-                        &host.state,
-                        data.unwrap(),
-                    ) {
-                        Ok(_) => {},
+                    match add_host(controller, hosts, patterns, &host.state, data.unwrap()) {
+                        Ok(_) => {}
                         Err(error) => {
                             match error {
-                                RuleDatabaseError::BadHostFormat => {},
+                                RuleDatabaseError::BadHostFormat => {}
                                 RuleDatabaseError::Interrupted => return Err(error),
-                                RuleDatabaseError::LockError => {},
+                                RuleDatabaseError::LockError => {}
                             };
                         }
                     };

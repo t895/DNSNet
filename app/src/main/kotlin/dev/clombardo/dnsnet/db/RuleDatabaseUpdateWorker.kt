@@ -94,7 +94,7 @@ class RuleDatabaseUpdateWorker(
         val end = System.currentTimeMillis()
         logd("doWork: end after ${end - start} milliseconds")
 
-        AdVpnService.restart(context)
+        AdVpnService.reloadDatabase(context)
 
         postExecute()
 

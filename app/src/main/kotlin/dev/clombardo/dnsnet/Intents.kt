@@ -28,6 +28,9 @@ object Intents {
     fun getRestartVpnIntent(): Intent = Intent(applicationContext, AdVpnService::class.java)
         .putExtra(AdVpnService.COMMAND_TAG, Command.RESTART.ordinal)
 
+    fun getReloadDatabaseIntent(): Intent = Intent(applicationContext, AdVpnService::class.java)
+        .putExtra(AdVpnService.COMMAND_TAG, Command.RELOAD_DATABASE.ordinal)
+
     fun getMainActivityPendingIntent(): PendingIntent = PendingIntent.getActivity(
         applicationContext,
         0,

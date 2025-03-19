@@ -34,7 +34,6 @@ import android.os.ParcelFileDescriptor
 import android.system.OsConstants
 import dev.clombardo.dnsnet.Configuration
 import dev.clombardo.dnsnet.DnsNetApplication.Companion.applicationContext
-import dev.clombardo.dnsnet.FileHelper
 import dev.clombardo.dnsnet.MainActivity
 import dev.clombardo.dnsnet.R
 import dev.clombardo.dnsnet.config
@@ -42,11 +41,7 @@ import dev.clombardo.dnsnet.logd
 import dev.clombardo.dnsnet.loge
 import dev.clombardo.dnsnet.logi
 import dev.clombardo.dnsnet.logw
-import kotlinx.atomicfu.atomic
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import uniffi.net.BlockLoggerCallback
-import uniffi.net.NativeHost
 import uniffi.net.RuleDatabase
 import uniffi.net.VpnController
 import uniffi.net.VpnException
@@ -158,12 +153,8 @@ class AdVpnThread(
     override fun run() {
         logi("Starting")
 
-        ruleDatabase.initialize(
-            androidFileHelper = FileHelper,
-            vpnController = threadData?.vpnController ?: throw IllegalStateException(),
-            hostItems = config.hosts.items.map { it.toNative() },
-            hostExceptions = config.hosts.exceptions.map { it.toNative() },
-        )
+        notify(VpnStatus.STARTING)
+        ruleDatabase.waitOnInit()
 
         var retryTimeout = MIN_RETRY_TIME
         // Try connecting the vpn continuously

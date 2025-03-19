@@ -16,7 +16,7 @@ import org.junit.Test
 import uniffi.net.NativeHost
 import uniffi.net.NativeHostState
 import uniffi.net.RuleDatabase
-import uniffi.net.VpnController
+import uniffi.net.RuleDatabaseController
 
 @SmallTest
 class RuleDatabaseTest {
@@ -24,10 +24,9 @@ class RuleDatabaseTest {
 
     @Before
     fun setup() {
-        ruleDatabase = RuleDatabase()
+        ruleDatabase = RuleDatabase(RuleDatabaseController())
         ruleDatabase.initialize(
             androidFileHelper = FileHelper,
-            vpnController = VpnController(),
             hostItems = emptyList(),
             hostExceptions = listOf(
                 // Single host denied test

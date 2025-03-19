@@ -50,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -769,6 +770,7 @@ fun HomeScreen(
                 vm.showStatusBarShade()
                 var refreshDaily by remember { mutableStateOf(config.hosts.automaticRefresh) }
                 val isRefreshingHosts by RuleDatabaseUpdateWorker.isRefreshing.collectAsState()
+                val context = LocalContext.current
                 HostsScreen(
                     contentPadding = contentPadding + PaddingValues(ListPadding) +
                             PaddingValues(bottom = DefaultFabSize + FabPadding),
@@ -786,7 +788,7 @@ fun HomeScreen(
                     },
                     onHostStateChanged = { host ->
                         vm.cycleHost(host)
-                        onRestartService()
+                        AdVpnService.reloadDatabase(context)
                     },
                     isRefreshingHosts = isRefreshingHosts,
                     onRefreshHosts = onRefreshHosts,

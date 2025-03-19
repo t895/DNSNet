@@ -34,6 +34,7 @@ import androidx.annotation.StringRes
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import dev.clombardo.dnsnet.DnsNetApplication.Companion.applicationContext
+import dev.clombardo.dnsnet.FileHelper
 import dev.clombardo.dnsnet.Intents
 import dev.clombardo.dnsnet.MainActivity
 import dev.clombardo.dnsnet.NotificationChannels
@@ -44,10 +45,15 @@ import dev.clombardo.dnsnet.logd
 import dev.clombardo.dnsnet.logi
 import dev.clombardo.dnsnet.logw
 import dev.clombardo.dnsnet.vpn.VpnStatus.Companion.toVpnStatus
+import kotlinx.atomicfu.atomic
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import uniffi.net.AdVpnCallback
 import uniffi.net.RuleDatabase
+import uniffi.net.RuleDatabaseController
 
 enum class VpnStatus {
     STARTING,
@@ -81,6 +87,7 @@ enum class Command {
     PAUSE,
     RESUME,
     RESTART,
+    RELOAD_DATABASE,
 }
 
 class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
@@ -147,6 +154,15 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
             ContextCompat.startForegroundService(context, Intents.getRestartVpnIntent())
         }
 
+        fun reloadDatabase(context: Context) {
+            if (!isRunning()) {
+                logw("VPN is stopped, cannot reload database")
+                return
+            }
+
+            context.startService(Intents.getReloadDatabaseIntent())
+        }
+
         private fun getOpenMainActivityPendingIntent() = PendingIntent.getActivity(
             applicationContext,
             0,
@@ -176,7 +192,28 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
 
     private val handler = Handler(Looper.myLooper()!!, this)
 
-    private val ruleDatabase = RuleDatabase()
+    // Guard against multiple coroutines waiting to reload the database
+    private val reloadPending = atomic(false)
+    private val ruleDatabaseController = RuleDatabaseController()
+    private val ruleDatabase = RuleDatabase(controller = ruleDatabaseController).also {
+        it.reload()
+    }
+
+    private fun RuleDatabase.reload() {
+        if (reloadPending.getAndSet(true)) {
+            return
+        }
+
+        CoroutineScope(Dispatchers.IO).launch {
+            waitOnInit()
+            reloadPending.getAndSet(false)
+            initialize(
+                androidFileHelper = FileHelper,
+                hostItems = config.hosts.items.map { it.toNative() },
+                hostExceptions = config.hosts.exceptions.map { it.toNative() },
+            )
+        }
+    }
 
     private val vpnThread = AdVpnThread(
         adVpnService = this,
@@ -432,12 +469,12 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        logi("onStartCommand$intent")
         val command = if (intent == null) {
             Command.START
         } else {
             Command.entries[intent.getIntExtra(COMMAND_TAG, Command.START.ordinal)]
         }
+        logi("Received command - $command")
 
         when (command) {
             Command.START,
@@ -457,6 +494,8 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
             Command.PAUSE -> pauseVpn()
 
             Command.RESTART -> restartVpnThread()
+
+            Command.RELOAD_DATABASE -> ruleDatabase.reload()
         }
 
         return START_STICKY
@@ -618,7 +657,14 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
 
     override fun onDestroy() {
         logi("Destroyed, shutting down")
+        ruleDatabaseController.setShouldStop(true)
         stopVpn()
+
+        // Looks like uniffi gets confused with this setup so we need to destroy these manually
+        // to prevent a memory leak. Just wait for it to finish whatever it's doing first.
+        ruleDatabase.waitOnInit()
+        ruleDatabase.destroy()
+        ruleDatabaseController.destroy()
     }
 
     override fun handleMessage(msg: Message): Boolean {
