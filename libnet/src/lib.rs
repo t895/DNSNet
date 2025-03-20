@@ -920,12 +920,18 @@ enum HostnameAction {
     Allow,
 }
 
+/// Whether a hostname is a wildcard or a single host in the [RuleDatabase]
+#[derive(PartialEq)]
+enum HostnameType {
+    Host,
+    Wildcard,
+}
+
 /// Holds the block list and manages the loading of the block list
 #[derive(uniffi::Object)]
 pub struct RuleDatabase {
     controller: Arc<RuleDatabaseController>,
-    hosts: RwLock<HashMap<String, HostnameAction>>,
-    patterns: RwLock<HashMap<String, HostnameAction>>,
+    map: RwLock<HashMap<String, (HostnameType, HostnameAction)>>,
 }
 
 #[uniffi::export]
@@ -934,8 +940,7 @@ impl RuleDatabase {
     fn new(controller: Arc<RuleDatabaseController>) -> Self {
         RuleDatabase {
             controller,
-            hosts: RwLock::new(HashMap::new()),
-            patterns: RwLock::new(HashMap::new()),
+            map: RwLock::new(HashMap::new()),
         }
     }
 
@@ -966,8 +971,7 @@ impl RuleDatabase {
             host_exceptions.len()
         );
 
-        let mut hosts = HashMap::<String, HostnameAction>::new();
-        let mut patterns = HashMap::<String, HostnameAction>::new();
+        let mut map = HashMap::<String, (HostnameType, HostnameAction)>::new();
 
         let mut sorted_host_items = host_items
             .iter()
@@ -979,8 +983,7 @@ impl RuleDatabase {
             match load_item(
                 &android_file_helper,
                 &self.controller,
-                &mut hosts,
-                &mut patterns,
+                &mut map,
                 item,
             ) {
                 Ok(_) => {}
@@ -1001,8 +1004,7 @@ impl RuleDatabase {
         for exception in sorted_host_exceptions {
             match add_host(
                 &self.controller,
-                &mut hosts,
-                &mut patterns,
+                &mut map,
                 &exception.state,
                 exception.data.clone(),
             ) {
@@ -1015,31 +1017,19 @@ impl RuleDatabase {
             };
         }
 
-        let mut hosts_guard = match self.hosts.write() {
+        let mut hosts_guard = match self.map.write() {
             Ok(value) => value,
             Err(e) => {
-                error!("initialize: Failed to get write lock for hosts - {:?}", e);
-                return Err(RuleDatabaseError::LockError);
-            }
-        };
-        let mut patterns_guard = match self.patterns.write() {
-            Ok(value) => value,
-            Err(e) => {
-                error!(
-                    "initialize: Failed to get write lock for patterns - {:?}",
-                    e
-                );
+                error!("initialize: Failed to get write lock for data - {:?}", e);
                 return Err(RuleDatabaseError::LockError);
             }
         };
 
-        *hosts_guard = hosts;
-        *patterns_guard = patterns;
+        *hosts_guard = map;
 
         info!(
-            "initialize: Loaded {} hosts and {} patterns",
-            hosts_guard.len(),
-            patterns_guard.len()
+            "initialize: Loaded {} value(s) into the block list",
+            hosts_guard.len()
         );
         self.controller.set_reloading(false);
         self.controller.set_initialized();
@@ -1064,7 +1054,7 @@ impl RuleDatabase {
 
     /// Checks if a host is blocked
     fn is_blocked(&self, host: &str) -> bool {
-        let hosts = match self.hosts.read() {
+        let map = match self.map.read() {
             Ok(value) => value,
             Err(e) => {
                 error!("is_blocked: Failed to get read lock for hosts - {:?}", e);
@@ -1072,31 +1062,30 @@ impl RuleDatabase {
             }
         };
 
-        if let Some(value) = hosts.get(host) {
-            return match value {
+        if let Some(value) = map.get(host) {
+            return match value.1 {
                 HostnameAction::Deny => true,
                 HostnameAction::Allow => false,
             };
         } else {
-            let patterns = match self.patterns.read() {
-                Ok(value) => value,
-                Err(e) => {
-                    error!("is_blocked: Failed to get read lock for patterns - {:?}", e);
-                    return false;
-                }
-            };
-
-            let mut sub_host = host.to_owned();
+            let mut sub_host = host;
             for split in host.split('.') {
-                if let Some(value) = patterns.get(&sub_host) {
-                    return match value {
+                sub_host = match sub_host.split_once(&(split.to_owned() + ".")) {
+                    Some(value) => value.1,
+                    None => break,
+                };
+                if !sub_host.contains('.') {
+                    break;
+                }
+                if let Some(value) = map.get(sub_host) {
+                    if value.0 == HostnameType::Host {
+                        continue;
+                    }
+
+                    return match value.1 {
                         HostnameAction::Deny => true,
                         HostnameAction::Allow => false,
                     };
-                }
-                sub_host = sub_host.replacen(&(split.to_owned() + "."), "", 1);
-                if !sub_host.contains('.') {
-                    break;
                 }
             }
             return false;
@@ -1176,8 +1165,7 @@ fn parse_line(line: &str) -> Option<String> {
 fn load_item(
     android_file_helper: &Box<dyn AndroidFileHelper>,
     controller: &Arc<RuleDatabaseController>,
-    hosts: &mut HashMap<String, HostnameAction>,
-    patterns: &mut HashMap<String, HostnameAction>,
+    map: &mut HashMap<String, (HostnameType, HostnameAction)>,
     host: &NativeHost,
 ) -> Result<(), RuleDatabaseError> {
     if host.state == NativeHostState::IGNORE {
@@ -1188,7 +1176,7 @@ fn load_item(
         Some(value) => {
             let file = unsafe { File::from_raw_fd(value) };
             let lines: io::Lines<io::BufReader<File>> = io::BufReader::new(file).lines();
-            match load_file(controller, hosts, patterns, &host, lines) {
+            match load_file(controller, map, &host, lines) {
                 Ok(_) => {}
                 Err(error) => match error {
                     RuleDatabaseError::BadHostFormat => {}
@@ -1202,7 +1190,7 @@ fn load_item(
                 "Failed to open {}. Attempting to add as single host.",
                 host.data
             );
-            match add_host(controller, hosts, patterns, &host.state, host.data.clone()) {
+            match add_host(controller, map, &host.state, host.data.clone()) {
                 Ok(_) => {}
                 Err(error) => match error {
                     RuleDatabaseError::BadHostFormat => {}
@@ -1218,8 +1206,7 @@ fn load_item(
 /// Adds a single host to the block list
 fn add_host(
     controller: &Arc<RuleDatabaseController>,
-    hosts: &mut HashMap<String, HostnameAction>,
-    patterns: &mut HashMap<String, HostnameAction>,
+    map: &mut HashMap<String, (HostnameType, HostnameAction)>,
     state: &NativeHostState,
     data: String,
 ) -> Result<(), RuleDatabaseError> {
@@ -1237,10 +1224,10 @@ fn add_host(
                         match state {
                             NativeHostState::IGNORE => {}
                             NativeHostState::DENY => {
-                                patterns.insert(value.to_owned(), HostnameAction::Deny);
+                                map.insert(value.to_owned(), (HostnameType::Wildcard, HostnameAction::Deny));
                             }
                             NativeHostState::ALLOW => {
-                                patterns.insert(value.to_owned(), HostnameAction::Allow);
+                                map.insert(value.to_owned(), (HostnameType::Wildcard, HostnameAction::Allow));
                             }
                         };
                         Ok(())
@@ -1257,11 +1244,10 @@ fn add_host(
                                     match state {
                                         NativeHostState::IGNORE => {}
                                         NativeHostState::DENY => {
-                                            patterns.insert(value.to_owned(), HostnameAction::Deny);
+                                            map.insert(value.to_owned(), (HostnameType::Wildcard, HostnameAction::Deny));
                                         }
                                         NativeHostState::ALLOW => {
-                                            patterns
-                                                .insert(value.to_owned(), HostnameAction::Allow);
+                                            map.insert(value.to_owned(), (HostnameType::Wildcard, HostnameAction::Allow));
                                         }
                                     };
                                     Ok(())
@@ -1290,10 +1276,10 @@ fn add_host(
     match state {
         NativeHostState::IGNORE => {}
         NativeHostState::DENY => {
-            hosts.insert(data, HostnameAction::Deny);
+            map.insert(data, (HostnameType::Host, HostnameAction::Deny));
         }
         NativeHostState::ALLOW => {
-            hosts.insert(data, HostnameAction::Allow);
+            map.insert(data, (HostnameType::Host, HostnameAction::Allow));
         }
     };
     return Ok(());
@@ -1302,8 +1288,7 @@ fn add_host(
 /// Loads a file of hosts and adds them to the block list
 fn load_file(
     controller: &Arc<RuleDatabaseController>,
-    hosts: &mut HashMap<String, HostnameAction>,
-    patterns: &mut HashMap<String, HostnameAction>,
+    map: &mut HashMap<String, (HostnameType, HostnameAction)>,
     host: &NativeHost,
     lines: io::Lines<io::BufReader<File>>,
 ) -> Result<(), RuleDatabaseError> {
@@ -1313,7 +1298,7 @@ fn load_file(
             Ok(value) => {
                 let data = parse_line(value.as_str());
                 if data.is_some() {
-                    match add_host(controller, hosts, patterns, &host.state, data.unwrap()) {
+                    match add_host(controller, map, &host.state, data.unwrap()) {
                         Ok(_) => {}
                         Err(error) => {
                             match error {
