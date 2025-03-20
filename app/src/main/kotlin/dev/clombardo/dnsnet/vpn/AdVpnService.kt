@@ -26,7 +26,6 @@ import android.net.ConnectivityManager.NetworkCallback
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.VpnService
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
@@ -35,7 +34,6 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import dev.clombardo.dnsnet.DnsNetApplication.Companion.applicationContext
 import dev.clombardo.dnsnet.FileHelper
-import dev.clombardo.dnsnet.Intents
 import dev.clombardo.dnsnet.MainActivity
 import dev.clombardo.dnsnet.NotificationChannels
 import dev.clombardo.dnsnet.Preferences
@@ -51,18 +49,124 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import uniffi.net.AdVpnCallback
 import uniffi.net.RuleDatabase
 import uniffi.net.RuleDatabaseController
 
-enum class VpnStatus {
-    STARTING,
-    RUNNING,
-    STOPPING,
-    WAITING_FOR_NETWORK,
-    RECONNECTING,
-    RECONNECTING_NETWORK_ERROR,
-    STOPPED;
+enum class VpnStatus(val value: Int) {
+    /**
+     * The service is not running and all of its resources have been released.
+     *
+     * This is the default state. It can transition to [STARTING] or be transitioned to from [STOPPING].
+     */
+    STOPPED(0),
+
+    /**
+     * The service is running but is still loading its resources and has not started the main loop yet.
+     *
+     * This can transition to [WAITING_FOR_NETWORK] if no network is connected or [RUNNING] if all
+     * resources are loaded and the main loop starts. It can also be transitioned to from [WAITING_FOR_NETWORK].
+     */
+    STARTING(1),
+
+    /**
+     * The service is running but is waiting for all of its resources to be released before it stops.
+     *
+     * This can only transition to [STOPPED] once all resources have been released and the service is
+     * destroyed. It can be transitioned to from [RUNNING] if we run into irrecoverable errors, or
+     * the user stopped the service. Additionally, it can be transitioned to from any other state
+     * if the service is being told to shut down.
+     */
+    STOPPING(2),
+
+    /**
+     * The service is running and some or all of its resources may be loaded, but the VPN configuration
+     * loop is waiting for a network connection in [AdVpnThread.run].
+     *
+     * This can transition to [RUNNING] if we lost network connections and then reconnected or to
+     * itself if no networks are discovered after a timeout. It can also be transitioned to from
+     * [RUNNING] if we lose all network connections.
+     */
+    WAITING_FOR_NETWORK(3),
+
+    /**
+     * The service is running and some or all of its resources may be loaded, but the main loop has
+     * not fully initialized since it has stopped prior.
+     *
+     * This can transition to [RUNNING] once the main loop has fully initialized or to [WAITING_FOR_NETWORK]
+     * if we lose all network connections. It can also be transitioned to from [RUNNING] if we run
+     * into a recoverable error, switch networks, or see a VPN configuration change.
+     */
+    RECONNECTING(4),
+
+    /**
+     * The service is running, all of its resources have been loaded, and the main loop is running.
+     *
+     * This can transition to [RECONNECTING] if we run into a recoverable error, switch networks, or
+     * see a VPN configuration change, [WAITING_FOR_NETWORK] if we lose all network connections, or
+     * [STOPPING] if we are shutting down. It can be transitioned to from [STARTING] if we loaded
+     * all of our resources and the main loop is running or [RECONNECTING] if we finished reloading.
+     */
+    RUNNING(5);
+
+    fun isValidTransition(newStatus: VpnStatus): Boolean {
+        return when (this) {
+            STOPPED -> {
+                when (newStatus) {
+                    STARTING -> true
+                    else -> false
+                }
+            }
+
+            STARTING -> {
+                when (newStatus) {
+                    STOPPING,
+                    WAITING_FOR_NETWORK,
+                    RUNNING -> true
+
+                    else -> false
+                }
+            }
+
+            STOPPING -> {
+                when (newStatus) {
+                    STOPPED -> true
+                    else -> false
+                }
+            }
+
+            WAITING_FOR_NETWORK -> {
+                when (newStatus) {
+                    RUNNING,
+                    WAITING_FOR_NETWORK,
+                    STOPPING -> true
+
+                    else -> false
+                }
+            }
+
+            RECONNECTING -> {
+                when (newStatus) {
+                    WAITING_FOR_NETWORK,
+                    STOPPING,
+                    RUNNING -> true
+
+                    else -> false
+                }
+            }
+
+            RUNNING -> {
+                when (newStatus) {
+                    STOPPING,
+                    WAITING_FOR_NETWORK,
+                    RECONNECTING -> true
+
+                    else -> false
+                }
+            }
+        }
+    }
 
     @StringRes
     fun toTextId(): Int =
@@ -72,21 +176,38 @@ enum class VpnStatus {
             STOPPING -> R.string.notification_stopping
             WAITING_FOR_NETWORK -> R.string.notification_waiting_for_net
             RECONNECTING -> R.string.notification_reconnecting
-            RECONNECTING_NETWORK_ERROR -> R.string.notification_reconnecting_error
             STOPPED -> R.string.notification_stopped
         }
 
     companion object {
-        fun Int.toVpnStatus(): VpnStatus = entries.firstOrNull { it.ordinal == this } ?: STOPPED
+        fun Int.toVpnStatus(): VpnStatus = entries.firstOrNull { it.value == this } ?: STOPPED
     }
 }
 
 enum class Command {
+    /**
+     * Starts the service
+     */
     START,
+
+    /**
+     * Stops the service
+     */
     STOP,
+
+    /**
+     * Stops the service and leaves a notification for the user to start the service again
+     */
     PAUSE,
-    RESUME,
-    RESTART,
+
+    /**
+     * Reloads the main loop if we're running
+     */
+    RECONNECT,
+
+    /**
+     * Reloads the rule database if we're running
+     */
     RELOAD_DATABASE,
 }
 
@@ -106,8 +227,18 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         private val _status = MutableStateFlow(VpnStatus.STOPPED)
         val status = _status.asStateFlow()
 
-        fun isRunning(): Boolean {
+        /**
+         * Returns true if the service has at least been started
+         */
+        fun isActive(): Boolean {
             return status.value != VpnStatus.STOPPED
+        }
+
+        /**
+         * Returns true if the service is running and all of its resources have been loaded
+         */
+        fun isRunning(): Boolean {
+            return status.value == VpnStatus.RUNNING
         }
 
         val logger by lazy { BlockLogger.load() }
@@ -124,44 +255,83 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
                 return
             }
 
-            ContextCompat.startForegroundService(context, Intents.getStartVpnIntent())
+            start(context)
         }
 
+        /**
+         * Starts the service if it is not active. Does nothing otherwise.
+         */
         fun start(context: Context) {
-            if (isRunning()) {
-                logw("VPN is already running")
+            if (isActive()) {
+                logw("VPN is already active")
                 return
             }
 
-            ContextCompat.startForegroundService(context, Intents.getStartVpnIntent())
+            ContextCompat.startForegroundService(context, getStartIntent())
         }
 
+        /**
+         * Stops the service if it is active. Does nothing otherwise.
+         */
         fun stop(context: Context) {
-            if (!isRunning()) {
+            if (!isActive()) {
                 logw("VPN is already stopped")
                 return
             }
 
-            ContextCompat.startForegroundService(context, Intents.getStopVpnIntent())
+            context.startService(getStopIntent())
         }
 
-        fun restart(context: Context) {
+        /**
+         * Starts the service if it is not active and stops it otherwise.
+         */
+        fun toggle(context: Context) {
+            if (isActive()) {
+                stop(context)
+            } else {
+                start(context)
+            }
+        }
+
+        /**
+         * Reloads the main loop and reconfigures if the service is running. Does nothing otherwise.
+         */
+        fun reconnect(context: Context) {
             if (!isRunning()) {
                 logw("VPN is stopped, cannot restart")
                 return
             }
 
-            ContextCompat.startForegroundService(context, Intents.getRestartVpnIntent())
+            context.startService(getReconnectIntent())
         }
 
+        /**
+         * Reloads the rule database if the service is active. Does nothing otherwise.
+         */
         fun reloadDatabase(context: Context) {
-            if (!isRunning()) {
+            if (!isActive()) {
                 logw("VPN is stopped, cannot reload database")
                 return
             }
 
-            context.startService(Intents.getReloadDatabaseIntent())
+            context.startService(getReloadDatabaseIntent())
         }
+
+        fun getStartIntent(): Intent = Intent(applicationContext, AdVpnService::class.java)
+            .putExtra(COMMAND_TAG, Command.START.ordinal)
+            .putExtra(
+                NOTIFICATION_INTENT_TAG,
+                MainActivity.getPendingIntent()
+            )
+
+        fun getStopIntent(): Intent = Intent(applicationContext, AdVpnService::class.java)
+            .putExtra(COMMAND_TAG, Command.STOP.ordinal)
+
+        fun getReconnectIntent(): Intent = Intent(applicationContext, AdVpnService::class.java)
+            .putExtra(COMMAND_TAG, Command.RECONNECT.ordinal)
+
+        fun getReloadDatabaseIntent(): Intent = Intent(applicationContext, AdVpnService::class.java)
+            .putExtra(COMMAND_TAG, Command.RELOAD_DATABASE.ordinal)
 
         private fun getOpenMainActivityPendingIntent() = PendingIntent.getActivity(
             applicationContext,
@@ -179,12 +349,12 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
             PendingIntent.FLAG_IMMUTABLE,
         )
 
-        private fun getResumePendingIntent() = PendingIntent.getService(
+        private fun getStartPendingIntent() = PendingIntent.getService(
             applicationContext,
             REQUEST_CODE_START,
             Intent(applicationContext, AdVpnService::class.java).apply {
                 putExtra(NOTIFICATION_INTENT_TAG, getOpenMainActivityPendingIntent())
-                putExtra(COMMAND_TAG, Command.RESUME.ordinal)
+                putExtra(COMMAND_TAG, Command.START.ordinal)
             },
             PendingIntent.FLAG_IMMUTABLE,
         )
@@ -196,31 +366,34 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
     private val reloadPending = atomic(false)
     private val ruleDatabaseController = RuleDatabaseController()
     private val ruleDatabase = RuleDatabase(controller = ruleDatabaseController).also {
-        it.reload()
+        CoroutineScope(Dispatchers.IO).launch {
+            it.initialize()
+        }
+    }
+
+    private suspend fun RuleDatabase.initialize() = withContext(Dispatchers.IO) {
+        initialize(
+            androidFileHelper = FileHelper,
+            hostItems = config.hosts.items.map { it.toNative() },
+            hostExceptions = config.hosts.exceptions.map { it.toNative() },
+        )
     }
 
     private fun RuleDatabase.reload() {
+        logi("Reloading")
         if (reloadPending.getAndSet(true)) {
+            logi("Reload already pending")
             return
         }
 
         CoroutineScope(Dispatchers.IO).launch {
             waitOnInit()
             reloadPending.getAndSet(false)
-            initialize(
-                androidFileHelper = FileHelper,
-                hostItems = config.hosts.items.map { it.toNative() },
-                hostExceptions = config.hosts.exceptions.map { it.toNative() },
-            )
+            initialize()
         }
     }
 
-    private val vpnThread = AdVpnThread(
-        adVpnService = this,
-        notify = { status -> notify(status.ordinal) },
-        blockLoggerCallback = logger,
-        ruleDatabase = ruleDatabase,
-    )
+    private lateinit var vpnThread: AdVpnThread
 
     internal data class NetworkState(
         private var defaultNetwork: NetworkDetails? = null,
@@ -340,13 +513,13 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
             logd(networkState.toString())
 
             // The thread will pause at the start and loop while waiting for a network
-            restartVpnThread()
+            reconnectVpn()
             return
         }
 
         if (networkState.shouldReconnect(newNetwork, status.value)) {
             logi("Default network changed, reconnecting")
-            reconnect()
+            reconnectVpn()
         }
 
         logd("Setting new default network")
@@ -463,7 +636,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
                 .addAction(
                     0,
                     getString(R.string.resume),
-                    getResumePendingIntent()
+                    getStartPendingIntent()
                 )
                 .build()
     }
@@ -477,11 +650,14 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         logi("Received command - $command")
 
         when (command) {
-            Command.START,
-            Command.RESUME -> {
-                with(getSystemService(NotificationManager::class.java)) {
-                    cancel(SERVICE_PAUSED_NOTIFICATION_ID)
-                }
+            Command.START -> {
+                runningServiceNotificationBuilder
+                    .setContentTitle(getString(VpnStatus.STARTING.toTextId()))
+                startForeground(
+                    SERVICE_RUNNING_NOTIFICATION_ID,
+                    runningServiceNotificationBuilder.build()
+                )
+
                 Preferences.VpnIsActive = true
                 startVpn()
             }
@@ -491,9 +667,18 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
                 stopVpn()
             }
 
-            Command.PAUSE -> pauseVpn()
+            Command.PAUSE -> {
+                stopVpn()
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                with(getSystemService(NotificationManager::class.java)) {
+                    notify(
+                        SERVICE_PAUSED_NOTIFICATION_ID,
+                        pausedServiceNotification
+                    )
+                }
+            }
 
-            Command.RESTART -> restartVpnThread()
+            Command.RECONNECT -> reconnectVpn()
 
             Command.RELOAD_DATABASE -> ruleDatabase.reload()
         }
@@ -503,97 +688,27 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
 
     private fun startVpn() {
         if (prepare(this) != null) {
-            stopVpn()
+            stopSelf()
             return
         }
 
         updateVpnStatus(VpnStatus.STARTING)
-        vpnThread.startThread()
+        vpnThread = AdVpnThread(
+            adVpnService = this,
+            notify = { status -> notify(status.ordinal) },
+            blockLoggerCallback = logger,
+            ruleDatabase = ruleDatabase,
+        )
     }
 
-    private fun checkStatusTransition(old: VpnStatus, new: VpnStatus): Boolean {
-        if (old == new) {
-            return true
-        }
-
-        return when (old) {
-            VpnStatus.STOPPED -> {
-                when (new) {
-                    VpnStatus.STARTING -> true
-                    else -> false
-                }
-            }
-
-            VpnStatus.STOPPING -> {
-                when (new) {
-                    VpnStatus.RUNNING,
-                    VpnStatus.STARTING,
-                    VpnStatus.WAITING_FOR_NETWORK,
-                    VpnStatus.STOPPED -> true
-
-                    else -> false
-                }
-            }
-
-            VpnStatus.STARTING -> {
-                when (new) {
-                    VpnStatus.WAITING_FOR_NETWORK,
-                    VpnStatus.RECONNECTING_NETWORK_ERROR,
-                    VpnStatus.RUNNING -> true
-                    else -> false
-                }
-            }
-
-            VpnStatus.WAITING_FOR_NETWORK -> {
-                when (new) {
-                    VpnStatus.STARTING -> true
-                    else -> false
-                }
-            }
-
-            VpnStatus.RECONNECTING -> {
-                when (new) {
-                    VpnStatus.STOPPING -> true
-                    else -> false
-                }
-            }
-
-            VpnStatus.RECONNECTING_NETWORK_ERROR -> {
-                when (new) {
-                    VpnStatus.STARTING -> true
-                    else -> false
-                }
-            }
-
-            VpnStatus.RUNNING -> {
-                when (new) {
-                    VpnStatus.STOPPING,
-                    VpnStatus.WAITING_FOR_NETWORK,
-                    VpnStatus.RECONNECTING,
-                    VpnStatus.RECONNECTING_NETWORK_ERROR -> true
-
-                    else -> false
-                }
-            }
-        }
-    }
-
-    private fun updateVpnStatus(newStatus: VpnStatus, paused: Boolean = false) {
-        if (!checkStatusTransition(status.value, newStatus)) {
-            logw("Attempted invalid status transition! Ignoring. - ${status.value} -> $newStatus")
+    private fun updateVpnStatus(newStatus: VpnStatus) {
+        logi("Updating status ${status.value} -> $newStatus")
+        if (!status.value.isValidTransition(newStatus)) {
+            logw("Attempted invalid status transition! Ignoring - ${status.value} -> $newStatus")
             return
         }
 
         when (newStatus) {
-            VpnStatus.STARTING -> {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    startForeground(
-                        SERVICE_RUNNING_NOTIFICATION_ID,
-                        runningServiceNotificationBuilder.build()
-                    )
-                }
-            }
-
             VpnStatus.WAITING_FOR_NETWORK,
             VpnStatus.RUNNING -> registerConnectivityChangedCallback()
 
@@ -603,61 +718,49 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         }
 
         with(getSystemService(NotificationManager::class.java)) {
-            if (paused) {
-                notify(
-                    SERVICE_PAUSED_NOTIFICATION_ID,
-                    pausedServiceNotification
-                )
+            cancel(SERVICE_PAUSED_NOTIFICATION_ID)
+            if (newStatus == VpnStatus.STOPPED) {
+                cancel(SERVICE_RUNNING_NOTIFICATION_ID)
             } else {
-                if (newStatus == VpnStatus.STOPPED) {
-                    cancel(SERVICE_RUNNING_NOTIFICATION_ID)
-                } else {
-                    runningServiceNotificationBuilder.setContentTitle(getString(newStatus.toTextId()))
-                    notify(
-                        SERVICE_RUNNING_NOTIFICATION_ID,
-                        runningServiceNotificationBuilder.build()
-                    )
-                }
+                runningServiceNotificationBuilder.setContentTitle(getString(newStatus.toTextId()))
+                notify(
+                    SERVICE_RUNNING_NOTIFICATION_ID,
+                    runningServiceNotificationBuilder.build()
+                )
             }
         }
         _status.value = newStatus
     }
 
-    private fun pauseVpn() = stopVpn(paused = true)
-
-    private fun restartVpnThread() {
-        logd("Restarting thread")
-        unregisterConnectivityChangedCallback()
-        vpnThread.stopThread()
-        vpnThread.startThread()
-    }
-
-    private fun reconnect() {
+    private fun reconnectVpn() {
         if (status.value != VpnStatus.RUNNING && status.value != VpnStatus.WAITING_FOR_NETWORK) {
             return
         }
 
-        updateVpnStatus(VpnStatus.RECONNECTING)
-        restartVpnThread()
+        logd("Reconnecting")
+        unregisterConnectivityChangedCallback()
+        vpnThread.reconnect()
     }
 
-    private fun stopVpn(paused: Boolean = false) {
+    private fun stopVpn() {
         logi("Stopping Service")
 
         updateVpnStatus(VpnStatus.STOPPING)
 
-        vpnThread.stopThread()
+        vpnThread.stop()
 
         logger.save()
 
-        updateVpnStatus(VpnStatus.STOPPED, paused)
+        ruleDatabaseController.setShouldStop(true)
+
+        updateVpnStatus(VpnStatus.STOPPED)
 
         stopSelf()
     }
 
     override fun onDestroy() {
         logi("Destroyed, shutting down")
-        ruleDatabaseController.setShouldStop(true)
+        super.onDestroy()
         stopVpn()
 
         // Looks like uniffi gets confused with this setup so we need to destroy these manually

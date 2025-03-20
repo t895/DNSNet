@@ -217,7 +217,7 @@ fun App(
     onShareLogcat: () -> Unit,
     onTryToggleService: () -> Unit,
     onStartWithoutHostsCheck: () -> Unit,
-    onRestartService: () -> Unit,
+    onReloadVpn: () -> Unit,
     onUpdateRefreshWork: () -> Unit,
     onOpenNetworkSettings: () -> Unit,
 ) {
@@ -324,7 +324,7 @@ fun App(
                 onClick = {
                     onLoadDefaults()
                     vm.onDismissResetSettingsDialog()
-                    onRestartService()
+                    onReloadVpn()
                 },
             ),
             secondaryButton = DialogButton(
@@ -387,7 +387,7 @@ fun App(
                         onExport = onExport,
                         onShareLogcat = onShareLogcat,
                         onTryToggleService = onTryToggleService,
-                        onRestartService = onRestartService,
+                        onReloadVpn = onReloadVpn,
                         onUpdateRefreshWork = onUpdateRefreshWork,
                     )
                 }
@@ -399,7 +399,7 @@ fun App(
                     host = host,
                     vm = vm,
                     onPopBackStack = { navController.tryPopBackstack(backstackEntry.id) },
-                    onRestartService = onRestartService,
+                    onReloadVpn = onReloadVpn,
                 )
             }
             composable<HostException> { backstackEntry ->
@@ -409,7 +409,7 @@ fun App(
                     host = host,
                     vm = vm,
                     onPopBackStack = { navController.tryPopBackstack(backstackEntry.id) },
-                    onRestartService = onRestartService,
+                    onReloadVpn = onReloadVpn,
                 )
             }
             composable<DnsServer> { backstackEntry ->
@@ -431,7 +431,7 @@ fun App(
                                 vm.removeDnsServer(server)
                                 vm.onDismissDeleteDnsServerWarning()
                                 navController.tryPopBackstack(backstackEntry.id)
-                                onRestartService()
+                                onReloadVpn()
                             },
                         ),
                         secondaryButton = DialogButton(
@@ -452,7 +452,7 @@ fun App(
                             vm.replaceDnsServer(server, savedServer)
                         }
                         navController.tryPopBackstack(backstackEntry.id)
-                        onRestartService()
+                        onReloadVpn()
                     },
                     onDelete = if (server.title.isEmpty()) {
                         null
@@ -502,7 +502,7 @@ fun EditHostDestination(
     host: Host,
     vm: HomeViewModel,
     onPopBackStack: () -> Unit,
-    onRestartService: () -> Unit,
+    onReloadVpn: () -> Unit,
 ) {
     val showDeleteHostWarningDialog by vm.showDeleteHostWarningDialog.collectAsState()
     if (showDeleteHostWarningDialog) {
@@ -518,7 +518,7 @@ fun EditHostDestination(
                     vm.removeHost(host)
                     vm.onDismissDeleteHostWarning()
                     onPopBackStack()
-                    onRestartService()
+                    onReloadVpn()
                 },
             ),
             secondaryButton = DialogButton(
@@ -542,7 +542,7 @@ fun EditHostDestination(
                 vm.replaceHost(host, hostToSave)
             }
             onPopBackStack()
-            onRestartService()
+            onReloadVpn()
         },
         onDelete = if (host.title.isEmpty()) {
             null
@@ -568,7 +568,7 @@ fun AppPreview() {
         onShareLogcat = {},
         onTryToggleService = {},
         onStartWithoutHostsCheck = {},
-        onRestartService = {},
+        onReloadVpn = {},
         onUpdateRefreshWork = {},
         onOpenNetworkSettings = {},
     )
@@ -585,7 +585,7 @@ fun HomeScreen(
     onExport: () -> Unit,
     onShareLogcat: () -> Unit,
     onTryToggleService: () -> Unit,
-    onRestartService: () -> Unit,
+    onReloadVpn: () -> Unit,
     onUpdateRefreshWork: () -> Unit,
 ) {
     val navController = rememberNavController()
@@ -712,7 +712,7 @@ fun HomeScreen(
                                 config.blockLogging = false
                                 blockLog = false
                                 config.save()
-                                onRestartService()
+                                onReloadVpn()
                                 vm.onDismissDisableBlockLogWarning()
                             },
                         ),
@@ -740,7 +740,7 @@ fun HomeScreen(
                         config.ipV6Support = !config.ipV6Support
                         ipv6Support = config.ipV6Support
                         config.save()
-                        onRestartService()
+                        onReloadVpn()
                     },
                     blockLog = blockLog,
                     onToggleBlockLog = {
@@ -750,7 +750,7 @@ fun HomeScreen(
                             config.blockLogging = !config.blockLogging
                             blockLog = config.blockLogging
                             config.save()
-                            onRestartService()
+                            onReloadVpn()
                         }
                     },
                     onOpenBlockLog = {
@@ -810,13 +810,13 @@ fun HomeScreen(
                         config.appList.defaultMode = selection
                         allowlistDefault = selection
                         config.save()
-                        onRestartService()
+                        onReloadVpn()
                         vm.populateAppList()
                     },
                     apps = vm.appList,
                     onAppClick = { app, enabled ->
                         vm.onToggleApp(app, enabled)
-                        onRestartService()
+                        onReloadVpn()
                     },
                 )
             }
@@ -833,7 +833,7 @@ fun HomeScreen(
                         config.dnsServers.enabled = !config.dnsServers.enabled
                         customDnsServers = config.dnsServers.enabled
                         config.save()
-                        onRestartService()
+                        onReloadVpn()
                     },
                     onItemClick = { item ->
                         topLevelNavController.navigate(item)
@@ -841,7 +841,7 @@ fun HomeScreen(
                     onItemCheckClicked = { item ->
                         vm.toggleDnsServer(item)
                         if (customDnsServers) {
-                            onRestartService()
+                            onReloadVpn()
                         }
                     },
                 )

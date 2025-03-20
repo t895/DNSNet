@@ -63,6 +63,7 @@ fun VpnFab(
     )
     val containerColor by animateColorAsState(
         targetValue = when (status) {
+            VpnStatus.RECONNECTING,
             VpnStatus.RUNNING -> MaterialTheme.colorScheme.primaryContainer
             else -> MaterialTheme.colorScheme.primary
         },
@@ -92,6 +93,7 @@ fun VpnFab(
         val contentSize = 42.dp
         val contentColor by animateColorAsState(
             targetValue = when (status) {
+                VpnStatus.RECONNECTING,
                 VpnStatus.RUNNING -> MaterialTheme.colorScheme.onPrimaryContainer
                 else -> MaterialTheme.colorScheme.onPrimary
             },
@@ -99,22 +101,29 @@ fun VpnFab(
             label = "contentColor",
         )
 
-        if (status == VpnStatus.RUNNING) {
-            Icon(
-                modifier = Modifier.size(contentSize),
-                imageVector = Icons.Default.Stop,
-                contentDescription = stringResource(R.string.action_stop),
-                tint = contentColor,
-            )
-        } else if (status == VpnStatus.STOPPED) {
-            Icon(
-                modifier = Modifier.size(contentSize),
-                imageVector = Icons.Default.PlayArrow,
-                contentDescription = stringResource(R.string.action_start),
-                tint = contentColor,
-            )
-        } else {
-            CircularProgressIndicator(color = contentColor)
+        when (status) {
+            VpnStatus.RECONNECTING,
+            VpnStatus.RUNNING -> {
+                Icon(
+                    modifier = Modifier.size(contentSize),
+                    imageVector = Icons.Default.Stop,
+                    contentDescription = stringResource(R.string.action_stop),
+                    tint = contentColor,
+                )
+            }
+
+            VpnStatus.STOPPED -> {
+                Icon(
+                    modifier = Modifier.size(contentSize),
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = stringResource(R.string.action_start),
+                    tint = contentColor,
+                )
+            }
+
+            else -> {
+                CircularProgressIndicator(color = contentColor)
+            }
         }
     }
 }

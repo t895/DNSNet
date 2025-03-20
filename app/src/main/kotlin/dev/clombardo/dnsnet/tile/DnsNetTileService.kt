@@ -13,7 +13,7 @@ import android.net.VpnService
 import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
-import dev.clombardo.dnsnet.Intents
+import dev.clombardo.dnsnet.MainActivity
 import dev.clombardo.dnsnet.vpn.AdVpnService
 import dev.clombardo.dnsnet.vpn.VpnStatus
 import kotlinx.coroutines.CoroutineScope
@@ -71,17 +71,13 @@ class DnsNetTileService : TileService() {
         val prepareIntent = VpnService.prepare(applicationContext)
         if (prepareIntent != null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                startActivityAndCollapse(Intents.getMainActivityPendingIntent())
+                startActivityAndCollapse(MainActivity.getPendingIntent())
             } else {
-                startActivityAndCollapse(Intents.getMainActivityIntent())
+                startActivityAndCollapse(MainActivity.getIntent())
             }
             return
         }
 
-        if (AdVpnService.isRunning()) {
-            AdVpnService.stop(applicationContext)
-        } else {
-            AdVpnService.start(applicationContext)
-        }
+        AdVpnService.toggle(applicationContext)
     }
 }

@@ -12,6 +12,7 @@
 package dev.clombardo.dnsnet
 
 import android.app.Activity
+import android.app.PendingIntent
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.VpnService.prepare
@@ -58,6 +59,7 @@ import dev.chrisbanes.haze.HazeEffectScope
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
+import dev.clombardo.dnsnet.DnsNetApplication.Companion.applicationContext
 import dev.clombardo.dnsnet.db.RuleDatabaseUpdateWorker
 import dev.clombardo.dnsnet.ui.App
 import dev.clombardo.dnsnet.ui.theme.Animation
@@ -98,7 +100,7 @@ class MainActivity : AppCompatActivity() {
                         }
                         config.save()
                         vm.onReloadSettings()
-                        AdVpnService.restart(this)
+                        AdVpnService.reconnect(this)
                         recreate()
                     }
 
@@ -156,7 +158,7 @@ class MainActivity : AppCompatActivity() {
                         onShareLogcat = { logcatLauncher.launch("dnsnet-log.txt") },
                         onTryToggleService = { tryToggleService(true, vpnLauncher) },
                         onStartWithoutHostsCheck = { tryToggleService(false, vpnLauncher) },
-                        onRestartService = { AdVpnService.restart(this@MainActivity) },
+                        onReloadVpn = { AdVpnService.reconnect(this@MainActivity) },
                         onUpdateRefreshWork = ::updateRefreshWork,
                         onOpenNetworkSettings = ::openNetworkSettings,
                     )
@@ -218,7 +220,7 @@ class MainActivity : AppCompatActivity() {
         hostsCheck: Boolean,
         launcher: ManagedActivityResultLauncher<Intent, ActivityResult>,
     ) {
-        if (AdVpnService.isRunning()) {
+        if (AdVpnService.isActive()) {
             logi("Attempting to disconnect")
             AdVpnService.stop(this)
         } else {
@@ -324,5 +326,17 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         vm.onCheckForUpdateErrors()
+    }
+
+    companion object {
+        fun getPendingIntent(): PendingIntent = PendingIntent.getActivity(
+            applicationContext,
+            0,
+            Intent(applicationContext, MainActivity::class.java),
+            PendingIntent.FLAG_IMMUTABLE
+        )
+
+        fun getIntent(): Intent = Intent(applicationContext, MainActivity::class.java)
+            .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
 }

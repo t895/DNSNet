@@ -14,13 +14,6 @@
  * GPL.
  */
 
-/**
- * Currently there is no supported way to parse the current Wifi/LTE/etc
- * network. Here we just use the deprecated NetworkInfo API and suppress
- * the warning until a better solution comes along.
- */
-@file:Suppress("DEPRECATION")
-
 package dev.clombardo.dnsnet.vpn
 
 import android.app.PendingIntent
@@ -45,6 +38,7 @@ import uniffi.net.BlockLoggerCallback
 import uniffi.net.RuleDatabase
 import uniffi.net.VpnController
 import uniffi.net.VpnException
+import uniffi.net.VpnResult
 import uniffi.net.runVpnNative
 import java.net.Inet4Address
 import java.net.Inet6Address
@@ -67,6 +61,12 @@ class AdVpnThread(
 
         private const val PREFIX_LENGTH = 24
 
+        /**
+         * Currently there is no supported way to parse the current Wifi/LTE/etc
+         * network. Here we just use the deprecated NetworkInfo API and suppress
+         * the warning until a better solution comes along.
+         */
+        @Suppress("DEPRECATION")
         @Throws(NoNetworkException::class)
         private fun getDnsServers(context: Context): List<InetAddress> {
             val known = HashSet<InetAddress>()
@@ -107,78 +107,91 @@ class AdVpnThread(
         val vpnController: VpnController
     )
 
-    private var threadData: ThreadData? = null
+    private val threadData: ThreadData = ThreadData(
+        thread = Thread(this, "AdVpnThread"),
+        vpnController = VpnController(),
+    )
     private val threadLock = Object()
 
-    fun startThread() {
-        synchronized(threadLock) {
-            if (threadData != null) {
-                logw("startThread: Thread wasn't stopped before starting a new one!")
-                return
-            }
-
-            logi("Starting Vpn Thread")
-            threadData = ThreadData(
-                thread = Thread(this, "AdVpnThread"),
-                vpnController = VpnController(),
-            )
-            threadData!!.thread.start()
-            logi("Vpn Thread started")
-        }
+    init {
+        threadData.thread.start()
+        logi("Vpn Thread started")
     }
 
-    fun stopThread() {
+    fun stop() {
         synchronized(threadLock) {
-            if (threadData == null) {
-                logw("stopThread: Thread already stopped")
-                return
-            }
-
-            logi("Stopping Vpn Thread")
+            logi("Stopping")
 
             // Tell the Rust code to stop
-            threadData?.vpnController?.stop()
-            threadData?.thread?.interrupt()
+            threadData.vpnController.stop(VpnResult.STOPPING)
+            threadData.thread.interrupt()
             try {
-                threadData?.thread?.join()
+                threadData.thread.join()
             } catch (e: InterruptedException) {
                 logw("stopThread: Interrupted while joining thread", e)
             }
-            threadData = null
             logi("Vpn Thread stopped")
+        }
+    }
+
+    fun reconnect() {
+        synchronized(threadLock) {
+            logi("Reconnecting")
+            threadData.vpnController.stop(VpnResult.RECONNECTING)
+            threadData.thread.interrupt()
         }
     }
 
     @Synchronized
     override fun run() {
         logi("Starting")
-
-        notify(VpnStatus.STARTING)
         ruleDatabase.waitOnInit()
 
         var retryTimeout = MIN_RETRY_TIME
         // Try connecting the vpn continuously
         while (true) {
             val connectTimeMillis: Long = System.currentTimeMillis()
-            notify(VpnStatus.STARTING)
 
+            var reloadOnInterrupt: Boolean
             try {
                 // If the function returns, that means it was interrupted
-                runVpn()
-                break
-            } catch (e: NoNetworkException) {
-                loge("No active network found. Waiting.", e)
-                notify(VpnStatus.WAITING_FOR_NETWORK)
-            } catch (e: VpnException) {
-                // Internal error. Wait and try again.
-                loge("Got internal VPN exception", e)
-                notify(VpnStatus.RECONNECTING_NETWORK_ERROR)
-            } catch (e: PrepareFailedException) {
-                loge("Failed to prepare VPN", e)
-                notify(VpnStatus.RECONNECTING_NETWORK_ERROR)
+                val result = runVpn()
+                retryTimeout = MIN_RETRY_TIME
+                when (result) {
+                    VpnResult.RECONNECTING,
+                    VpnResult.CONTINUING -> {
+                        logi("Reconnecting")
+                        notify(VpnStatus.RECONNECTING)
+                        continue
+                    }
+                    VpnResult.STOPPING -> {
+                        logi("Stopping")
+                        break
+                    }
+                }
             } catch (e: Exception) {
-                loge("Thread dropped. Stopping.", e)
-                break
+                when (e) {
+                    is NoNetworkException -> {
+                        loge("No active network found. Waiting.", e)
+                        notify(VpnStatus.WAITING_FOR_NETWORK)
+                        reloadOnInterrupt = true
+                    }
+
+                    is VpnException, is PrepareFailedException -> {
+                        if (e is VpnException) {
+                            loge("Got internal VPN exception", e)
+                        } else {
+                            loge("Failed to prepare VPN", e)
+                        }
+                        notify(VpnStatus.RECONNECTING)
+                        reloadOnInterrupt = true
+                    }
+
+                    else -> {
+                        loge("Thread dropped. Stopping.", e)
+                        break
+                    }
+                }
             }
 
             if (System.currentTimeMillis() - connectTimeMillis >= RETRY_RESET_SEC * 1000) {
@@ -191,7 +204,12 @@ class AdVpnThread(
             try {
                 Thread.sleep(retryTimeout.toLong() * 1000)
             } catch (_: InterruptedException) {
-                break
+                logi("Thread interrupted")
+                if (reloadOnInterrupt) {
+                    continue
+                } else {
+                    break
+                }
             }
 
             if (retryTimeout < MAX_RETRY_TIME) {
@@ -199,25 +217,23 @@ class AdVpnThread(
             }
         }
 
-        notify(VpnStatus.STOPPING)
         logi("Exiting")
     }
 
     @Throws(
         NoNetworkException::class,
         VpnException::class,
-        PrepareFailedException::class,
-        IllegalStateException::class
+        PrepareFailedException::class
     )
-    private fun runVpn() {
+    private fun runVpn(): VpnResult {
         // Authenticate and configure the virtual network interface.
         val vpnFd = configure() ?: throw PrepareFailedException("Got null descriptor from system")
-        runVpnNative(
+        return runVpnNative(
             adVpnCallback = adVpnService,
             blockLoggerCallback = blockLoggerCallback,
             upstreamDnsServers = upstreamDnsServers.map { it.address },
             vpnFd = vpnFd.detachFd(),
-            vpnController = threadData?.vpnController ?: throw IllegalStateException(),
+            vpnController = threadData.vpnController,
             ruleDatabase = ruleDatabase,
         )
     }

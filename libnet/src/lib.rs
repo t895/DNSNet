@@ -55,7 +55,7 @@ pub fn run_vpn_native(
     vpn_fd: i32,
     vpn_controller: Arc<VpnController>,
     rule_database: Arc<RuleDatabase>,
-) -> Result<(), VpnError> {
+) -> Result<VpnResult, VpnError> {
     let mut vpn = AdVpn::new(vpn_fd, vpn_controller);
     let result = vpn.run(
         ad_vpn_callback,
@@ -67,13 +67,13 @@ pub fn run_vpn_native(
     return result;
 }
 
-/// Holds a single-fire event file descriptor and boolean flag to stop the VPN
+/// Holds an event file descriptor and flag to meant to interrupt the VPN loop
 ///
 /// Meant to be created on the Kotlin side and passed to the main Rust loop
 #[derive(uniffi::Object)]
 pub struct VpnController {
     event_fd: i32,
-    should_stop: AtomicBool,
+    stop_result: RwLock<Option<VpnResult>>,
 }
 
 #[uniffi::export]
@@ -85,21 +85,64 @@ impl VpnController {
                 let result = libc::eventfd(0, 0);
                 if result != -1 { result } else { panic!() }
             },
-            should_stop: AtomicBool::new(false),
+            stop_result: RwLock::new(None),
         })
     }
 
-    /// Returns whether the VPN has been told to stop
-    fn get_should_stop(&self) -> bool {
-        return self.should_stop.load(std::sync::atomic::Ordering::Relaxed);
+    /// Returns whether the VPN has been given a reason to stop. The main loop should stop if the result is [Some].
+    /// If [None], it should be ignored.
+    ///
+    /// Once this function is called and the result is [Some], the result will be cleared and the next call will return [None].
+    fn get_stop_result(&self) -> Option<VpnResult> {
+        return match self.stop_result.write() {
+            Ok(mut lock) => match *lock {
+                Some(result) => {
+                    // Additionally clear the eventfd
+                    unsafe {
+                        let mut eventfd_result = libc::eventfd_t::default();
+                        libc::eventfd_read(self.event_fd, &mut eventfd_result);
+                    };
+
+                    let result_clone = result.clone();
+                    *lock = None;
+                    Some(result_clone)
+                }
+                None => None,
+            },
+            Err(e) => {
+                error!(
+                    "get_should_stop: Failed to get write lock for should_stop - {:?}",
+                    e
+                );
+                None
+            }
+        };
     }
 
-    /// Closes the event file descriptor and sets the stop flag so we can interrupt epoll and stop the VPN
-    fn stop(&self) {
+    /// Writes an int to the event file descriptor and sets the stop flag so we can interrupt epoll and stop the VPN
+    fn stop(&self, result: VpnResult) {
+        if result == VpnResult::Continuing {
+            error!("stop: Cannot stop with VpnResult::Continuing");
+            return;
+        }
+
         info!("VpnController::stop");
-        self.should_stop
-            .store(true, std::sync::atomic::Ordering::Relaxed);
-        unsafe { libc::eventfd_write(self.event_fd, 1) };
+        match self.stop_result.write() {
+            Ok(mut lock) => {
+                if lock.is_none() {
+                    unsafe { libc::eventfd_write(self.event_fd, 1) };
+                    *lock = Some(result);
+                } else {
+                    warn!("stop: stop_result is already set!");
+                }
+            }
+            Err(e) => {
+                error!(
+                    "stop: Failed to get write lock for should_stop. This should never happen. - {:?}",
+                    e
+                );
+            }
+        }
     }
 }
 
@@ -311,27 +354,25 @@ fn get_epoch_nanos() -> u128 {
 
 /// Represents the current status of the VPN (Mirrors the version in Kotlin)
 pub enum VpnStatus {
-    Starting,
-    Running,
-    Stopping,
-    WaitingForNetwork,
-    Reconnecting,
-    ReconnectingNetworkError,
-    Stopped,
+    Stopped = 0,
+    Starting = 1,
+    Stopping = 2,
+    WaitingForNetwork = 3,
+    Reconnecting = 4,
+    Running = 5,
 }
 
-impl VpnStatus {
-    fn ordinal(&self) -> i32 {
-        match self {
-            VpnStatus::Starting => 0,
-            VpnStatus::Running => 1,
-            VpnStatus::Stopping => 2,
-            VpnStatus::WaitingForNetwork => 3,
-            VpnStatus::Reconnecting => 4,
-            VpnStatus::ReconnectingNetworkError => 5,
-            VpnStatus::Stopped => 6,
-        }
-    }
+/// Represents the possible results that can occur in the VPN and that will be passed back to Kotlin
+#[derive(uniffi::Enum, PartialEq, PartialOrd, Debug, Clone, Copy)]
+pub enum VpnResult {
+    // Loop should continue
+    Continuing,
+
+    // Loop should stop
+    Stopping,
+
+    // Loop should stop, the VPN should be reconfigured, and then the loop should start again
+    Reconnecting,
 }
 
 /// Represents the possible errors that can occur in the VPN and that will be passed back to Kotlin
@@ -341,7 +382,7 @@ pub enum VpnError {
     #[error("Failed to set up polling for the tunnel file descriptor")]
     TunnelPollFailure,
 
-    #[error("Failed to set up poling for a socket file descriptor")]
+    #[error("Failed to set up polling for a socket file descriptor")]
     SocketPollFailure,
 
     #[error("Failed to write to the tunnel file descriptor")]
@@ -407,7 +448,7 @@ impl AdVpn {
         block_logger_callback: Box<dyn BlockLoggerCallback>,
         rule_database: Arc<RuleDatabase>,
         upstream_dns_servers: Vec<Vec<u8>>,
-    ) -> Result<(), VpnError> {
+    ) -> Result<VpnResult, VpnError> {
         let mut packet = vec![0u8; i16::MAX as usize];
 
         let mut dns_packet_proxy = DnsPacketProxy::new(
@@ -438,7 +479,7 @@ impl AdVpn {
         }
         let mut events = Events::new();
 
-        android_vpn_callback.notify(VpnStatus::Running.ordinal());
+        android_vpn_callback.notify(VpnStatus::Running as i32);
         loop {
             match self.do_one(
                 &poller,
@@ -446,13 +487,10 @@ impl AdVpn {
                 &mut dns_packet_proxy,
                 packet.as_mut_slice(),
             ) {
-                Ok(should_stop) => {
-                    if should_stop {
-                        return Result::Ok(());
-                    } else {
-                        continue;
-                    }
-                }
+                Ok(result) => match result {
+                    VpnResult::Continuing => continue,
+                    _ => return Ok(result),
+                },
                 Err(e) => {
                     return Result::Err(e);
                 }
@@ -467,7 +505,7 @@ impl AdVpn {
         events: &mut Events,
         dns_packet_proxy: &mut DnsPacketProxy,
         packet: &mut [u8],
-    ) -> Result<bool, VpnError> {
+    ) -> Result<VpnResult, VpnError> {
         unsafe {
             match poller.add_with_mode(
                 self.vpn_file.as_raw_fd(),
@@ -509,16 +547,19 @@ impl AdVpn {
 
         debug!("do_one: Polling {} socket(s)", waiting_sockets);
         match poller.wait(events, None) {
-            Ok(events_length) => info!("do_one: Found {} events", events_length),
+            Ok(events_length) => info!("do_one: Found {} event(s)", events_length),
             Err(e) => {
                 debug!("do_one: Poll timed out - {:?}", e);
                 return Result::Err(VpnError::Timeout);
             }
         };
 
-        if self.vpn_controller.get_should_stop() {
-            info!("do_one: Told to stop");
-            return Result::Ok(true);
+        match self.vpn_controller.get_stop_result() {
+            Some(result) => {
+                info!("do_one: Told to stop");
+                return Ok(result);
+            }
+            None => {}
         }
 
         // Need to do this before reading from the device, otherwise a new insertion there could
@@ -581,7 +622,7 @@ impl AdVpn {
             }
         };
 
-        return Result::Ok(false);
+        return Result::Ok(VpnResult::Continuing);
     }
 
     /// Writes a packet to the tunnel from the device_writes queue
