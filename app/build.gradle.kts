@@ -41,7 +41,7 @@ cargo {
     }
 }
 
-val task = tasks.register<Exec>("uniffiBindgen") {
+val uniffiBindgen = tasks.register<Exec>("uniffiBindgen") {
     val s = File.separatorChar
     workingDir = file("${project.rootDir}${s}$libnet")
     commandLine(
@@ -59,6 +59,10 @@ val task = tasks.register<Exec>("uniffiBindgen") {
     )
 }
 
+uniffiBindgen.configure {
+    dependsOn.add(tasks.withType(CargoBuildTask::class.java))
+}
+
 project.afterEvaluate {
     tasks.withType(CargoBuildTask::class)
         .forEach { buildTask ->
@@ -74,7 +78,7 @@ project.afterEvaluate {
 
 tasks.preBuild.configure {
     dependsOn.add(tasks.withType(CargoBuildTask::class.java))
-    dependsOn.add(task)
+    dependsOn.add(uniffiBindgen)
 }
 
 android {
