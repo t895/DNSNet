@@ -529,6 +529,7 @@ fun EditHostDestination(
         )
     }
 
+    val context = LocalContext.current
     EditHostScreen(
         host = host,
         onNavigateUp = onPopBackStack,
@@ -542,7 +543,7 @@ fun EditHostDestination(
                 vm.replaceHost(host, hostToSave)
             }
             onPopBackStack()
-            onReloadVpn()
+            AdVpnService.reloadDatabase(context)
         },
         onDelete = if (host.title.isEmpty()) {
             null
