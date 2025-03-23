@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_shortdesc">Bloqueio de hosts e servidores personalizados de DNS</string>
     <string name="custom_dns">Servidores personalizados de DNS</string>
@@ -34,8 +35,6 @@
         <item>@string/allow</item>
         <item>@string/ignore</item>
     </string-array>
-    <!-- Translate with something like <Language> Translation: Your Name -->
-    <string name="translator_credits"/>
     <string name="app_version_info">Versão: %s</string>
     <string name="missing_hosts_files_message">Alguns arquivos host configurados (não-ignorados) estão faltando.\n\nUtilize o botão "Atualizar" para baixar os arquivos host.\n\nQuer continuar mesmo assim?</string>
     <string name="missing_hosts_files_title">Faltando os arquivos host</string>
