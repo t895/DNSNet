@@ -13,6 +13,7 @@ package dev.clombardo.dnsnet
 
 import android.app.Activity
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.VpnService.prepare
@@ -54,21 +55,26 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import dagger.hilt.android.AndroidEntryPoint
 import dev.chrisbanes.haze.HazeDefaults
 import dev.chrisbanes.haze.HazeEffectScope
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
-import dev.clombardo.dnsnet.DnsNetApplication.Companion.applicationContext
-import dev.clombardo.dnsnet.db.RuleDatabaseUpdateWorker
-import dev.clombardo.dnsnet.ui.App
-import dev.clombardo.dnsnet.ui.theme.Animation
-import dev.clombardo.dnsnet.ui.theme.DnsNetTheme
-import dev.clombardo.dnsnet.viewmodel.HomeViewModel
-import dev.clombardo.dnsnet.vpn.AdVpnService
+import dev.clombardo.dnsnet.file.FileHelper
+import dev.clombardo.dnsnet.log.logd
+import dev.clombardo.dnsnet.log.logi
+import dev.clombardo.dnsnet.service.db.RuleDatabaseUpdateWorker
+import dev.clombardo.dnsnet.service.vpn.AdVpnService
+import dev.clombardo.dnsnet.settings.HostState
+import dev.clombardo.dnsnet.ui.app.App
+import dev.clombardo.dnsnet.ui.app.viewmodel.HomeViewModel
+import dev.clombardo.dnsnet.ui.common.theme.Animation
+import dev.clombardo.dnsnet.ui.common.theme.DnsNetTheme
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     private val vm: HomeViewModel by viewModels()
 
@@ -89,7 +95,7 @@ class MainActivity : AppCompatActivity() {
                     rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
                         it ?: return@rememberLauncherForActivityResult
                         try {
-                            config = Configuration.load(contentResolver.openInputStream(it)!!)
+                            vm.configuration.replaceInstance(contentResolver.openInputStream(it)!!)
                         } catch (e: Exception) {
                             logd("Cannot read file", e)
                             Toast.makeText(
@@ -98,7 +104,7 @@ class MainActivity : AppCompatActivity() {
                                 Toast.LENGTH_SHORT,
                             ).show()
                         }
-                        config.save()
+                        vm.configuration.save()
                         vm.onReloadSettings()
                         AdVpnService.reconnect(this)
                         recreate()
@@ -109,7 +115,7 @@ class MainActivity : AppCompatActivity() {
                         uri ?: return@rememberLauncherForActivityResult
                         try {
                             contentResolver.openOutputStream(uri).use {
-                                config.save(it!!)
+                                vm.configuration.saveOut(it!!)
                             }
                         } catch (e: Exception) {
                             Toast.makeText(
@@ -143,13 +149,16 @@ class MainActivity : AppCompatActivity() {
                 ) {
                     val hazeState = remember { HazeState() }
 
+                    val status by AdVpnService.status.collectAsState()
+                    val isDatabaseRefreshing by RuleDatabaseUpdateWorker.isRefreshing.collectAsState()
                     App(
                         modifier = Modifier.hazeSource(hazeState),
                         vm = vm,
+                        state = status.toFabState(),
+                        isDatabaseRefreshing = isDatabaseRefreshing,
                         onRefreshHosts = ::refresh,
                         onLoadDefaults = {
-                            config = Configuration()
-                            config.save()
+                            vm.configuration.resetInstance()
                             vm.onReloadSettings()
                             recreate()
                         },
@@ -159,6 +168,7 @@ class MainActivity : AppCompatActivity() {
                         onTryToggleService = { tryToggleService(true, vpnLauncher) },
                         onStartWithoutHostsCheck = { tryToggleService(false, vpnLauncher) },
                         onReloadVpn = { AdVpnService.reconnect(this@MainActivity) },
+                        onReloadDatabase = { AdVpnService.reloadDatabase(this@MainActivity) },
                         onUpdateRefreshWork = ::updateRefreshWork,
                         onOpenNetworkSettings = ::openNetworkSettings,
                     )
@@ -176,7 +186,8 @@ class MainActivity : AppCompatActivity() {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(systemBarShadeHeight.dp)
-                                .hazeEffect(state = hazeState,
+                                .hazeEffect(
+                                    state = hazeState,
                                     style = HazeDefaults.style(
                                         backgroundColor = MaterialTheme.colorScheme.surface,
                                         blurRadius = 1.dp,
@@ -205,7 +216,8 @@ class MainActivity : AppCompatActivity() {
             refresh()
         }
 
-        vm.onCheckForUpdateErrors()
+        vm.onCheckForUpdateErrors(RuleDatabaseUpdateWorker.lastErrors)
+        RuleDatabaseUpdateWorker.lastErrors = null
 
         super.onNewIntent(intent)
     }
@@ -242,22 +254,25 @@ class MainActivity : AppCompatActivity() {
      * @return true if all host files exist or no host files were configured.
      */
     private fun areHostsFilesExistent(): Boolean {
-        if (!config.hosts.enabled) {
-            return true
-        }
+        return vm.configuration.read {
+            if (!hosts.enabled) {
+                return@read true
+            }
 
-        for (item in config.hosts.items) {
-            if (item.state != HostState.IGNORE) {
-                try {
-                    val reader = FileHelper.openItemFile(item) ?: return false
-                    reader.close()
-                } catch (e: IOException) {
-                    logi("areHostFilesExistent: Failed to open file {$item}", e)
-                    return false
+            for (item in hosts.items) {
+                if (item.state != HostState.IGNORE) {
+                    try {
+                        val reader =
+                            FileHelper.openPath(this@MainActivity, item.data) ?: return@read false
+                        reader.close()
+                    } catch (e: IOException) {
+                        logi("areHostFilesExistent: Failed to open file {$item}", e)
+                        return@read false
+                    }
                 }
             }
+            return@read true
         }
-        return true
     }
 
     private fun isPrivateDnsEnabled(): Boolean {
@@ -291,7 +306,7 @@ class MainActivity : AppCompatActivity() {
      */
     private fun tryStartService(launcher: ManagedActivityResultLauncher<Intent, ActivityResult>) {
         logi("Attempting to connect")
-        val intent = prepare(DnsNetApplication.applicationContext)
+        val intent = prepare(this)
         if (intent != null) {
             launcher.launch(intent)
         } else {
@@ -301,7 +316,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateRefreshWork() {
         val workManager = WorkManager.getInstance(this)
-        if (config.hosts.automaticRefresh) {
+        if (vm.configuration.read { hosts.automaticRefresh }) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.UNMETERED)
                 .setRequiresDeviceIdle(true)
@@ -325,18 +340,19 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        vm.onCheckForUpdateErrors()
+        vm.onCheckForUpdateErrors(RuleDatabaseUpdateWorker.lastErrors)
+        RuleDatabaseUpdateWorker.lastErrors = null
     }
 
     companion object {
-        fun getPendingIntent(): PendingIntent = PendingIntent.getActivity(
-            applicationContext,
+        fun getPendingIntent(context: Context): PendingIntent = PendingIntent.getActivity(
+            context,
             0,
-            Intent(applicationContext, MainActivity::class.java),
+            Intent(context, MainActivity::class.java),
             PendingIntent.FLAG_IMMUTABLE
         )
 
-        fun getIntent(): Intent = Intent(applicationContext, MainActivity::class.java)
+        fun getIntent(context: Context): Intent = Intent(context, MainActivity::class.java)
             .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
 }

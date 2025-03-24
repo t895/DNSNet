@@ -13,7 +13,9 @@ package dev.clombardo.dnsnet
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import dev.clombardo.dnsnet.vpn.AdVpnService
+import dev.clombardo.dnsnet.log.logd
+import dev.clombardo.dnsnet.log.logw
+import dev.clombardo.dnsnet.service.vpn.AdVpnService
 
 class ActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
