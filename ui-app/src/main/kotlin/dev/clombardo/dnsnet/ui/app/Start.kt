@@ -46,6 +46,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -69,6 +70,10 @@ data class StartButton(
     val onClick: () -> Unit,
     val endContent: @Composable (() -> Unit)? = null,
 )
+
+object Start {
+    const val TEST_TAG_START_BUTTON = "start_button"
+}
 
 @Composable
 fun StartScreen(
@@ -209,6 +214,7 @@ fun StartScreen(
             val iconSize = 42.dp
             TriStateFab(
                 modifier = Modifier
+                    .testTag(Start.TEST_TAG_START_BUTTON)
                     .then(
                         if (windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.COMPACT) {
                             Modifier.padding(bottom = NavigationBar.height).systemBarsPadding()

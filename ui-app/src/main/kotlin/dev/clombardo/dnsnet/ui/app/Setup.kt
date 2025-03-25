@@ -61,6 +61,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -80,6 +81,11 @@ object Setup {
     const val KEY_ICON = "icon"
     const val KEY_TITLE = "title"
     const val KEY_BACKGROUND = "background"
+
+    const val TEST_TAG_GET_STARTED = "get_started"
+    const val TEST_TAG_ACKNOWLEDGED_ONE = "acknowledge1"
+    const val TEST_TAG_ACKNOWLEDGED_TWO = "acknowledge2"
+    const val TEST_TAG_CONTINUE = "continue"
 
     val padding
         @Composable
@@ -138,7 +144,10 @@ fun GreetingScreen(
                         fontWeight = FontWeight.Bold,
                     )
                     Spacer(modifier = Modifier.padding(vertical = 48.dp))
-                    Button(onClick = onGetStartedClick) {
+                    Button(
+                        modifier = Modifier.testTag(Setup.TEST_TAG_GET_STARTED),
+                        onClick = onGetStartedClick
+                    ) {
                         Text(
                             text = stringResource(R.string.get_started),
                             style = MaterialTheme.typography.headlineSmall,
@@ -182,7 +191,10 @@ fun GreetingScreen(
                         )
                     }
                     Spacer(modifier = Modifier.padding(horizontal = 48.dp))
-                    Button(onClick = onGetStartedClick) {
+                    Button(
+                        modifier = Modifier.testTag(Setup.TEST_TAG_GET_STARTED),
+                        onClick = onGetStartedClick
+                    ) {
                         Text(
                             text = stringResource(R.string.get_started),
                             style = MaterialTheme.typography.headlineSmall,
@@ -266,6 +278,7 @@ fun NoticeScreen(
             }
             item {
                 InformationListItem(
+                    buttonTestTag = Setup.TEST_TAG_ACKNOWLEDGED_ONE,
                     icon = Icons.Default.Info,
                     title = stringResource(R.string.notice),
                     text = stringResource(R.string.notice_vpn_service),
@@ -277,6 +290,7 @@ fun NoticeScreen(
             }
             item {
                 InformationListItem(
+                    buttonTestTag = Setup.TEST_TAG_ACKNOWLEDGED_TWO,
                     icon = Icons.Default.Info,
                     title = stringResource(R.string.notice),
                     text = stringResource(R.string.notice_application),
@@ -294,6 +308,7 @@ fun NoticeScreen(
                     contentAlignment = Alignment.TopEnd,
                 ) {
                     Button(
+                        modifier = Modifier.testTag(Setup.TEST_TAG_CONTINUE),
                         enabled = vpnServiceAcknowledged && applicationAcknowledged,
                         onClick = onContinueClick,
                     ) {
@@ -375,6 +390,7 @@ private fun NoticeScreenPreview() {
 @Composable
 fun InformationListItem(
     modifier: Modifier = Modifier,
+    buttonTestTag: String = "",
     icon: ImageVector,
     title: String,
     text: String,
@@ -441,6 +457,7 @@ fun InformationListItem(
                     )
                     Button(
                         modifier = Modifier
+                            .testTag(buttonTestTag)
                             .sizeIn(minWidth = 128.dp, maxWidth = 192.dp)
                             .graphicsLayer { alpha = buttonAlpha },
                         onClick = onButtonClick,
