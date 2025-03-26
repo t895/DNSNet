@@ -1,8 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name" translatable="false">DNSNet</string>
     <string name="app_shortdesc">Host engelleme ve özel DNS sunucuları</string>
     <string name="custom_dns">Özel DNS sunucuları</string>
-    <string name="enable_hosts">Host filtreleme</string>
     <string name="start_tab">Başlat</string>
     <string name="hosts_tab">Hostlar</string>
     <string name="dns_tab">DNS</string>
