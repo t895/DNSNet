@@ -1,0 +1,110 @@
+/* Copyright (C) 2025 Charles Lombardo <clombardo169@gmail.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+package dev.clombardo.dnsnet.blocklogger
+
+import android.content.Context
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
+import dev.clombardo.dnsnet.file.FileHelper
+import dev.clombardo.dnsnet.log.loge
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromStream
+import kotlinx.serialization.json.encodeToStream
+import javax.inject.Singleton
+
+@Module
+@InstallIn(SingletonComponent::class)
+class BlockLoggerModule {
+    @Provides
+    @Singleton
+    fun provideBlockLogger(@ApplicationContext context: Context): BlockLogger {
+        return BlockLogger.load(context)
+    }
+}
+
+@Serializable
+data class BlockLogger(val connections: MutableMap<String, LoggedConnection> = HashMap()) {
+    @Transient
+    private var onConnection: ((name: String, connection: LoggedConnection) -> Unit)? = null
+
+    fun setOnConnectionListener(listener: ((name: String, connection: LoggedConnection) -> Unit)?) {
+        onConnection = listener
+    }
+
+    fun newConnection(name: String, allowed: Boolean) {
+        val connection = connections[name]
+        val now = System.currentTimeMillis()
+        if (connection != null) {
+            if (connection.allowed != allowed) {
+                connections.remove(name)
+                connections[name] = LoggedConnection(allowed, 1, now)
+            } else {
+                connection.attempt(now)
+            }
+        } else {
+            connections[name] = LoggedConnection(allowed, 1, now)
+        }
+        onConnection?.invoke(name, connections[name]!!)
+    }
+
+    @OptIn(ExperimentalSerializationApi::class)
+    fun save(context: Context, name: String = DEFAULT_LOG_FILENAME) {
+        try {
+            val outputStream = FileHelper.openWrite(context, name)
+            json.encodeToStream(this, outputStream)
+        } catch (e: Exception) {
+            loge("Failed to write connection history", e)
+        }
+    }
+
+    fun clear(context: Context) {
+        connections.clear()
+        context.getFileStreamPath(DEFAULT_LOG_FILENAME).delete()
+    }
+
+    companion object {
+        private const val DEFAULT_LOG_FILENAME = "connections.json"
+
+        private val json by lazy {
+            Json {
+                ignoreUnknownKeys = true
+            }
+        }
+
+        @OptIn(ExperimentalSerializationApi::class)
+        internal fun load(context: Context, name: String = DEFAULT_LOG_FILENAME): BlockLogger {
+            val inputStream =
+                FileHelper.openRead(context, name) ?: return BlockLogger()
+            return try {
+                json.decodeFromStream<BlockLogger>(inputStream)
+            } catch (e: Exception) {
+                loge("Failed to load connection history", e)
+                BlockLogger()
+            }
+        }
+    }
+}
+
+@Serializable
+data class LoggedConnection(
+    val allowed: Boolean = true,
+    var attempts: Long = 0,
+    var lastAttemptTime: Long = 0,
+) {
+    fun attempt(now: Long) {
+        attempts++
+        lastAttemptTime = now
+    }
+}

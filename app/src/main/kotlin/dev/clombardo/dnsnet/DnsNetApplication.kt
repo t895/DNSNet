@@ -9,28 +9,35 @@
 package dev.clombardo.dnsnet
 
 import android.app.Application
-import android.content.Context
+import androidx.hilt.work.HiltWorkerFactory
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
 import coil3.disk.directory
 import coil3.memory.MemoryCache
-import dev.clombardo.dnsnet.ui.image.AppImageFetcher
-import dev.clombardo.dnsnet.ui.image.AppImageKeyer
+import dagger.hilt.android.HiltAndroidApp
+import dev.clombardo.dnsnet.notification.NotificationChannels
+import dev.clombardo.dnsnet.service.HostUtil
+import dev.clombardo.dnsnet.service.db.RuleDatabaseUpdateWorker
+import dev.clombardo.dnsnet.settings.Configuration
+import dev.clombardo.dnsnet.settings.ConfigurationManager
+import dev.clombardo.dnsnet.settings.Preferences
+import dev.clombardo.dnsnet.ui.app.coil.AppImageFetcher
+import dev.clombardo.dnsnet.ui.app.coil.AppImageKeyer
 import uniffi.net.rustInit
 import java.io.File
+import javax.inject.Inject
 
-var config = Configuration.load()
+@HiltAndroidApp
+class DnsNetApplication : Application(), androidx.work.Configuration.Provider {
+    @Inject
+    lateinit var preferences: Preferences
 
-class DnsNetApplication : Application() {
-    companion object {
-        private lateinit var application: Application
-        val applicationContext: Context get() = application.applicationContext
-    }
+    @Inject
+    lateinit var configuration: ConfigurationManager
 
     override fun onCreate() {
         super.onCreate()
-        application = this
 
         rustInit(debug = BuildConfig.DEBUG)
 
@@ -58,9 +65,21 @@ class DnsNetApplication : Application() {
 
         // Prevent existing users (pre-1.1.9) from seeing the setup screen
         if (File(applicationContext.filesDir, Configuration.DEFAULT_CONFIG_FILENAME).exists() ||
-            Preferences.NotificationPermissionActedUpon
+            preferences.NotificationPermissionActedUpon
         ) {
-            Preferences.SetupComplete = true
+            preferences.SetupComplete = true
+        }
+
+        if (!HostUtil.areHostsFilesExistent(this, configuration)) {
+            RuleDatabaseUpdateWorker.runNow(this)
         }
     }
+
+    @Inject
+    lateinit var workerFactory: HiltWorkerFactory
+
+    override val workManagerConfiguration: androidx.work.Configuration
+        get() = androidx.work.Configuration.Builder()
+            .setWorkerFactory(workerFactory)
+            .build()
 }
