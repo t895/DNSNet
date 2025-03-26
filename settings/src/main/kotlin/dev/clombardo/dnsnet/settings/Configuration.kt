@@ -27,6 +27,11 @@ import dev.clombardo.dnsnet.file.FileHelper
 import dev.clombardo.dnsnet.log.logd
 import dev.clombardo.dnsnet.log.loge
 import dev.clombardo.dnsnet.log.logi
+import kotlinx.atomicfu.atomic
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
@@ -52,39 +57,56 @@ class ConfigurationManager(private val context: Context) {
     private val configLock = Object()
     private var configuration = Configuration.load(context)
 
-    fun replaceInstance(newConfigStream: InputStream) =
+    private val pendingSave = atomic(false)
+    private var saving by atomic(false)
+
+    fun replaceInstance(newConfigStream: InputStream) {
         synchronized(configLock) {
             val newConfig = Configuration.load(newConfigStream)
             configuration = newConfig
-            configuration.save(context)
         }
+        saveAsync()
+    }
 
-    fun resetInstance() =
+    fun resetInstance() {
         synchronized(configLock) {
             configuration = Configuration()
-            configuration.save(context)
         }
+        saveAsync()
+    }
 
-    fun edit(block: Configuration.() -> Unit) =
+    fun edit(block: Configuration.() -> Unit) {
         synchronized(configLock) {
             block(configuration)
-            configuration.save(context)
         }
+        saveAsync()
+    }
 
     fun <T> read(block: ImmutableConfiguration.() -> T): T =
         synchronized(configLock) {
             block(ImmutableConfiguration(configuration))
         }
 
-    fun save(): Result<Unit> =
-        synchronized(configLock) {
-            configuration.save(context)
+    fun saveOut(writer: OutputStream): Result<Unit> =
+        configuration.save(writer)
+
+    private fun saveAsync() {
+        if (pendingSave.getAndSet(true)) {
+            return
         }
 
-    fun saveOut(writer: OutputStream): Result<Unit> =
-        synchronized(configLock) {
-            configuration.save(writer)
+        CoroutineScope(Dispatchers.IO).launch {
+            while (saving) {
+                delay(100)
+            }
+
+            saving = true
+            pendingSave.getAndSet(false)
+            configuration.save(context)
+            logd("Saved configuration")
+            saving = false
         }
+    }
 }
 
 @Serializable

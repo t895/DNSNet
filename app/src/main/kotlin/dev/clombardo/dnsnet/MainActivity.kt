@@ -101,7 +101,6 @@ class MainActivity : AppCompatActivity() {
                                 Toast.LENGTH_SHORT,
                             ).show()
                         }
-                        vm.configuration.save()
                         vm.onReloadSettings()
                         AdVpnService.reconnect(this)
                         recreate()
