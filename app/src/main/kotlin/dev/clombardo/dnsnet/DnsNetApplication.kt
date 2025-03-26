@@ -17,7 +17,10 @@ import coil3.disk.directory
 import coil3.memory.MemoryCache
 import dagger.hilt.android.HiltAndroidApp
 import dev.clombardo.dnsnet.notification.NotificationChannels
+import dev.clombardo.dnsnet.service.HostUtil
+import dev.clombardo.dnsnet.service.db.RuleDatabaseUpdateWorker
 import dev.clombardo.dnsnet.settings.Configuration
+import dev.clombardo.dnsnet.settings.ConfigurationManager
 import dev.clombardo.dnsnet.settings.Preferences
 import dev.clombardo.dnsnet.ui.app.coil.AppImageFetcher
 import dev.clombardo.dnsnet.ui.app.coil.AppImageKeyer
@@ -29,6 +32,9 @@ import javax.inject.Inject
 class DnsNetApplication : Application(), androidx.work.Configuration.Provider {
     @Inject
     lateinit var preferences: Preferences
+
+    @Inject
+    lateinit var configuration: ConfigurationManager
 
     override fun onCreate() {
         super.onCreate()
@@ -62,6 +68,10 @@ class DnsNetApplication : Application(), androidx.work.Configuration.Provider {
             preferences.NotificationPermissionActedUpon
         ) {
             preferences.SetupComplete = true
+        }
+
+        if (!HostUtil.areHostsFilesExistent(this, configuration)) {
+            RuleDatabaseUpdateWorker.runNow(this)
         }
     }
 

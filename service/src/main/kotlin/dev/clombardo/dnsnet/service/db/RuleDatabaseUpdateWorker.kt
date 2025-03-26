@@ -20,6 +20,8 @@ import androidx.core.app.NotificationCompat
 import androidx.core.net.toUri
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -59,6 +61,12 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
 
         private val _isRefreshing = MutableStateFlow(false)
         val isRefreshing = _isRefreshing.asStateFlow()
+
+        fun runNow(context: Context) {
+            val workRequest = OneTimeWorkRequestBuilder<RuleDatabaseUpdateWorker>()
+                .build()
+            WorkManager.getInstance(context).enqueue(workRequest)
+        }
     }
 
     private val errors = ArrayList<String>()

@@ -52,7 +52,6 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
-import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import dagger.hilt.android.AndroidEntryPoint
@@ -61,17 +60,15 @@ import dev.chrisbanes.haze.HazeEffectScope
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
-import dev.clombardo.dnsnet.file.FileHelper
 import dev.clombardo.dnsnet.log.logd
 import dev.clombardo.dnsnet.log.logi
+import dev.clombardo.dnsnet.service.HostUtil
 import dev.clombardo.dnsnet.service.db.RuleDatabaseUpdateWorker
 import dev.clombardo.dnsnet.service.vpn.AdVpnService
-import dev.clombardo.dnsnet.settings.HostState
 import dev.clombardo.dnsnet.ui.app.App
 import dev.clombardo.dnsnet.ui.app.viewmodel.HomeViewModel
 import dev.clombardo.dnsnet.ui.common.theme.Animation
 import dev.clombardo.dnsnet.ui.common.theme.DnsNetTheme
-import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 @AndroidEntryPoint
@@ -156,7 +153,7 @@ class MainActivity : AppCompatActivity() {
                         vm = vm,
                         state = status.toFabState(),
                         isDatabaseRefreshing = isDatabaseRefreshing,
-                        onRefreshHosts = ::refresh,
+                        onRefreshHosts = { RuleDatabaseUpdateWorker.runNow(this@MainActivity) },
                         onLoadDefaults = {
                             vm.configuration.resetInstance()
                             vm.onReloadSettings()
@@ -204,28 +201,18 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        if (!areHostsFilesExistent() && savedInstanceState == null) {
-            refresh()
-        }
-
         updateRefreshWork()
     }
 
     override fun onNewIntent(intent: Intent) {
         if (intent.getBooleanExtra("UPDATE", false)) {
-            refresh()
+            RuleDatabaseUpdateWorker.runNow(this)
         }
 
         vm.onCheckForUpdateErrors(RuleDatabaseUpdateWorker.lastErrors)
         RuleDatabaseUpdateWorker.lastErrors = null
 
         super.onNewIntent(intent)
-    }
-
-    private fun refresh() {
-        val workRequest = OneTimeWorkRequestBuilder<RuleDatabaseUpdateWorker>()
-            .build()
-        WorkManager.getInstance(this).enqueue(workRequest)
     }
 
     private fun tryToggleService(
@@ -240,38 +227,11 @@ class MainActivity : AppCompatActivity() {
                 vm.onPrivateDnsEnabledWarning()
                 return
             }
-            if (!areHostsFilesExistent() && hostsCheck) {
+            if (!HostUtil.areHostsFilesExistent(this, vm.configuration) && hostsCheck) {
                 vm.onHostsFilesNotFound()
                 return
             }
             tryStartService(launcher)
-        }
-    }
-
-    /**
-     * Check if all configured hosts files exist.
-     *
-     * @return true if all host files exist or no host files were configured.
-     */
-    private fun areHostsFilesExistent(): Boolean {
-        return vm.configuration.read {
-            if (!hosts.enabled) {
-                return@read true
-            }
-
-            for (item in hosts.items) {
-                if (item.state != HostState.IGNORE) {
-                    try {
-                        val reader =
-                            FileHelper.openPath(this@MainActivity, item.data) ?: return@read false
-                        reader.close()
-                    } catch (e: IOException) {
-                        logi("areHostFilesExistent: Failed to open file {$item}", e)
-                        return@read false
-                    }
-                }
-            }
-            return@read true
         }
     }
 
