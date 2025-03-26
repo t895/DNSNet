@@ -138,6 +138,9 @@ dependencies {
     ksp(libs.hilt.compiler)
     ksp(libs.hilt.extensions.compiler)
 
+    testImplementation(libs.junit)
+    testImplementation(libs.androidx.test.core)
+
     androidTestImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.rules)

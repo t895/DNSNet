@@ -64,4 +64,6 @@ jobs:
           target: ${{ matrix.target }}
           arch: ${{ matrix.arch }}
           profile: Nexus 6
-          script: ./gradlew :service:connectedCheck && killall -INT crashpad_handler || true
+          script: |
+            ./gradlew :service:test
+            ./gradlew :service:connectedCheck && killall -INT crashpad_handler || true
