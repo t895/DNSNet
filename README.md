@@ -9,6 +9,12 @@ This is a DNS-based host blocker for Android. In the default configuration,
 several widely-respected host files are used to block ads, malware, and other
 weird stuff.
 
+<div align="center">
+<a href="https://hosted.weblate.org/engage/dnsnet/">
+<img src="https://hosted.weblate.org/widget/dnsnet/287x66-black.png" alt="Translation status" height="80" />
+</a>
+</div>
+
 Screenshots
 -----------
 
