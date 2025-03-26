@@ -70,14 +70,4 @@
         <item>Все приложения для обхода блокировки по умолчанию</item>
         <item>Системные приложения для обхода блокировки по умолчанию</item>
     </string-array>
-    <string name="import_description"></string>
-    <string name="view_source_code"></string>
-    <string name="adbuster_credit"></string>
-    <string name="allowlist_description"></string>
-    <string name="cannot_read_config"></string>
-    <string name="dns66_credit"></string>
-    <string name="action_use_file"></string>
-    <string name="about_description"></string>
-    <string name="load_defaults_description"></string>
-    <string name="export_description"></string>
 </resources>
