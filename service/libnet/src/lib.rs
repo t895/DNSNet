@@ -1062,6 +1062,10 @@ impl RuleDatabase {
             }
         };
 
+        if map.is_empty() {
+            return false;
+        }
+
         if let Some(value) = map.get(host) {
             return match value.1 {
                 HostnameAction::Deny => true,
