@@ -65,6 +65,8 @@ fun DnsScreen(
     servers: List<DnsServer> = emptyList(),
     customDnsServers: Boolean,
     onCustomDnsServersClick: () -> Unit,
+    useNetworkDnsServers: Boolean,
+    onUseNetworkDnsServersClick: () -> Unit,
     onItemClick: (DnsServer) -> Unit,
     onItemCheckClicked: (DnsServer) -> Unit,
 ) {
@@ -80,6 +82,15 @@ fun DnsScreen(
                     details = stringResource(R.string.dns_description),
                     checked = customDnsServers,
                     onCheckedChange = { onCustomDnsServersClick() },
+                )
+
+                val allServersDisabled = servers.all { !it.enabled }
+                SwitchListItem(
+                    enabled = customDnsServers && !allServersDisabled,
+                    title = stringResource(R.string.use_dns_servers_from_active_network),
+                    details = stringResource(R.string.use_dns_servers_from_active_network_description),
+                    checked = useNetworkDnsServers || !customDnsServers || allServersDisabled,
+                    onCheckedChange = { onUseNetworkDnsServersClick() },
                 )
             }
             Spacer(modifier = Modifier.padding(vertical = 4.dp))
@@ -111,6 +122,8 @@ private fun DnsScreenPreview() {
             onItemClick = {},
             customDnsServers = false,
             onCustomDnsServersClick = {},
+            useNetworkDnsServers = false,
+            onUseNetworkDnsServersClick = {},
             onItemCheckClicked = {},
         )
     }

@@ -172,6 +172,8 @@
     <string name="learn_more">Learn more</string>
     <string name="complete">Complete</string>
     <string name="button_continue">Continue</string>
+    <string name="use_dns_servers_from_active_network">Use servers from active network</string>
+    <string name="use_dns_servers_from_active_network_description">Applies servers from the network you are connected to in addition to your own</string>
 
     <!-- Rust crate credits -->
     <string name="etherparse" translatable="false">etherparse</string>

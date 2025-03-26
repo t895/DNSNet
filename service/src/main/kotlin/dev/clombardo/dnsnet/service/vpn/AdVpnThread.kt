@@ -369,6 +369,7 @@ class AdVpnThread(
         // Add all known DNS servers from local network
         val addLocalDnsServers = adVpnService.configuration.read {
             !this.dnsServers.enabled || this.dnsServers.items.none { it.enabled }
+                    || useNetworkDnsServers
         }
         if (addLocalDnsServers) {
             for (addr in dnsServers) {

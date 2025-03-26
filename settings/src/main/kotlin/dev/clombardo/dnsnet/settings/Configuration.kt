@@ -27,7 +27,6 @@ import dev.clombardo.dnsnet.file.FileHelper
 import dev.clombardo.dnsnet.log.logd
 import dev.clombardo.dnsnet.log.loge
 import dev.clombardo.dnsnet.log.logi
-import dev.clombardo.dnsnet.settings.Configuration.Companion.load
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
@@ -55,7 +54,7 @@ class ConfigurationManager(private val context: Context) {
 
     fun replaceInstance(newConfigStream: InputStream) =
         synchronized(configLock) {
-            val newConfig = load(newConfigStream)
+            val newConfig = Configuration.load(newConfigStream)
             configuration = newConfig
             configuration.save(context)
         }
@@ -101,6 +100,7 @@ data class Configuration(
     var watchDog: Boolean = false,
     var ipV6Support: Boolean = true,
     var blockLogging: Boolean = false,
+    var useNetworkDnsServers: Boolean = false,
 ) {
     companion object {
         const val DEFAULT_CONFIG_FILENAME = "settings.json"
@@ -182,6 +182,7 @@ value class ImmutableConfiguration(private val config: Configuration) {
     val watchDog get() = config.watchDog
     val ipV6Support get() = config.ipV6Support
     val blockLogging get() = config.blockLogging
+    val useNetworkDnsServers get() = config.useNetworkDnsServers
 }
 
 @Serializable

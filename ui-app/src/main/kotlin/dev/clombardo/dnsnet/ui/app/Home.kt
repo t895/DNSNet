@@ -853,6 +853,9 @@ fun HomeScreen(
                 var customDnsServers by remember {
                     mutableStateOf(vm.configuration.read { dnsServers.enabled })
                 }
+                var useNetworkDnsServers by remember {
+                    mutableStateOf(vm.configuration.read { useNetworkDnsServers })
+                }
                 DnsScreen(
                     contentPadding = contentPadding + PaddingValues(ListPadding) +
                             PaddingValues(bottom = DefaultFabSize + FabPadding),
@@ -863,6 +866,14 @@ fun HomeScreen(
                         vm.configuration.edit {
                             dnsServers.enabled = !dnsServers.enabled
                             customDnsServers = dnsServers.enabled
+                        }
+                        onReloadVpn()
+                    },
+                    useNetworkDnsServers = useNetworkDnsServers,
+                    onUseNetworkDnsServersClick = {
+                        vm.configuration.edit {
+                            this.useNetworkDnsServers = !useNetworkDnsServers
+                            useNetworkDnsServers = this.useNetworkDnsServers
                         }
                         onReloadVpn()
                     },
