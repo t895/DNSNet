@@ -80,12 +80,8 @@ import dev.clombardo.dnsnet.ui.common.theme.Animation
 import dev.clombardo.dnsnet.ui.common.theme.DnsNetTheme
 
 object Hosts {
-    val RefreshHostsButtonContainerAnimationSpec by lazy {
-        tween<IntSize>(
-            durationMillis = 1,
-            easing = Animation.EmphasizedAccelerateEasing,
-        )
-    }
+    val RefreshHostsButtonContainerAnimationSpec =
+        tween<IntSize>(easing = Animation.EmphasizedDecelerateEasing)
 }
 
 @Composable
@@ -271,6 +267,7 @@ private fun HostsScreenPreview() {
         add(item3)
     }
 
+    var isRefreshingHosts by remember { mutableStateOf(false) }
     DnsNetTheme {
         HostsScreen(
             modifier = Modifier.background(MaterialTheme.colorScheme.surface),
@@ -279,8 +276,8 @@ private fun HostsScreenPreview() {
             hosts = items,
             onHostClick = {},
             onHostStateChanged = {},
-            isRefreshingHosts = false,
-            onRefreshHosts = {},
+            isRefreshingHosts = isRefreshingHosts,
+            onRefreshHosts = { isRefreshingHosts = !isRefreshingHosts },
         )
     }
 }
