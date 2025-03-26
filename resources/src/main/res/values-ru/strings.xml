@@ -70,4 +70,43 @@
         <item>Все приложения для обхода блокировки по умолчанию</item>
         <item>Системные приложения для обхода блокировки по умолчанию</item>
     </string-array>
+    <string name="import_description">Загрузить резервный файл настроек</string>
+    <string name="adbuster_credit">Используются части от AdBuster созданном Daniel Brodie</string>
+    <string name="view_source_code">Просмотреть исходный код</string>
+    <string name="add_address">Добавить адрес</string>
+    <string name="cannot_read_config">Невозможно прочитать конфигурацию</string>
+    <string name="action_use_file">Использовать файл</string>
+    <string name="legend_host_intro">Сначала добавьте записи заблокированных. Затем записи разрешённых создают исключения. Вы можете управлять этой операцией с помощью следующих опций:</string>
+    <string name="switch_onboot_description">Если DNSNet активен при выключении устройства, DNSNet запускается при включении устройства.</string>
+    <string name="add_dns_server">Добавить сервер DNS</string>
+    <string name="notification_paused_title">DNSNet приостановлен</string>
+    <string name="action_logcat">Logcat</string>
+    <string name="logcat_description">Поделитесь журналом приложения когда вам нужно сообщить о проблеме</string>
+    <string name="notifications_running">Запуск службы</string>
+    <string name="notifications_running_desc">Уведомления о взаимодействии с текущими службами</string>
+    <string name="notifications_update">Состояние</string>
+    <string name="notifications_update_desc">Уведомления об обновлении хост-файлов</string>
+    <string name="notifications_paused">Приостановленная служба</string>
+    <string name="notifications_paused_desc">Уведомления возобновляются после перерыва</string>
+    <string name="notifications_group_service">Управление службой</string>
+    <string name="notifications_group_updates">Обновления</string>
+    <string name="unstable_feature">Нестабильная функциональность</string>
+    <string name="button_cancel">Отмена</string>
+    <string name="resume">Продолжить</string>
+    <string name="notification_permission">Требуется разрешение на уведомление</string>
+    <string name="could_not_start_vpn">Невозможно запустить VPN</string>
+    <string name="add">Добавить</string>
+    <string name="save">Сохранить</string>
+    <string name="more_options">Другие настройки</string>
+    <string name="navigate_up">Переход вверх</string>
+    <string name="expanded">Развёрнуто</string>
+    <string name="collapsed">Свёрнуто</string>
+    <string name="about_description">Информация о DNSNet</string>
+    <string name="input_blank_error">Поле не должно быть пустым</string>
+    <string name="allowlist_description">Не использовать DNSNet для отмеченных приложений</string>
+    <string name="load_defaults_description">Сбросить все настройки обратно к значениям по умолчанию</string>
+    <string name="allowlist_defaults_title">Списки разрешённых по умолчанию</string>
+    <string name="export_description">Создайте резервную копию вашей конфигурации</string>
+    <string name="dns66_credit">Основано на DNS66 созданном Julian Andres Klode</string>
+    <string name="unstable_watchdog_message">Просмотр соединения может привести к пересоединению и соединение может застрять</string>
 </resources>
