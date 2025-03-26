@@ -1,7 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_shortdesc">Blokowanie hostów i niestandardowe serwery DNS</string>
     <string name="custom_dns">Niestandardowe serwery DNS</string>
-    <string name="enable_hosts">Włącz filtrowanie domen</string>
     <string name="start_tab">Start</string>
     <string name="hosts_tab">Pliki hosts</string>
     <string name="dns_tab">Serwery DNS</string>
@@ -11,12 +11,9 @@
     <string name="action_about">O nas</string>
     <string name="info_app_license">Ten program jest wolnym oprogramowaniem: możesz go redystrybuować i / lub modyfikować na zasadach licencji GNU General Public License publikowanej przez Free Software Foundation, w trzeciej wersji licencji, lub (dowolnie) dowolnej późniejszej wersji.</string>
     <string name="switch_onboot">Automatycznie uruchamianie podczas rozruchu</string>
-    <string name="activity_edit">Edytuj element</string>
     <string name="title">Tytuł</string>
     <string name="location">Lokalizacja (adres URL lub host)</string>
     <string name="action">Akcja</string>
-    <string name="cannot_restore_previous_config">Nie można przywrócić poprzedniej konfiguracji: %s</string>
-    <string name="cannot_load_default_config">Nie można odczytać ustawień domyślnych: %s - To się nie powinno zdarzyć</string>
     <string name="cannot_write_config">Nie można zapisać konfiguracji: %s</string>
     <string name="action_refresh">Odśwież pliki hosts</string>
     <string name="notification_starting">Uruchamianie</string>
@@ -42,13 +39,7 @@
     <string name="button_no">Nie</string>
     <string name="button_yes">Tak</string>
     <string name="allowlist_tab">Aplikacje</string>
-    <string name="show_notification">Pokaż powiadomienie</string>
     <string name="dns_description">Włącz preferowane serwery DNS</string>
-    <string name="host_description">Czerwone reguły blokują, zielone reguły pozwalają</string>
-    <string name="disable_notification_title">Wyłączanie powiadomień</string>
-    <string name="disable_notification_ack">Wyłącz powiadomienie</string>
-    <string name="disable_notification_nak">Przerwji</string>
-    <string name="switch_show_system_apps">Pokaż aplikacje systemowe</string>
     <string name="location_dns">Adres IP serwera DNS (IPv4 oder IPv6)</string>
     <string name="state_dns_enabled">Włączone</string>
     <string name="host_update_error_item">Błąd %1$d: %2$s</string>
@@ -65,28 +56,14 @@
     <string name="unknown_error_s">Nieoczekiwany błąd: %1$s</string>
     <string name="requested_timed_out">Upłynął limit czasu żądania</string>
     <string name="action_delete">Usuń</string>
-    <string name="night_mode">Ciemny motyw</string>
-    <string name="expand_bar_toggle_expand">Otwórz panel szczegółów</string>
-    <string name="expand_bar_toggle_close">Zamknij panel szczegółów</string>
-    <string name="expand_bar_expanded">Otwarty</string>
-    <string name="expand_bar_closed">Zamknięty</string>
     <string name="action_stop">Zatrzymaj</string>
     <string name="action_start">Uruchom</string>
     <string name="automatic_refresh">Odśwież codziennie</string>
     <string name="automatic_refresh_description">Codzienne aktualizuje pliki hosts.</string>
     <string name="watchdog">Monitoruj połączenie</string>
     <string name="watchdog_description">Sprawdza połączenie z internetem w określonych odstępach czasu i ponownie je podłącza jeśli przestanie działać</string>
-    <string name="legend_host_ignore">Zignoruj ten wpis</string>
-    <string name="legend_host_allow">Zezwala na dostęp do hosts w tym wpisie</string>
-    <string name="legend_host_deny">Odmawia dostępu do hosts w tym wpisie</string>
-    <string name="do_not_use_dns_server">Wyłączone</string>
-    <string name="use_dns_server">Włączone</string>
     <string name="activity_edit_dns_server">Edytuj serwer DNS</string>
-    <string name="notification_paused_text">Dotknij, aby wznowić.</string>
     <string name="notification_action_pause">Pauza</string>
-    <string name="allowlist_on_vpn">Brak aplikacji</string>
-    <string name="allowlist_not_on_vpn">Wszystkie aplikacje</string>
-    <string name="allowlist_intelligent">Aplikacje syst. z wyjątkiem przeglądarek</string>
     <string name="ipv6_support_description">Wyłącz tę opcję jeśli twoja sieć nie korzysta z protokołu IPv6 lub nie można uruchomić tej usługi.</string>
     <string name="ipv6_support">Obsługa protokołu IPv6</string>
     <string-array name="allowlist_defaults">

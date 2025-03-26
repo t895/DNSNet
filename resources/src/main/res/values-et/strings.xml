@@ -1,7 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_shortdesc">Hostide blokeerimine ja kohandatud DNS-serverid</string>
     <string name="custom_dns">Kohandatud DNS-serverid</string>
-    <string name="enable_hosts">Hostide filtreerimine</string>
     <string name="start_tab">Algus</string>
     <string name="hosts_tab">Hostid</string>
     <string name="dns_tab">DNS</string>
@@ -11,12 +11,9 @@
     <string name="action_about">Teave</string>
     <string name="info_app_license">See programm on vaba tarkvara: sa võid seda edasi levitada ja/või muuta litsensi GNU General Public License tingimuste alusel, nagu on postitanud Free Software Foundation, kas litsensi 3. versioon või (omal valikul) mõni hilisem versioon.</string>
     <string name="switch_onboot">Jätka süsteemi käivitusel</string>
-    <string name="activity_edit">Muuda üksust</string>
     <string name="title">Pealkiri</string>
     <string name="location">Asukoht (URL või host)</string>
     <string name="action">Tegevus</string>
-    <string name="cannot_restore_previous_config">Eelmist konfiguratsiooni ei saa taastada: %s</string>
-    <string name="cannot_load_default_config">Vaikimisi seadeid ei saa lugeda: %s - See ei tohiks juhtuda</string>
     <string name="cannot_write_config">Konfiguratsiooni ei saa kirjutada: %s</string>
     <string name="action_refresh">Värskenda hostifaile</string>
     <string name="notification_starting">Käivitun</string>
@@ -42,13 +39,7 @@
     <string name="button_no">Ei</string>
     <string name="button_yes">Jah</string>
     <string name="allowlist_tab">Rakendused</string>
-    <string name="show_notification">Kuva teadet</string>
     <string name="dns_description">Luba oma eelistatud DNS-serverid</string>
-    <string name="host_description">Punased reeglid keelavad, rohelised lubavad</string>
-    <string name="disable_notification_title">Teate keelamine</string>
-    <string name="disable_notification_ack">Keela teade</string>
-    <string name="disable_notification_nak">Tühista</string>
-    <string name="switch_show_system_apps">Kuva süsteemirakendused</string>
     <string name="location_dns">DNS-serveri IP-aadress (IPv4 või IPv6)</string>
     <string name="state_dns_enabled">Lubatud</string>
     <string name="host_update_error_item">Viga %1$d: %2$s</string>
@@ -65,28 +56,14 @@
     <string name="unknown_error_s">Ootamatu viga: %1$s</string>
     <string name="requested_timed_out">Taotluse ajalõpp</string>
     <string name="action_delete">Kustuta</string>
-    <string name="night_mode">Tume teema</string>
-    <string name="expand_bar_toggle_expand">Ava seadetepaneel</string>
-    <string name="expand_bar_toggle_close">Sulge seadetepaneel</string>
-    <string name="expand_bar_expanded">Avatud</string>
-    <string name="expand_bar_closed">Suletud</string>
     <string name="action_stop">Peata</string>
     <string name="action_start">Käivita</string>
     <string name="automatic_refresh">Värskenda igapäevaselt</string>
     <string name="automatic_refresh_description">Igapäevased uuendused toimuvad siis, kui seade laeb, on ebaaktiivne ja ühendatud mahupiiranguta võrku.</string>
     <string name="watchdog">Jälgi ühendust</string>
     <string name="watchdog_description">Kontrolli ühendust pidevalt pikenevate intervallidega ja taasühenda, kui see lakkas töötamast</string>
-    <string name="legend_host_ignore">Ignoreeri seda üksust</string>
-    <string name="legend_host_allow">Luba sellel üksusel hostidele ligipääs</string>
-    <string name="legend_host_deny">Keela sellel üksusel hostidele ligipääs</string>
-    <string name="do_not_use_dns_server">Väljas</string>
-    <string name="use_dns_server">Sees</string>
     <string name="activity_edit_dns_server">Muuda DNS-serverit</string>
-    <string name="notification_paused_text">Koputa jätkamiseks.</string>
     <string name="notification_action_pause">Paus</string>
-    <string name="allowlist_on_vpn">Mitte ühtegi rakendust</string>
-    <string name="allowlist_not_on_vpn">Kõiki rakendusi</string>
-    <string name="allowlist_intelligent">Süsteemirakendusi, v.a. brauserid</string>
     <string name="ipv6_support_description">Keela see, kui su võrk ei kasuta IPv6-te või sa ei saa teenust käivitada.</string>
     <string name="ipv6_support">IPv6-tugi</string>
     <string name="action_logcat">Logcat</string>
