@@ -97,19 +97,13 @@ class AdVpnThread(
     /* Upstream DNS servers, indexed by our IP */
     private val upstreamDnsServers = ArrayList<InetAddress>()
 
-    internal data class ThreadData(
-        val thread: Thread,
-        val vpnController: VpnController
-    )
-
-    private val threadData: ThreadData = ThreadData(
-        thread = Thread(this, "AdVpnThread"),
-        vpnController = VpnController(),
-    )
     private val threadLock = Object()
+    private val thread = Thread(this, "AdVpnThread")
+    private val vpnController = VpnController()
+    private var userStop = false
 
     init {
-        threadData.thread.start()
+        thread.start()
         logi("Vpn Thread started")
     }
 
@@ -118,10 +112,12 @@ class AdVpnThread(
             logi("Stopping")
 
             // Tell the Rust code to stop
-            threadData.vpnController.stop(VpnResult.STOPPING)
-            threadData.thread.interrupt()
+            vpnController.stop(VpnResult.STOPPING)
+            userStop = true
+            thread.interrupt()
             try {
-                threadData.thread.join()
+                thread.join()
+                userStop = false
             } catch (e: InterruptedException) {
                 logw("stopThread: Interrupted while joining thread", e)
             }
@@ -132,8 +128,8 @@ class AdVpnThread(
     fun reconnect() {
         synchronized(threadLock) {
             logi("Reconnecting")
-            threadData.vpnController.stop(VpnResult.RECONNECTING)
-            threadData.thread.interrupt()
+            vpnController.stop(VpnResult.RECONNECTING)
+            thread.interrupt()
         }
     }
 
@@ -201,7 +197,7 @@ class AdVpnThread(
                 Thread.sleep(retryTimeout.toLong() * 1000)
             } catch (_: InterruptedException) {
                 logi("Thread interrupted")
-                if (reloadOnInterrupt) {
+                if (reloadOnInterrupt && !userStop) {
                     continue
                 } else {
                     break
@@ -229,7 +225,7 @@ class AdVpnThread(
             blockLoggerCallback = blockLoggerCallback,
             upstreamDnsServers = upstreamDnsServers.map { it.address },
             vpnFd = vpnFd.detachFd(),
-            vpnController = threadData.vpnController,
+            vpnController = vpnController,
             ruleDatabase = ruleDatabase,
         )
     }
