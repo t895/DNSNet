@@ -26,5 +26,5 @@ plugins {
     alias(libs.plugins.hilt) apply false
 }
 
-val versionCode by extra { 47 }
-val versionName by extra { "1.1.13" }
+val versionCode by extra { 48 }
+val versionName by extra { "1.1.14" }
