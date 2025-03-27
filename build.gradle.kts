@@ -25,3 +25,6 @@ plugins {
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.hilt) apply false
 }
+
+val versionCode by extra { 47 }
+val versionName by extra { "1.1.13" }

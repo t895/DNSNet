@@ -27,6 +27,13 @@ android {
         minSdk = libs.versions.minSdk.get().toInt()
 
         consumerProguardFiles("consumer-rules.pro")
+
+        val versionName: String by rootProject.extra
+        buildConfigField(
+            type = "String",
+            name = "VERSION_NAME",
+            value = "\"$versionName\"",
+        )
     }
 
     buildTypes {
@@ -35,6 +42,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

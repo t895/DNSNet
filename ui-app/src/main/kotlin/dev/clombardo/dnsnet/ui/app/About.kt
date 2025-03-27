@@ -88,7 +88,7 @@ fun About(
                 AboutText(
                     text = stringResource(
                         id = R.string.app_version_info,
-                        LocalContext.current.packageName
+                        BuildConfig.VERSION_NAME,
                     )
                 )
                 AboutText(text = stringResource(id = R.string.info_app_copyright))
