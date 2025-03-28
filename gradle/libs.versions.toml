@@ -43,6 +43,7 @@ hiltExtensions = "1.2.0"
 ksp = "2.1.20-1.0.31"
 hiltWork = "1.2.0"
 hiltNavigationCompose = "1.2.0"
+playPublisher = "3.12.1"
 
 [libraries]
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistPermissions" }
@@ -103,3 +104,4 @@ arturbosch-detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt"
 rust-android-gradle = { id = "org.mozilla.rust-android-gradle.rust-android", version.ref = "rustPlugin" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+gradle-play-publisher = { id = "com.github.triplet.play", version.ref = "playPublisher" }

@@ -6,6 +6,7 @@
  * (at your option) any later version.
  */
 
+import com.github.triplet.gradle.androidpublisher.ReleaseStatus
 import io.gitlab.arturbosch.detekt.Detekt
 
 plugins {
@@ -20,6 +21,7 @@ plugins {
     alias(libs.plugins.arturbosch.detekt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.gradle.play.publisher)
 }
 
 android {
@@ -200,4 +202,15 @@ tasks.withType<Detekt>().configureEach {
     reports {
         html.required.set(true)
     }
+}
+
+play {
+    val keyPath = System.getenv("SERVICE_ACCOUNT_KEY_PATH")
+    if (keyPath != null) {
+        serviceAccountCredentials.set(file(System.getenv("SERVICE_ACCOUNT_KEY_PATH")))
+    }
+    track.set(System.getenv("STORE_TRACK") ?: "internal")
+    releaseStatus.set(ReleaseStatus.IN_PROGRESS)
+    defaultToAppBundles.set(true)
+    userFraction.set(0.2)
 }
