@@ -642,7 +642,9 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
 
         updateVpnStatus(VpnStatus.STOPPING)
 
-        vpnThread.stop()
+        if (this::vpnThread.isInitialized) {
+            vpnThread.stop()
+        }
 
         blockLogger.save(this)
 
