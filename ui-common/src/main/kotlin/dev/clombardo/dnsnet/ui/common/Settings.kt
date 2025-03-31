@@ -32,6 +32,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
@@ -467,6 +469,19 @@ fun SwitchListItem(
                 checked = checked,
                 onCheckedChange = onCheckedChange,
                 interactionSource = sharedInteractionSource,
+                thumbContent = {
+                    if (checked) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = null,
+                        )
+                    }
+                },
             )
         },
     )
@@ -516,6 +531,19 @@ fun SplitSwitchListItem(
                 enabled = switchEnabled,
                 checked = checked,
                 onCheckedChange = onCheckedChange,
+                thumbContent = {
+                    if (checked) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = null,
+                        )
+                    }
+                },
             )
         },
     )
@@ -525,13 +553,15 @@ fun SplitSwitchListItem(
 @Composable
 private fun SplitSwitchListItemPreview() {
     DnsNetTheme {
+        var checked by remember { mutableStateOf(false) }
+        val onCheckedChange = { checked = !checked }
         SplitSwitchListItem(
             modifier = Modifier.background(MaterialTheme.colorScheme.surface),
-            checked = true,
+            checked = checked,
             title = "Title",
             details = "Details",
-            onBodyClick = {},
-            onCheckedChange = {},
+            onBodyClick = onCheckedChange,
+            onCheckedChange = { onCheckedChange() },
         )
     }
 }
