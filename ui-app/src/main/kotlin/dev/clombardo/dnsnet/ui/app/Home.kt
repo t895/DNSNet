@@ -27,7 +27,6 @@ import androidx.compose.animation.slideOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
@@ -687,7 +686,7 @@ fun HomeScreen(
         },
     ) { contentPadding ->
         // List state must be hoisted outside of the NavHost or it will be lost on recomposition
-        val startListState = rememberLazyGridState()
+        val startListState = rememberLazyListState()
         val hostsListState = rememberLazyListState()
         val appListState = rememberLazyListState()
         val dnsListState = rememberLazyListState()

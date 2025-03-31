@@ -22,11 +22,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyGridState
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Download
@@ -41,7 +39,6 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -68,7 +65,7 @@ object Start {
 fun StartScreen(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
-    listState: LazyGridState = rememberLazyGridState(),
+    listState: LazyListState = rememberLazyListState(),
     resumeOnStartup: Boolean,
     onResumeOnStartupClick: () -> Unit,
     ipv6Support: Boolean,
@@ -87,22 +84,12 @@ fun StartScreen(
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
-        val columns = remember {
-            when (windowSizeClass.windowWidthSizeClass) {
-                WindowWidthSizeClass.COMPACT -> 1
-                WindowWidthSizeClass.MEDIUM -> 2
-                else -> 3
-            }
-        }
-
-        LazyVerticalGrid(
+        LazyColumn(
             state = listState,
             contentPadding = contentPadding,
-            columns = GridCells.Fixed(columns),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            item(span = { GridItemSpan(columns) }) {
+            item {
                 ListSettingsContainer(title = stringResource(R.string.start_title)) {
                     item {
                         SwitchListItem(
