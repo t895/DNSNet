@@ -64,7 +64,7 @@ fun BoxScope.ScrollUpIndicator(
     onClick: suspend CoroutineScope.() -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-    val scrollUpButtonColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    val scrollUpButtonColor = MaterialTheme.colorScheme.tertiaryContainer
     AnimatedVisibility(
         modifier = Modifier.align(Alignment.BottomCenter),
         visible = visible,
@@ -93,7 +93,7 @@ fun BoxScope.ScrollUpIndicator(
             Icon(
                 imageVector = Icons.Default.ArrowUpward,
                 contentDescription = stringResource(R.string.scroll_up),
-                tint = MaterialTheme.colorScheme.onSurface,
+                tint = MaterialTheme.colorScheme.onTertiaryContainer,
             )
         }
     }
