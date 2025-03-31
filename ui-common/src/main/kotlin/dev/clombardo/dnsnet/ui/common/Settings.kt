@@ -35,7 +35,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
@@ -74,13 +73,20 @@ private val innerHorizontalPadding = 8.dp
 private val clickablePadding = 8.dp
 
 @Composable
-fun Modifier.roundedClickable(
+fun Modifier.clickable(
     enabled: Boolean,
     interactionSource: MutableInteractionSource?,
     role: Role,
+    clip: Boolean = false,
     onClick: () -> Unit,
 ) = this
-    .clip(CardDefaults.shape)
+    .then(
+        if (clip) {
+            Modifier.clip(CardDefaults.shape)
+        } else {
+            Modifier
+        }
+    )
     .clickable(
         enabled = enabled,
         onClick = onClick,
@@ -91,14 +97,21 @@ fun Modifier.roundedClickable(
     .padding(clickablePadding)
 
 @Composable
-private fun Modifier.roundedToggleable(
+private fun Modifier.toggleable(
     value: Boolean,
     enabled: Boolean,
     interactionSource: MutableInteractionSource?,
     role: Role,
+    clip: Boolean = false,
     onValueChange: (Boolean) -> Unit,
 ) = this
-    .clip(CardDefaults.shape)
+    .then(
+        if (clip) {
+            Modifier.clip(CardDefaults.shape)
+        } else {
+            Modifier
+        }
+    )
     .toggleable(
         value = value,
         enabled = enabled,
@@ -167,7 +180,7 @@ fun ContentSetting(
     endContent: @Composable (BoxScope.() -> Unit)? = null,
 ) {
     Row(
-        modifier = modifier,
+        modifier = modifier.padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (startContent != null) {
@@ -207,23 +220,26 @@ fun SplitContentSetting(
     maxDetailLines: Int = 1,
     outlineColor: Color = MaterialTheme.colorScheme.outlineVariant,
     onBodyClick: () -> Unit,
+    clip: Boolean = false,
     interactionSource: MutableInteractionSource? = remember { MutableInteractionSource() },
     startContent: @Composable (BoxScope.() -> Unit)? = null,
     endContent: @Composable BoxScope.() -> Unit,
 ) {
     Row(
         modifier = modifier
-            .height(IntrinsicSize.Min),
+            .height(IntrinsicSize.Min)
+            .clickable(
+                enabled = enabled,
+                onClick = onBodyClick,
+                interactionSource = interactionSource,
+                role = Role.Button,
+                clip = clip,
+            ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
             modifier = Modifier
-                .roundedClickable(
-                    enabled = enabled,
-                    onClick = onBodyClick,
-                    interactionSource = interactionSource,
-                    role = Role.Button,
-                )
+                .padding(8.dp)
                 .weight(1f),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -254,7 +270,7 @@ fun SplitContentSetting(
         Box(
             modifier = Modifier
                 .minimumInteractiveComponentSize()
-                .padding(end = clickablePadding),
+                .padding(end = 8.dp),
             contentAlignment = Alignment.Center,
             content = endContent,
         )
@@ -268,6 +284,7 @@ private fun ClickableSetting(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     details: String = "",
+    clip: Boolean = false,
     sharedInteractionSource: MutableInteractionSource? = null,
     onClick: () -> Unit,
     startContent: @Composable (BoxScope.() -> Unit)? = null,
@@ -275,9 +292,10 @@ private fun ClickableSetting(
 ) {
     ContentSetting(
         modifier = modifier
-            .roundedClickable(
+            .clickable(
                 enabled = enabled,
                 onClick = onClick,
+                clip = clip,
                 interactionSource = sharedInteractionSource,
                 role = role,
             ),
@@ -297,6 +315,7 @@ private fun ToggleableSetting(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     details: String = "",
+    clip: Boolean = false,
     sharedInteractionSource: MutableInteractionSource? = null,
     onCheckedChange: (Boolean) -> Unit,
     startContent: @Composable (BoxScope.() -> Unit)? = null,
@@ -304,9 +323,10 @@ private fun ToggleableSetting(
 ) {
     ContentSetting(
         modifier = modifier
-            .roundedToggleable(
+            .toggleable(
                 value = checked,
                 enabled = enabled,
+                clip = clip,
                 onValueChange = onCheckedChange,
                 interactionSource = sharedInteractionSource,
                 role = role,
@@ -375,6 +395,7 @@ fun SplitCheckboxListItem(
     bodyEnabled: Boolean = true,
     checkboxEnabled: Boolean = true,
     details: String = "",
+    clip: Boolean = false,
     maxDetailLines: Int = 1,
     onBodyClick: () -> Unit,
     onCheckedChange: (Boolean) -> Unit,
@@ -388,6 +409,7 @@ fun SplitCheckboxListItem(
         outlineColor = outlineColor,
         onBodyClick = onBodyClick,
         enabled = bodyEnabled,
+        clip = clip,
         startContent = startContent,
         endContent = {
             Checkbox(
@@ -422,6 +444,7 @@ fun SwitchListItem(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     details: String = "",
+    clip: Boolean = false,
     onCheckedChange: (Boolean) -> Unit,
     startContent: @Composable (BoxScope.() -> Unit)? = null
 ) {
@@ -433,6 +456,7 @@ fun SwitchListItem(
         title = title,
         role = Role.Switch,
         details = details,
+        clip = clip,
         onCheckedChange = onCheckedChange,
         sharedInteractionSource = sharedInteractionSource,
         startContent = startContent,
@@ -557,6 +581,7 @@ fun ExpandableOptionsItem(
     modifier: Modifier = Modifier,
     expanded: Boolean = false,
     enabled: Boolean = true,
+    clip: Boolean = false,
     title: String = "",
     details: String = "",
     sharedInteractionSource: MutableInteractionSource? = null,
@@ -569,6 +594,7 @@ fun ExpandableOptionsItem(
             role = Role.DropdownList,
             details = details,
             enabled = enabled,
+            clip = clip,
             onClick = onExpandClick,
             sharedInteractionSource = sharedInteractionSource,
         ) {
@@ -637,6 +663,7 @@ fun RadioListItem(
     enabled: Boolean = true,
     title: String = "",
     details: String = "",
+    clip: Boolean = false,
     sharedInteractionSource: MutableInteractionSource? = null,
     onCheckedChange: (Boolean) -> Unit,
 ) {
@@ -647,6 +674,7 @@ fun RadioListItem(
         enabled = enabled,
         title = title,
         details = details,
+        clip = clip,
         onCheckedChange = onCheckedChange,
         sharedInteractionSource = sharedInteractionSource,
         toggleableContent = {
@@ -680,9 +708,9 @@ private fun RadioListItemPreview() {
 fun ListSettingsContainer(
     modifier: Modifier = Modifier,
     title: String = "",
-    content: @Composable ColumnScope.() -> Unit,
+    content: SplitContentContainerScope.() -> Unit,
 ) {
-    Column {
+    Column(modifier = modifier) {
         if (title.isNotEmpty()) {
             Text(
                 modifier = Modifier
@@ -695,19 +723,10 @@ fun ListSettingsContainer(
             Spacer(modifier = Modifier.padding(vertical = 4.dp))
         }
 
-        Card(
-            modifier = modifier
-                .wrapContentHeight()
-                .fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                horizontalAlignment = Alignment.Start,
-                content = content,
-            )
-        }
+        SplitContentColumnContainer(
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            content = content,
+        )
     }
 }
 
@@ -716,60 +735,70 @@ fun ListSettingsContainer(
 private fun ListSettingsContainerPreview() {
     DnsNetTheme {
         ListSettingsContainer(title = "Bypass DNSNet for marked apps") {
-            var checked by remember { mutableStateOf(false) }
-            SwitchListItem(
-                checked = checked,
-                title = "Chaos Computer Club",
-                details = "213.73.91.35",
-                onCheckedChange = { checked = !checked },
-            )
-            var checked2 by remember { mutableStateOf(false) }
-            CheckboxListItem(
-                checked = checked2,
-                title = "Chaos Computer Club",
-                details = "213.73.91.35",
-                onCheckedChange = { checked2 = !checked2 },
-            )
-            IconListItem(
-                title = "Chaos Computer Club",
-                details = "213.73.91.35",
-                onClick = {},
-                iconContent = {
-                    IconButton(onClick = {}) {
-                        Icon(Icons.Default.MoreVert, null)
-                    }
-                },
-            )
+            item {
+                var checked by remember { mutableStateOf(false) }
+                SwitchListItem(
+                    checked = checked,
+                    title = "Chaos Computer Club",
+                    details = "213.73.91.35",
+                    onCheckedChange = { checked = !checked },
+                )
+            }
 
-            var expanded by remember { mutableStateOf(false) }
-            ExpandableOptionsItem(
-                expanded = expanded,
-                title = "Expandable",
-                details = "Details",
-                onExpandClick = { expanded = !expanded },
-            ) {
-                RadioListItem(
-                    checked = false,
-                    title = "Option1",
-                    onCheckedChange = {},
+            item {
+                var checked2 by remember { mutableStateOf(false) }
+                CheckboxListItem(
+                    checked = checked2,
+                    title = "Chaos Computer Club",
+                    details = "213.73.91.35",
+                    onCheckedChange = { checked2 = !checked2 },
                 )
-                RadioListItem(
-                    checked = false,
-                    title = "Option2",
-                    onCheckedChange = {},
+            }
+
+            item {
+                IconListItem(
+                    title = "Chaos Computer Club",
+                    details = "213.73.91.35",
+                    onClick = {},
+                    iconContent = {
+                        IconButton(onClick = {}) {
+                            Icon(Icons.Default.MoreVert, null)
+                        }
+                    },
                 )
-                RadioListItem(
-                    checked = false,
-                    title = "Option3",
-                    onCheckedChange = {},
-                )
+            }
+
+            item {
+                var expanded by remember { mutableStateOf(false) }
+                ExpandableOptionsItem(
+                    expanded = expanded,
+                    title = "Expandable",
+                    details = "Details",
+                    onExpandClick = { expanded = !expanded },
+                ) {
+                    RadioListItem(
+                        checked = false,
+                        title = "Option1",
+                        onCheckedChange = {},
+                    )
+                    RadioListItem(
+                        checked = false,
+                        title = "Option2",
+                        onCheckedChange = {},
+                    )
+                    RadioListItem(
+                        checked = false,
+                        title = "Option3",
+                        onCheckedChange = {},
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun FilledTonalSettingsButton(
+fun IconSettingButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     title: String,
@@ -778,40 +807,38 @@ fun FilledTonalSettingsButton(
     onClick: () -> Unit,
     endContent: (@Composable () -> Unit)? = null,
 ) {
-    Surface(
+    Row(
         modifier = modifier
-            .wrapContentHeight()
-            .clip(CardDefaults.shape),
-        onClick = onClick,
-        enabled = enabled,
-        color = MaterialTheme.colorScheme.surfaceVariant,
+            .clickable(
+                enabled = enabled,
+                onClick = onClick,
+                interactionSource = remember { MutableInteractionSource() },
+                role = Role.Button,
+                indication = ripple(),
+            )
+            .alpha(if (enabled) 1f else 0.6f)
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier
-                .alpha(if (enabled) 1f else 0.6f)
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(imageVector = icon, contentDescription = null)
-            Spacer(Modifier.padding(horizontal = 8.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    modifier = Modifier.basicMarquee(),
-                    text = title,
-                    style = MaterialTheme.typography.labelLarge,
-                    maxLines = 1,
-                )
-                Text(
-                    modifier = Modifier.basicMarquee(),
-                    text = description,
-                    style = MaterialTheme.typography.labelSmall,
-                    maxLines = 1,
-                )
-            }
-            if (endContent != null) {
-                endContent()
-            }
+        Icon(imageVector = icon, contentDescription = null)
+        Spacer(Modifier.padding(horizontal = 8.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                modifier = Modifier.basicMarquee(),
+                text = title,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+            )
+            Text(
+                modifier = Modifier.basicMarquee(),
+                text = description,
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+            )
+        }
+        if (endContent != null) {
+            endContent()
         }
     }
 }
@@ -820,12 +847,14 @@ fun FilledTonalSettingsButton(
 @Composable
 private fun FilledTonalSettingsButtonPreview() {
     DnsNetTheme {
-        FilledTonalSettingsButton(
-            title = "Some submenu",
-            description = "Submenu description",
-            icon = Icons.Default.Person,
-            enabled = true,
-            onClick = {},
-        )
+        Box(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
+            IconSettingButton(
+                title = "Some submenu",
+                description = "Submenu description",
+                icon = Icons.Default.Person,
+                enabled = true,
+                onClick = {},
+            )
+        }
     }
 }
