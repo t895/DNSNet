@@ -84,4 +84,26 @@
         <item>Aucune app ne passe par DNSNet par défaut</item>
         <item>Les apps systèmes ne passent pas par DNSNet par défaut</item>
     </string-array>
+    <string name="export_description">Créer une copie de sauvegarde de votre configuration</string>
+    <string name="add">Ajouter</string>
+    <string name="save">Enregistrer</string>
+    <string name="close">Fermer</string>
+    <string name="blocked">Bloqué</string>
+    <string name="allowed">Autorisé</string>
+    <string name="warning">Attention</string>
+    <string name="disable">Désactiver</string>
+    <string name="alphabetical">Alphabétiquement</string>
+    <string name="attempts">Tentatives</string>
+    <string name="reset">Réinitialiser</string>
+    <string name="hostname">Nom du hôte</string>
+    <string name="credits">Crédits</string>
+    <string name="search">Recherche</string>
+    <string name="ascending">Ascendant</string>
+    <string name="descending">Descendant</string>
+    <string name="filter">Filtre</string>
+    <string name="sort">Trier</string>
+    <string name="help">Aide</string>
+    <string name="notifications">Notifications</string>
+    <string name="button_continue">Continuer</string>
+    <string name="add_address">Ajouter une adresse</string>
 </resources>
