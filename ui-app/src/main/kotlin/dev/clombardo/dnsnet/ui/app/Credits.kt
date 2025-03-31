@@ -12,14 +12,12 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LargeTopAppBar
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,18 +25,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.core.net.toUri
-import dev.clombardo.dnsnet.ui.common.BasicTooltipIconButton
+import dev.clombardo.dnsnet.ui.common.BasicTooltipButton
 import dev.clombardo.dnsnet.ui.common.ContentSetting
 import dev.clombardo.dnsnet.ui.common.ExpandableOptionsItem
+import dev.clombardo.dnsnet.ui.common.FloatingTopActions
 import dev.clombardo.dnsnet.ui.common.InsetScaffold
+import dev.clombardo.dnsnet.ui.common.ScreenTitle
 import dev.clombardo.dnsnet.ui.common.plus
-import dev.clombardo.dnsnet.ui.common.roundedClickable
+import dev.clombardo.dnsnet.ui.common.rememberAtTop
+import dev.clombardo.dnsnet.ui.common.clickable
 import dev.clombardo.dnsnet.ui.common.theme.ListPadding
 import dev.clombardo.dnsnet.ui.common.tryOpenUri
 import io.github.usefulness.licensee.Artifact
@@ -54,8 +54,9 @@ fun LicenseListItem(
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
     ContentSetting(
-        modifier = modifier.roundedClickable(
+        modifier = modifier.clickable(
             enabled = true,
+            clip = true,
             interactionSource = remember { MutableInteractionSource() },
             role = Role.Button,
             onClick = { uriHandler.tryOpenUri(context, licenseLink.toUri()) },
@@ -82,6 +83,7 @@ fun CreditListItem(
     ExpandableOptionsItem(
         modifier = modifier,
         expanded = expanded,
+        clip = true,
         onExpandClick = { expanded = !expanded },
         title = credit.name ?: "",
         details = credit.groupId,
@@ -108,23 +110,20 @@ fun CreditsScreen(
     modifier: Modifier = Modifier,
     onNavigateUp: () -> Unit,
 ) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val state = rememberLazyListState()
     InsetScaffold(
-        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = modifier,
         topBar = {
-            LargeTopAppBar(
-                windowInsets = topAppBarInsets,
-                title = {
-                    Text(text = stringResource(R.string.credits))
-                },
+            val isAtTop by rememberAtTop(state)
+            FloatingTopActions(
+                elevated = !isAtTop,
                 navigationIcon = {
-                    BasicTooltipIconButton(
+                    BasicTooltipButton(
                         icon = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = stringResource(R.string.navigate_up),
                         onClick = onNavigateUp,
                     )
                 },
-                scrollBehavior = scrollBehavior,
             )
         }
     ) { contentPadding ->
@@ -133,7 +132,13 @@ fun CreditsScreen(
                 .distinctBy { it.groupId }
                 .sortedBy { it.name }
         }
-        LazyColumn(contentPadding = contentPadding + PaddingValues(horizontal = ListPadding)) {
+        LazyColumn(
+            state = state,
+            contentPadding = contentPadding + PaddingValues(horizontal = ListPadding),
+        ) {
+            item {
+                ScreenTitle(text = stringResource(R.string.credits))
+            }
             item {
                 LicenseListItem(
                     title = stringResource(R.string.dns66_credit),

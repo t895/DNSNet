@@ -39,8 +39,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -52,7 +50,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
@@ -65,9 +62,11 @@ import dev.clombardo.dnsnet.blocklogger.LoggedConnection
 import dev.clombardo.dnsnet.ui.app.state.BlockLogListState
 import dev.clombardo.dnsnet.ui.app.util.NumberFormatterCompat
 import dev.clombardo.dnsnet.ui.app.viewmodel.BlockLogListViewModel
+import dev.clombardo.dnsnet.ui.common.BasicTooltipButton
 import dev.clombardo.dnsnet.ui.common.BasicTooltipIconButton
 import dev.clombardo.dnsnet.ui.common.ContentSetting
 import dev.clombardo.dnsnet.ui.common.FilterItem
+import dev.clombardo.dnsnet.ui.common.FloatingTopActions
 import dev.clombardo.dnsnet.ui.common.InsetScaffold
 import dev.clombardo.dnsnet.ui.common.MaterialHorizontalTabLayout
 import dev.clombardo.dnsnet.ui.common.MenuItem
@@ -76,6 +75,7 @@ import dev.clombardo.dnsnet.ui.common.SearchWidget
 import dev.clombardo.dnsnet.ui.common.SortItem
 import dev.clombardo.dnsnet.ui.common.TabLayoutContent
 import dev.clombardo.dnsnet.ui.common.plus
+import dev.clombardo.dnsnet.ui.common.rememberAtTop
 import dev.clombardo.dnsnet.ui.common.theme.Animation
 import dev.clombardo.dnsnet.ui.common.theme.ListPadding
 import kotlinx.parcelize.Parcelize
@@ -310,24 +310,20 @@ fun BlockLogScreen(
     loggedConnections: Map<String, LoggedConnection>,
     onCreateException: (LoggedConnectionState) -> Unit,
 ) {
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val isAtTop by rememberAtTop(listState)
     Box(modifier = Modifier.fillMaxSize()) {
         InsetScaffold(
-            modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            modifier = modifier,
             topBar = {
-                TopAppBar(
-                    title = {
-                        Text(text = stringResource(id = R.string.block_log))
-                    },
+                FloatingTopActions(
+                    elevated = !isAtTop,
                     navigationIcon = {
-                        BasicTooltipIconButton(
+                        BasicTooltipButton(
                             icon = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.navigate_up),
                             onClick = onNavigateUp,
                         )
                     },
-                    windowInsets = topAppBarInsets,
-                    scrollBehavior = scrollBehavior,
                 )
             },
         ) { contentPadding ->
@@ -340,13 +336,8 @@ fun BlockLogScreen(
             )
         }
 
-        val isAtTop by remember {
-            derivedStateOf {
-                listState.firstVisibleItemIndex != 0
-            }
-        }
         ScrollUpIndicator(
-            visible = isAtTop,
+            visible = !isAtTop,
             onClick = { listState.animateScrollToItem(0) },
         )
     }

@@ -29,8 +29,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AttachFile
@@ -43,12 +41,10 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -58,7 +54,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
@@ -70,14 +65,19 @@ import dev.clombardo.dnsnet.settings.Host
 import dev.clombardo.dnsnet.settings.HostException
 import dev.clombardo.dnsnet.settings.HostFile
 import dev.clombardo.dnsnet.settings.HostState
+import dev.clombardo.dnsnet.ui.common.BasicTooltipButton
 import dev.clombardo.dnsnet.ui.common.BasicTooltipIconButton
+import dev.clombardo.dnsnet.ui.common.FloatingTopActions
 import dev.clombardo.dnsnet.ui.common.InsetScaffold
 import dev.clombardo.dnsnet.ui.common.ListSettingsContainer
+import dev.clombardo.dnsnet.ui.common.ScreenTitle
 import dev.clombardo.dnsnet.ui.common.SplitContentSetting
 import dev.clombardo.dnsnet.ui.common.SwitchListItem
 import dev.clombardo.dnsnet.ui.common.TooltipIconButton
+import dev.clombardo.dnsnet.ui.common.rememberAtTop
 import dev.clombardo.dnsnet.ui.common.theme.Animation
 import dev.clombardo.dnsnet.ui.common.theme.DnsNetTheme
+import dev.clombardo.dnsnet.ui.common.theme.ListPadding
 
 object Hosts {
     val RefreshHostsButtonContainerAnimationSpec =
@@ -135,45 +135,48 @@ fun HostsScreen(
     ) {
         item {
             ListSettingsContainer(title = stringResource(R.string.hosts_title)) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                    horizontalAlignment = Alignment.Start,
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Spacer(Modifier.padding(top = 2.dp))
-                    Text(
-                        text = stringResource(id = R.string.legend_host_intro),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Spacer(Modifier.padding(top = 2.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
+                item {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.Start,
                     ) {
-                        IconText(
-                            icon = painterResource(id = R.drawable.ic_state_ignore),
-                            text = stringResource(id = R.string.ignore),
+                        Spacer(Modifier.padding(top = 2.dp))
+                        Text(
+                            text = stringResource(id = R.string.legend_host_intro),
+                            style = MaterialTheme.typography.bodyMedium,
                         )
-                        Spacer(Modifier.padding(horizontal = 8.dp))
-                        IconText(
-                            icon = painterResource(id = R.drawable.ic_state_allow),
-                            text = stringResource(id = R.string.allow),
-                        )
-                        Spacer(Modifier.padding(horizontal = 8.dp))
-                        IconText(
-                            icon = painterResource(id = R.drawable.ic_state_deny),
-                            text = stringResource(id = R.string.deny),
-                        )
+                        Spacer(Modifier.padding(top = 8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            IconText(
+                                icon = painterResource(id = R.drawable.ic_state_ignore),
+                                text = stringResource(id = R.string.ignore),
+                            )
+                            Spacer(Modifier.padding(horizontal = 8.dp))
+                            IconText(
+                                icon = painterResource(id = R.drawable.ic_state_allow),
+                                text = stringResource(id = R.string.allow),
+                            )
+                            Spacer(Modifier.padding(horizontal = 8.dp))
+                            IconText(
+                                icon = painterResource(id = R.drawable.ic_state_deny),
+                                text = stringResource(id = R.string.deny),
+                            )
+                        }
                     }
                 }
 
-                SwitchListItem(
-                    title = stringResource(id = R.string.automatic_refresh),
-                    details = stringResource(id = R.string.automatic_refresh_description),
-                    checked = refreshDaily,
-                    onCheckedChange = { onRefreshDailyClick() },
-                )
+                item {
+                    SwitchListItem(
+                        title = stringResource(id = R.string.automatic_refresh),
+                        details = stringResource(id = R.string.automatic_refresh_description),
+                        checked = refreshDaily,
+                        onCheckedChange = { onRefreshDailyClick() },
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.padding(vertical = 4.dp))
@@ -231,6 +234,7 @@ fun HostsScreen(
                 },
                 title = it.title,
                 details = it.data,
+                clip = true,
                 endContent = {
                     val stateText = getStateString(it.state)
                     TooltipIconButton(
@@ -434,8 +438,6 @@ fun EditHostScreen(
     onDelete: (() -> Unit)? = null,
     onUriPermissionAcquireFailed: (() -> Unit)? = null,
 ) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-
     var titleInput by rememberSaveable { mutableStateOf(host.title) }
     var titleInputError by rememberSaveable { mutableStateOf(false) }
     var dataInput by rememberSaveable { mutableStateOf(host.data) }
@@ -467,35 +469,14 @@ fun EditHostScreen(
             dataInput = it.toString()
         }
 
+    val state = rememberLazyListState()
     InsetScaffold(
-        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
-                windowInsets = topAppBarInsets,
-                title = {
-                    val text = when (host) {
-                        is HostFile -> {
-                            if (host.data.isEmpty()) {
-                                stringResource(R.string.add_hosts_file)
-                            } else {
-                                stringResource(R.string.edit_hosts_file)
-                            }
-                        }
-
-                        is HostException -> {
-                            if (host.title.isEmpty()) {
-                                stringResource(R.string.add_host)
-                            } else {
-                                stringResource(R.string.edit_host)
-                            }
-                        }
-
-                        else -> ""
-                    }
-                    Text(text = text)
-                },
+            val isAtTop by rememberAtTop(state)
+            FloatingTopActions(
+                elevated = !isAtTop,
                 navigationIcon = {
-                    BasicTooltipIconButton(
+                    BasicTooltipButton(
                         icon = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = stringResource(R.string.navigate_up),
                         onClick = onNavigateUp,
@@ -503,55 +484,90 @@ fun EditHostScreen(
                 },
                 actions = {
                     if (onDelete != null) {
-                        BasicTooltipIconButton(
-                            icon = Icons.Default.Delete,
-                            contentDescription = stringResource(R.string.action_delete),
-                            onClick = onDelete,
-                        )
+                        item {
+                            BasicTooltipButton(
+                                icon = Icons.Default.Delete,
+                                contentDescription = stringResource(R.string.action_delete),
+                                onClick = onDelete,
+                            )
+                        }
                     }
 
-                    BasicTooltipIconButton(
-                        icon = Icons.Default.Save,
-                        contentDescription = stringResource(R.string.save),
-                        onClick = {
-                            titleInputError = titleInput.isBlank()
-                            dataInputError = dataInput.isBlank()
-                            if (titleInputError || dataInputError) {
-                                return@BasicTooltipIconButton
-                            }
+                    item {
+                        BasicTooltipButton(
+                            icon = Icons.Default.Save,
+                            contentDescription = stringResource(R.string.save),
+                            onClick = {
+                                titleInputError = titleInput.isBlank()
+                                dataInputError = dataInput.isBlank()
+                                if (titleInputError || dataInputError) {
+                                    return@BasicTooltipButton
+                                }
 
-                            when (host) {
-                                is HostFile -> onSave(HostFile(titleInput, dataInput, stateInput))
-                                is HostException ->
-                                    onSave(HostException(titleInput, dataInput, stateInput))
-                            }
-                        },
-                    )
-                },
-                scrollBehavior = scrollBehavior,
+                                when (host) {
+                                    is HostFile -> onSave(
+                                        HostFile(
+                                            titleInput,
+                                            dataInput,
+                                            stateInput
+                                        )
+                                    )
+
+                                    is HostException ->
+                                        onSave(HostException(titleInput, dataInput, stateInput))
+                                }
+                            },
+                        )
+                    }
+                }
             )
         },
-    ) { paddingValues ->
-        EditHost(
-            modifier = Modifier
-                .verticalScroll(rememberScrollState())
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            titleText = titleInput,
-            titleTextError = titleInputError,
-            onTitleTextChanged = { titleInput = it },
-            dataText = dataInput,
-            dataTextError = dataInputError,
-            onDataTextChanged = { dataInput = it },
-            onOpenHostsDirectoryClick = if (host is HostFile) {
-                { locationLauncher.launch(arrayOf("*/*")) }
-            } else {
-                null
-            },
-            state = stateInput,
-            singleHost = host is HostException,
-            onStateChanged = { stateInput = it },
-        )
+    ) { contentPadding ->
+        LazyColumn(
+            state = state,
+            contentPadding = contentPadding,
+        ) {
+            item {
+                val text = when (host) {
+                    is HostFile -> {
+                        if (host.data.isEmpty()) {
+                            stringResource(R.string.add_hosts_file)
+                        } else {
+                            stringResource(R.string.edit_hosts_file)
+                        }
+                    }
+
+                    is HostException -> {
+                        if (host.title.isEmpty()) {
+                            stringResource(R.string.add_host)
+                        } else {
+                            stringResource(R.string.edit_host)
+                        }
+                    }
+                }
+                ScreenTitle(text = text)
+            }
+
+            item {
+                EditHost(
+                    modifier = Modifier.padding(horizontal = ListPadding),
+                    titleText = titleInput,
+                    titleTextError = titleInputError,
+                    onTitleTextChanged = { titleInput = it },
+                    dataText = dataInput,
+                    dataTextError = dataInputError,
+                    onDataTextChanged = { dataInput = it },
+                    onOpenHostsDirectoryClick = if (host is HostFile) {
+                        { locationLauncher.launch(arrayOf("*/*")) }
+                    } else {
+                        null
+                    },
+                    state = stateInput,
+                    singleHost = host is HostException,
+                    onStateChanged = { stateInput = it },
+                )
+            }
+        }
     }
 }
 

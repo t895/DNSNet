@@ -53,9 +53,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.window.core.layout.WindowWidthSizeClass
 import coil3.compose.rememberAsyncImagePainter
-import dev.clombardo.dnsnet.ui.app.model.AppData
 import dev.clombardo.dnsnet.settings.AllowListMode
 import dev.clombardo.dnsnet.settings.AllowListMode.Companion.toAllowListMode
+import dev.clombardo.dnsnet.ui.app.model.AppData
 import dev.clombardo.dnsnet.ui.app.state.AppListState
 import dev.clombardo.dnsnet.ui.app.viewmodel.AppListViewModel
 import dev.clombardo.dnsnet.ui.common.BasicTooltipIconButton
@@ -118,21 +118,24 @@ fun AppsScreen(
                 ListSettingsContainer(
                     title = stringResource(R.string.allowlist_description),
                 ) {
-                    var expanded by rememberSaveable { mutableStateOf(false) }
-                    val bypassOptions = stringArrayResource(R.array.allowlist_defaults)
-                    ExpandableOptionsItem(
-                        expanded = expanded,
-                        title = stringResource(R.string.allowlist_defaults_title),
-                        details = bypassOptions[bypassSelection.ordinal],
-                        onExpandClick = { expanded = !expanded },
-                    ) {
-                        bypassOptions.forEachIndexed { i, option ->
-                            val thisMode = i.toAllowListMode()
-                            RadioListItem(
-                                checked = thisMode == bypassSelection,
-                                title = option,
-                                onCheckedChange = { onBypassSelection(thisMode) },
-                            )
+                    item {
+                        var expanded by rememberSaveable { mutableStateOf(false) }
+                        val bypassOptions = stringArrayResource(R.array.allowlist_defaults)
+                        ExpandableOptionsItem(
+                            expanded = expanded,
+                            title = stringResource(R.string.allowlist_defaults_title),
+                            details = bypassOptions[bypassSelection.ordinal],
+                            onExpandClick = { expanded = !expanded },
+                        ) {
+                            bypassOptions.forEachIndexed { i, option ->
+                                val thisMode = i.toAllowListMode()
+                                RadioListItem(
+                                    checked = thisMode == bypassSelection,
+                                    title = option,
+                                    onCheckedChange = { onBypassSelection(thisMode) },
+                                    clip = true,
+                                )
+                            }
                         }
                     }
                 }
@@ -193,6 +196,7 @@ fun AppsScreen(
                         checked = !checked
                         onAppClick(it, checked)
                     },
+                    clip = true,
                     startContent = {
                         Image(
                             modifier = Modifier.fillMaxSize(),
