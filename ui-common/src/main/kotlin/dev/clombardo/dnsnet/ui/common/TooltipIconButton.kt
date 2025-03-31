@@ -118,3 +118,54 @@ fun BasicTooltipIconButton(
         onClick = onClick,
     )
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TooltipButton(
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    painter: Painter,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    TooltipBox(
+        positionProvider = rememberTooltipPositionProvider(),
+        state = rememberTooltipState(),
+        focusable = false,
+        tooltip = {
+            val haptics = LocalHapticFeedback.current
+            LaunchedEffect(Unit) {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            }
+            PlainTooltip { Text(contentDescription) }
+        },
+    ) {
+        Icon(
+            modifier = modifier
+                .fullSizeClickable(
+                    enabled = enabled,
+                    onClick = onClick,
+                )
+                .semantics { this.contentDescription = contentDescription },
+            painter = painter,
+            contentDescription = contentDescription,
+        )
+    }
+}
+
+@Composable
+fun BasicTooltipButton(
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    TooltipButton(
+        modifier = modifier,
+        enabled = enabled,
+        painter = rememberVectorPainter(icon),
+        contentDescription = contentDescription,
+        onClick = onClick,
+    )
+}
