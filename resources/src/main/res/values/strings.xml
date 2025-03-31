@@ -174,6 +174,47 @@
     <string name="button_continue">Continue</string>
     <string name="use_dns_servers_from_active_network">Use servers from active network</string>
     <string name="use_dns_servers_from_active_network_description">Applies servers from the network you are connected to in addition to your own</string>
+    <string name="presets">Presets</string>
+    <string name="presets_description">Well known and regularly updated block lists</string>
+
+    <!-- Block list defaults -->
+    <string name="hagezi_dns_blocklists">hagezi\'s DNS-Blocklists</string>
+    <string name="hagezi_dns_blocklists_source_url" translatable="false">https://github.com/hagezi/dns-blocklists</string>
+    <string name="hagezi_dns_blocklists_light">Light</string>
+    <string name="hagezi_dns_blocklists_light_description">Should not lead to any restrictions and will use the least system resources.</string>
+    <string name="hagezi_dns_blocklists_light_url" translatable="false">https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/light.txt</string>
+    <string name="hagezi_dns_blocklists_normal">Normal</string>
+    <string name="hagezi_dns_blocklists_normal_description">Should not lead to any restrictions for the most part.</string>
+    <string name="hagezi_dns_blocklists_normal_url" translatable="false">https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/normal.txt</string>
+    <string name="hagezi_dns_blocklists_pro">Pro</string>
+    <string name="hagezi_dns_blocklists_pro_description">Should only very rarely lead to restrictions. You may have to unblock specific domains.</string>
+    <string name="hagezi_dns_blocklists_pro_url" translatable="false">https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/pro.txt</string>
+    <string name="hagezi_dns_blocklists_pro_plus_plus">Pro++</string>
+    <string name="hagezi_dns_blocklists_pro_plus_plus_description">May contain some false positives. Should only be used by experienced users who can unblock domains as needed.</string>
+    <string name="hagezi_dns_blocklists_pro_plus_plus_url" translatable="false">https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/pro.plus.txt</string>
+    <string name="hagezi_dns_blocklists_ultimate">Ultimate</string>
+    <string name="hagezi_dns_blocklists_ultimate_description">Will limit functionality in many apps and websites. Should only be used by very experienced users.</string>
+    <string name="hagezi_dns_blocklists_ultimate_url">https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/ultimate.txt</string>
+    <string name="stevenblack_hosts">StevenBlack\'s hosts</string>
+    <string name="stevenblack_hosts_source_url" translatable="false">https://github.com/StevenBlack/hosts</string>
+    <string name="stevenblack_hosts_description">Aggregates several sources for blocked domains.</string>
+    <string name="stevenblack_hosts_adware_malware">Adware + malware</string>
+    <string name="stevenblack_hosts_adware_malware_url" translatable="false">https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts</string>
+    <string name="stevenblack_hosts_gambling">Gambling</string>
+    <string name="stevenblack_hosts_gambling_url" translatable="false">https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/gambling-only/hosts</string>
+    <string name="stevenblack_hosts_nsfw">Not safe for work</string>
+    <string name="stevenblack_hosts_nsfw_url" translatable="false">https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/porn-only/hosts</string>
+    <string name="stevenblack_hosts_social_media">Social media</string>
+    <string name="stevenblack_hosts_social_media_url" translatable="false">https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/social-only/hosts</string>
+    <string name="oisd">oisd</string>
+    <string name="oisd_description">Prioritizes stability over blocking</string>
+    <string name="oisd_source_url" translatable="false">https://oisd.nl/</string>
+    <string name="oisd_big">Big</string>
+    <string name="oisd_big_description">Full list that will take a significant amount of system memory. If you do not know what this means, select the small list instead.</string>
+    <string name="oisd_big_url" translatable="false">https://big.oisd.nl</string>
+    <string name="oisd_small">Small</string>
+    <string name="oisd_small_description">Smaller version of the big list that is easier on system memory.</string>
+    <string name="oisd_small_url" translatable="false">https://small.oisd.nl</string>
 
     <!-- Rust crate credits -->
     <string name="etherparse" translatable="false">etherparse</string>

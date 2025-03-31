@@ -47,4 +47,5 @@ dependencies {
 
     implementation(project(":log"))
     implementation(project(":file"))
+    implementation(project(":resources"))
 }

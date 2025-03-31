@@ -17,6 +17,7 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Parcelable
 import androidx.annotation.Keep
+import androidx.annotation.StringRes
 import androidx.core.net.toUri
 import dagger.Module
 import dagger.Provides
@@ -332,7 +333,7 @@ data class DnsServer(
     fun getAddresses(): List<String> = addresses.split(",").map { it.trim() }
 }
 
-interface Host : Parcelable {
+sealed interface Host : Parcelable {
     var title: String
     var data: String
     var state: HostState
@@ -436,4 +437,115 @@ enum class HostState {
     companion object {
         fun Int.toHostState(): HostState = entries.firstOrNull { it.ordinal == this } ?: IGNORE
     }
+}
+
+sealed interface BlockListProvider {
+    @get:StringRes
+    val title: Int
+
+    @get:StringRes
+    val description: Int
+
+    @get:StringRes
+    val sourceUrl: Int
+}
+
+data class BlockListVariantProvider(
+    override val title: Int,
+    override val description: Int = 0,
+    override val sourceUrl: Int,
+    val singleSelection: Boolean,
+    val variants: List<BlockListVariant>,
+): BlockListProvider
+
+data class BlockListVariant(
+    @StringRes val title: Int,
+    @StringRes val description: Int = 0,
+    @StringRes val url: Int,
+)
+
+data class BlockListUrlProvider(
+    override val title: Int,
+    override val description: Int = 0,
+    override val sourceUrl: Int,
+    val url: String,
+): BlockListProvider
+
+object BlockListDefaults {
+    val providers = listOf(
+        BlockListVariantProvider(
+            title = R.string.hagezi_dns_blocklists,
+            sourceUrl = R.string.hagezi_dns_blocklists_source_url,
+            singleSelection = true,
+            variants = listOf(
+                BlockListVariant(
+                    title = R.string.hagezi_dns_blocklists_light,
+                    description = R.string.hagezi_dns_blocklists_light_description,
+                    url = R.string.hagezi_dns_blocklists_light_url,
+                ),
+                BlockListVariant(
+                    title = R.string.hagezi_dns_blocklists_normal,
+                    description = R.string.hagezi_dns_blocklists_normal_description,
+                    url = R.string.hagezi_dns_blocklists_normal_url,
+                ),
+                BlockListVariant(
+                    title = R.string.hagezi_dns_blocklists_pro,
+                    description = R.string.hagezi_dns_blocklists_pro_description,
+                    url = R.string.hagezi_dns_blocklists_pro_url,
+                ),
+                BlockListVariant(
+                    title = R.string.hagezi_dns_blocklists_pro_plus_plus,
+                    description = R.string.hagezi_dns_blocklists_pro_plus_plus_description,
+                    url = R.string.hagezi_dns_blocklists_pro_plus_plus_url,
+                ),
+                BlockListVariant(
+                    title = R.string.hagezi_dns_blocklists_ultimate,
+                    description = R.string.hagezi_dns_blocklists_ultimate_description,
+                    url = R.string.hagezi_dns_blocklists_ultimate_url,
+                ),
+            ),
+        ),
+        BlockListVariantProvider(
+            title = R.string.stevenblack_hosts,
+            description = R.string.stevenblack_hosts_description,
+            sourceUrl = R.string.stevenblack_hosts_source_url,
+            singleSelection = false,
+            variants = listOf(
+                BlockListVariant(
+                    title = R.string.stevenblack_hosts_adware_malware,
+                    url = R.string.stevenblack_hosts_adware_malware_url,
+                ),
+                BlockListVariant(
+                    title = R.string.stevenblack_hosts_gambling,
+                    url = R.string.stevenblack_hosts_gambling_url,
+                ),
+                BlockListVariant(
+                    title = R.string.stevenblack_hosts_nsfw,
+                    url = R.string.stevenblack_hosts_nsfw_url,
+                ),
+                BlockListVariant(
+                    title = R.string.stevenblack_hosts_social_media,
+                    url = R.string.stevenblack_hosts_social_media_url,
+                ),
+            ),
+        ),
+        BlockListVariantProvider(
+            title = R.string.oisd,
+            description = R.string.oisd_description,
+            sourceUrl = R.string.oisd_source_url,
+            singleSelection = true,
+            variants = listOf(
+                BlockListVariant(
+                    title = R.string.oisd_big,
+                    description = R.string.oisd_big_description,
+                    url = R.string.oisd_big_url,
+                ),
+                BlockListVariant(
+                    title = R.string.oisd_small,
+                    description = R.string.oisd_small_description,
+                    url = R.string.oisd_small_url,
+                ),
+            ),
+        ),
+    )
 }
