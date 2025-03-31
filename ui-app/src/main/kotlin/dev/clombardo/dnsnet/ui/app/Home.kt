@@ -148,6 +148,10 @@ sealed class TopLevelDestination : Parcelable {
     @Parcelize
     @Serializable
     data object Notice : TopLevelDestination()
+
+    @Parcelize
+    @Serializable
+    data class Presets(val canGoBack: Boolean) : TopLevelDestination()
 }
 
 object Home {
@@ -361,10 +365,26 @@ fun App(
                 NoticeScreen(
                     onContinueClick = {
                         vm.preferences.SetupComplete = true
-                        navController.popNavigate(TopLevelDestination.Home)
+                        navController.popNavigate(TopLevelDestination.Presets(canGoBack = false))
                     },
                     animatedVisibilityScope = this@composable,
                     sharedTransitionScope = this@SharedTransitionLayout,
+                )
+            }
+            composable<TopLevelDestination.Presets> { backstackEntry ->
+                val route = backstackEntry.toRoute<TopLevelDestination.Presets>()
+                PresetsScreen(
+                    canGoBack = route.canGoBack,
+                    onNavigateUp = { navController.tryPopBackstack(backstackEntry.id) },
+                    onComplete = {
+                        vm.addBlockLists(it)
+                        onRefreshHosts()
+                        if (route.canGoBack) {
+                            navController.tryPopBackstack(backstackEntry.id)
+                        } else {
+                            navController.popNavigate(TopLevelDestination.Home)
+                        }
+                    },
                 )
             }
             composable<TopLevelDestination.Home> {
@@ -650,6 +670,16 @@ fun HomeScreen(
                         }
                     ) {
                         item(
+                            icon = Icons.Default.Bolt,
+                            text = context.getString(R.string.presets),
+                            onClick = {
+                                expanded = false
+                                topLevelNavController.navigate(
+                                    TopLevelDestination.Presets(canGoBack = true)
+                                )
+                            }
+                        )
+                        item(
                             icon = Icons.AutoMirrored.Filled.DriveFileMove,
                             text = context.getString(R.string.add_hosts_file),
                             onClick = {
@@ -805,6 +835,11 @@ fun HomeScreen(
                     },
                     isRefreshingHosts = isDatabaseRefreshing,
                     onRefreshHosts = onRefreshHosts,
+                    onOpenPresets = {
+                        topLevelNavController.navigate(
+                            TopLevelDestination.Presets(canGoBack = true)
+                        )
+                    },
                 )
             }
 

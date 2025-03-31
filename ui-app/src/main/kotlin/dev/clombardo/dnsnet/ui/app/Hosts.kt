@@ -34,6 +34,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -119,6 +121,7 @@ fun HostsScreen(
     onHostStateChanged: (Host) -> Unit,
     isRefreshingHosts: Boolean,
     onRefreshHosts: () -> Unit,
+    onOpenPresets: () -> Unit,
 ) {
     val itemStateStrings = stringArrayResource(R.array.item_states)
     val getStateString = { state: HostState ->
@@ -181,37 +184,39 @@ fun HostsScreen(
 
             Spacer(modifier = Modifier.padding(vertical = 4.dp))
 
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Row(
-                    modifier = Modifier.animateContentSize(
-                        animationSpec = Hosts.RefreshHostsButtonContainerAnimationSpec
-                    ),
-                    verticalAlignment = Alignment.CenterVertically,
+            if (hosts.isNotEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    FilledTonalButton(
-                        onClick = {
-                            if (!isRefreshingHosts) {
-                                onRefreshHosts()
-                            }
-                        },
+                    Row(
+                        modifier = Modifier.animateContentSize(
+                            animationSpec = Hosts.RefreshHostsButtonContainerAnimationSpec
+                        ),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(text = stringResource(R.string.action_refresh))
-                    }
-
-                    AnimatedVisibility(
-                        visible = isRefreshingHosts,
-                        enter = Animation.ShowSpinnerHorizontal,
-                        exit = Animation.HideSpinnerHorizontal,
-                    ) {
-                        Row(
-                            modifier = Modifier.wrapContentSize(),
-                            verticalAlignment = Alignment.CenterVertically,
+                        FilledTonalButton(
+                            onClick = {
+                                if (!isRefreshingHosts) {
+                                    onRefreshHosts()
+                                }
+                            },
                         ) {
-                            Spacer(modifier = Modifier.padding(horizontal = 8.dp))
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            Text(text = stringResource(R.string.action_refresh))
+                        }
+
+                        AnimatedVisibility(
+                            visible = isRefreshingHosts,
+                            enter = Animation.ShowSpinnerHorizontal,
+                            exit = Animation.HideSpinnerHorizontal,
+                        ) {
+                            Row(
+                                modifier = Modifier.wrapContentSize(),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Spacer(modifier = Modifier.padding(horizontal = 8.dp))
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            }
                         }
                     }
                 }
@@ -244,6 +249,27 @@ fun HostsScreen(
                     )
                 },
             )
+        }
+
+        if (hosts.isEmpty()) {
+            item {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = stringResource(R.string.no_block_items),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    Button(
+                        colors = ButtonDefaults.filledTonalButtonColors(),
+                        onClick = onOpenPresets,
+                    ) {
+                        Text(text = stringResource(R.string.presets))
+                    }
+                }
+            }
         }
     }
 }
@@ -282,6 +308,26 @@ private fun HostsScreenPreview() {
             onHostStateChanged = {},
             isRefreshingHosts = isRefreshingHosts,
             onRefreshHosts = { isRefreshingHosts = !isRefreshingHosts },
+            onOpenPresets = {},
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun HostsScreenNoBlockItemsPreview() {
+    var isRefreshingHosts by remember { mutableStateOf(false) }
+    DnsNetTheme {
+        HostsScreen(
+            modifier = Modifier.background(MaterialTheme.colorScheme.surface),
+            refreshDaily = false,
+            onRefreshDailyClick = {},
+            hosts = listOf(),
+            onHostClick = {},
+            onHostStateChanged = {},
+            isRefreshingHosts = isRefreshingHosts,
+            onRefreshHosts = { isRefreshingHosts = !isRefreshingHosts },
+            onOpenPresets = {},
         )
     }
 }

@@ -24,6 +24,7 @@ import dev.clombardo.dnsnet.blocklogger.BlockLogger
 import dev.clombardo.dnsnet.blocklogger.LoggedConnection
 import dev.clombardo.dnsnet.log.logd
 import dev.clombardo.dnsnet.log.logw
+import dev.clombardo.dnsnet.settings.BlockList
 import dev.clombardo.dnsnet.settings.ConfigurationManager
 import dev.clombardo.dnsnet.settings.DnsServer
 import dev.clombardo.dnsnet.settings.Host
@@ -465,6 +466,25 @@ class HomeViewModel @Inject constructor(
             logcatLock.getAndSet(false)
             _isWritingLogcat.value = false
         }
+    }
+
+    fun addBlockLists(lists: List<BlockList>) {
+        configuration.edit {
+            lists.forEach { blockList ->
+                val listUrl = context.getString(blockList.urlResId)
+                if (this.hosts.items.firstOrNull { it.data == listUrl } == null) {
+                    this.hosts.items.add(
+                        HostFile(
+                            title = context.getString(blockList.titleResId),
+                            data = listUrl,
+                            state = HostState.DENY,
+                        )
+                    )
+                }
+            }
+        }
+        _hosts.clear()
+        _hosts.addAll(configuration.read { hosts.getAllHosts() })
     }
 
     companion object {

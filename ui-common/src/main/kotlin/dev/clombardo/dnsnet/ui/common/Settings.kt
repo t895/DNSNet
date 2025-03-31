@@ -348,6 +348,7 @@ fun CheckboxListItem(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     details: String = "",
+    clip: Boolean = false,
     onCheckedChange: (Boolean) -> Unit,
     startContent: @Composable (BoxScope.() -> Unit)? = null,
 ) {
@@ -359,6 +360,7 @@ fun CheckboxListItem(
         modifier = modifier,
         enabled = enabled,
         details = details,
+        clip = clip,
         sharedInteractionSource = sharedInteractionSource,
         onCheckedChange = onCheckedChange,
         startContent = startContent,
@@ -738,6 +740,7 @@ private fun RadioListItemPreview() {
 fun ListSettingsContainer(
     modifier: Modifier = Modifier,
     title: String = "",
+    circleClip: Boolean = true,
     content: SplitContentContainerScope.() -> Unit,
 ) {
     Column(modifier = modifier) {
@@ -755,6 +758,7 @@ fun ListSettingsContainer(
 
         SplitContentColumnContainer(
             color = MaterialTheme.colorScheme.surfaceVariant,
+            circleClip = circleClip,
             content = content,
         )
     }

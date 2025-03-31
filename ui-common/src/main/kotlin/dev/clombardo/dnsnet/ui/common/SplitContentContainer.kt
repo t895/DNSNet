@@ -61,6 +61,13 @@ object SplitContentContainer {
         bottomRight = fullRoundCorner,
     )
 
+    val slightlyRoundCornerShape = AbsoluteRoundedCornerShape(
+        topLeft = outerCorner,
+        topRight = outerCorner,
+        bottomLeft = outerCorner,
+        bottomRight = outerCorner,
+    )
+
     val startRowContainerShape = AbsoluteRoundedCornerShape(
         topLeft = outerCorner,
         topRight = innerCorner,
@@ -127,6 +134,7 @@ private fun Container(
 fun SplitContentRowContainer(
     modifier: Modifier = Modifier,
     elevated: Boolean = true,
+    circleClip: Boolean = true,
     color: Color = MaterialTheme.colorScheme.primaryContainer,
     content: SplitContentContainerScope.() -> Unit,
 ) {
@@ -156,7 +164,11 @@ fun SplitContentRowContainer(
         scope.itemList.forEachIndexed { index, content ->
             val containerShape = when (index) {
                 0 -> if (scope.itemList.size == 1) {
-                    SplitContentContainer.fullRoundCornerShape
+                    if (circleClip) {
+                        SplitContentContainer.fullRoundCornerShape
+                    } else {
+                        SplitContentContainer.slightlyRoundCornerShape
+                    }
                 } else {
                     SplitContentContainer.startRowContainerShape
                 }
@@ -186,7 +198,7 @@ private fun SplitContentRowContainerPreview() {
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             val scope = rememberCoroutineScope()
-            var elevated by remember { mutableStateOf(false) }
+            var elevated by remember { mutableStateOf(true) }
             LaunchedEffect(Unit) {
                 scope.launch {
                     while (true) {
@@ -254,6 +266,7 @@ private fun SplitContentRowContainerPreview() {
 fun SplitContentColumnContainer(
     modifier: Modifier = Modifier,
     elevated: Boolean = true,
+    circleClip: Boolean = true,
     color: Color = MaterialTheme.colorScheme.primaryContainer,
     content: SplitContentContainerScope.() -> Unit,
 ) {
@@ -283,7 +296,11 @@ fun SplitContentColumnContainer(
         scope.itemList.forEachIndexed { index, content ->
             val containerShape = when (index) {
                 0 -> if (scope.itemList.size == 1) {
-                    SplitContentContainer.fullRoundCornerShape
+                    if (circleClip) {
+                        SplitContentContainer.fullRoundCornerShape
+                    } else {
+                        SplitContentContainer.slightlyRoundCornerShape
+                    }
                 } else {
                     SplitContentContainer.startColumnContainerShape
                 }
@@ -313,7 +330,7 @@ private fun SplitContentColumnContainerPreview() {
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             val scope = rememberCoroutineScope()
-            var elevated by remember { mutableStateOf(false) }
+            var elevated by remember { mutableStateOf(true) }
             LaunchedEffect(Unit) {
                 scope.launch {
                     while (true) {

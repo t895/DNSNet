@@ -54,6 +54,7 @@ import dev.clombardo.dnsnet.ui.common.SplitCheckboxListItem
 import dev.clombardo.dnsnet.ui.common.SwitchListItem
 import dev.clombardo.dnsnet.ui.common.TooltipIconButton
 import dev.clombardo.dnsnet.ui.common.rememberAtTop
+import dev.clombardo.dnsnet.ui.common.rememberMutableStateListOf
 import dev.clombardo.dnsnet.ui.common.theme.DnsNetTheme
 import dev.clombardo.dnsnet.ui.common.theme.ListPadding
 import kotlinx.parcelize.Parcelize

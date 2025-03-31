@@ -6,7 +6,7 @@
  * (at your option) any later version.
  */
 
-package dev.clombardo.dnsnet.ui.app
+package dev.clombardo.dnsnet.ui.common
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.saveable.listSaver
@@ -15,7 +15,7 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 
 @Composable
-fun <T: Any> rememberMutableStateListOf(builderAction: MutableList<T>.() -> Unit): SnapshotStateList<T> {
+fun <T: Any> rememberMutableStateListOf(builderAction: MutableList<T>.() -> Unit = {}): SnapshotStateList<T> {
     return rememberSaveable(saver = snapshotStateListSaver()) {
         val elements = mutableListOf<T>()
         builderAction(elements)

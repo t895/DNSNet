@@ -18,7 +18,7 @@ import androidx.compose.runtime.remember
 fun rememberAtTop(state: LazyListState): State<Boolean> {
     return remember {
         derivedStateOf {
-            state.firstVisibleItemIndex == 0
+            state.firstVisibleItemIndex == 0 && state.firstVisibleItemScrollOffset == 0
         }
     }
 }

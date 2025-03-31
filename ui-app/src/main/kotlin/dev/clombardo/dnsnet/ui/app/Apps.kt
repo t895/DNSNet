@@ -117,6 +117,7 @@ fun AppsScreen(
             item {
                 ListSettingsContainer(
                     title = stringResource(R.string.allowlist_description),
+                    circleClip = false,
                 ) {
                     item {
                         var expanded by rememberSaveable { mutableStateOf(false) }
