@@ -732,9 +732,6 @@ fun HomeScreen(
                 var resumeOnStartupToggle by remember {
                     mutableStateOf(vm.configuration.read { autoStart })
                 }
-                var ipV6SupportToggle by remember {
-                    mutableStateOf(vm.configuration.read { ipV6Support })
-                }
                 var blockLogToggle by remember {
                     mutableStateOf(vm.configuration.read { blockLogging })
                 }
@@ -775,14 +772,6 @@ fun HomeScreen(
                             autoStart = !autoStart
                             resumeOnStartupToggle = autoStart
                         }
-                    },
-                    ipv6Support = ipV6SupportToggle,
-                    onIpv6SupportClick = {
-                        vm.configuration.edit {
-                            ipV6Support = !ipV6Support
-                            ipV6SupportToggle = ipV6Support
-                        }
-                        onReloadVpn()
                     },
                     blockLog = blockLogToggle,
                     onToggleBlockLog = {
@@ -874,6 +863,9 @@ fun HomeScreen(
                 var customDnsServers by remember {
                     mutableStateOf(vm.configuration.read { dnsServers.enabled })
                 }
+                var ipV6SupportToggle by remember {
+                    mutableStateOf(vm.configuration.read { ipV6Support })
+                }
                 var useNetworkDnsServers by remember {
                     mutableStateOf(vm.configuration.read { useNetworkDnsServers })
                 }
@@ -887,6 +879,14 @@ fun HomeScreen(
                         vm.configuration.edit {
                             dnsServers.enabled = !dnsServers.enabled
                             customDnsServers = dnsServers.enabled
+                        }
+                        onReloadVpn()
+                    },
+                    ipv6Support = ipV6SupportToggle,
+                    onIpv6SupportClick = {
+                        vm.configuration.edit {
+                            ipV6Support = !ipV6Support
+                            ipV6SupportToggle = ipV6Support
                         }
                         onReloadVpn()
                     },

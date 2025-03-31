@@ -68,8 +68,6 @@ fun StartScreen(
     listState: LazyListState = rememberLazyListState(),
     resumeOnStartup: Boolean,
     onResumeOnStartupClick: () -> Unit,
-    ipv6Support: Boolean,
-    onIpv6SupportClick: () -> Unit,
     blockLog: Boolean,
     onToggleBlockLog: () -> Unit,
     onOpenBlockLog: () -> Unit,
@@ -97,15 +95,6 @@ fun StartScreen(
                             details = stringResource(id = R.string.switch_onboot_description),
                             checked = resumeOnStartup,
                             onCheckedChange = { onResumeOnStartupClick() },
-                        )
-                    }
-
-                    item {
-                        SwitchListItem(
-                            title = stringResource(id = R.string.ipv6_support),
-                            details = stringResource(id = R.string.ipv6_support_description),
-                            checked = ipv6Support,
-                            onCheckedChange = { onIpv6SupportClick() },
                         )
                     }
 
@@ -246,8 +235,6 @@ private fun StartScreenPreview() {
             modifier = Modifier.background(MaterialTheme.colorScheme.surface),
             resumeOnStartup = false,
             onResumeOnStartupClick = {},
-            ipv6Support = false,
-            onIpv6SupportClick = {},
             state = FabState.Inactive,
             onChangeVpnStatusClick = {},
             blockLog = true,

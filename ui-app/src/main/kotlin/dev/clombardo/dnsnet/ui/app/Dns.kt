@@ -67,6 +67,8 @@ fun DnsScreen(
     servers: List<DnsServer> = emptyList(),
     customDnsServers: Boolean,
     onCustomDnsServersClick: () -> Unit,
+    ipv6Support: Boolean,
+    onIpv6SupportClick: () -> Unit,
     useNetworkDnsServers: Boolean,
     onUseNetworkDnsServersClick: () -> Unit,
     onItemClick: (DnsServer) -> Unit,
@@ -85,6 +87,15 @@ fun DnsScreen(
                         details = stringResource(R.string.dns_description),
                         checked = customDnsServers,
                         onCheckedChange = { onCustomDnsServersClick() },
+                    )
+                }
+
+                item {
+                    SwitchListItem(
+                        title = stringResource(id = R.string.ipv6_support),
+                        details = stringResource(id = R.string.ipv6_support_description),
+                        checked = ipv6Support,
+                        onCheckedChange = { onIpv6SupportClick() },
                     )
                 }
 
@@ -131,6 +142,8 @@ private fun DnsScreenPreview() {
             onItemClick = {},
             customDnsServers = false,
             onCustomDnsServersClick = {},
+            ipv6Support = false,
+            onIpv6SupportClick = {},
             useNetworkDnsServers = false,
             onUseNetworkDnsServersClick = {},
             onItemCheckClicked = {},
