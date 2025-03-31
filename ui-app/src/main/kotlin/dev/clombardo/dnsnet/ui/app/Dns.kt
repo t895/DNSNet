@@ -13,10 +13,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -137,91 +137,6 @@ private fun DnsScreenPreview() {
     }
 }
 
-fun editDnsList(
-    titleText: String,
-    titleTextError: Boolean,
-    onTitleTextChanged: (String) -> Unit,
-    addressState: List<AddressInputState>,
-    onAddressTextChanged: (index: Int, location: String) -> Unit,
-    onAddAddress: () -> Unit,
-    onRemoveAddress: (Int) -> Unit,
-    enabled: Boolean,
-    onEnable: () -> Unit,
-): LazyListScope.() -> Unit {
-    return {
-        item {
-            OutlinedTextField(
-                modifier = Modifier.fillMaxWidth(),
-                label = {
-                    Text(text = stringResource(id = R.string.title))
-                },
-                value = titleText,
-                onValueChange = onTitleTextChanged,
-                isError = titleTextError,
-                supportingText = {
-                    if (titleTextError) {
-                        Text(text = stringResource(R.string.input_blank_error))
-                    }
-                },
-            )
-        }
-
-        itemsIndexed(
-            items = addressState,
-            key = { i, _ -> i }
-        ) { i, state ->
-            OutlinedTextField(
-                modifier = Modifier
-                    .animateItem()
-                    .fillMaxWidth(),
-                label = {
-                    Text(text = stringResource(id = R.string.location_dns))
-                },
-                value = state.address,
-                onValueChange = {
-                    onAddressTextChanged(i, it)
-                },
-                isError = state.error,
-                supportingText = {
-                    if (state.error) {
-                        Text(text = stringResource(R.string.input_blank_error))
-                    }
-                },
-                trailingIcon = {
-                    if (i > 0) {
-                        TooltipIconButton(
-                            painter = rememberVectorPainter(Icons.Default.Delete),
-                            contentDescription = stringResource(R.string.action_delete),
-                            onClick = { onRemoveAddress(i) },
-                        )
-                    }
-                }
-            )
-        }
-
-        item(key = "item") {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center,
-            ) {
-                FilledTonalButton(
-                    modifier = Modifier.animateItem(),
-                    onClick = onAddAddress,
-                ) {
-                    Text(text = stringResource(R.string.add_address))
-                }
-            }
-            SwitchListItem(
-                modifier = Modifier.animateItem(),
-                title = stringResource(id = R.string.state_dns_enabled),
-                checked = enabled,
-                clip = true,
-                onCheckedChange = { onEnable() },
-            )
-        }
-    }
-}
-
 @Parcelize
 data class AddressInputState(
     val address: String = "",
@@ -312,12 +227,15 @@ fun EditDnsScreen(
         },
     ) { contentPadding ->
         LazyColumn(
-            modifier = Modifier.padding(horizontal = ListPadding),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = ListPadding),
             state = state,
             contentPadding = contentPadding,
         ) {
-            item {
+            item(key = "title") {
                 ScreenTitle(
+                    modifier = Modifier.animateItem(),
                     text = stringResource(
                         if (server.title.isBlank() && server.addresses.isBlank()) {
                             R.string.add_dns_server
@@ -328,19 +246,79 @@ fun EditDnsScreen(
                 )
             }
 
-            editDnsList(
-                titleText = titleInput,
-                titleTextError = titleInputError,
-                onTitleTextChanged = { titleInput = it },
-                addressState = addressesState,
-                onAddressTextChanged = { i, location ->
-                    addressesState[i] = AddressInputState(location)
-                },
-                onAddAddress = { addressesState.add(AddressInputState()) },
-                onRemoveAddress = { addressesState.removeAt(it) },
-                enabled = enabledInput,
-                onEnable = { enabledInput = !enabledInput },
-            ).invoke(this)
+            item(key = "title-input") {
+                OutlinedTextField(
+                    modifier = Modifier
+                        .animateItem()
+                        .fillMaxWidth(),
+                    label = {
+                        Text(text = stringResource(id = R.string.title))
+                    },
+                    value = titleInput,
+                    onValueChange = { titleInput = it },
+                    isError = titleInputError,
+                    supportingText = {
+                        if (titleInputError) {
+                            Text(text = stringResource(R.string.input_blank_error))
+                        }
+                    },
+                )
+            }
+
+            itemsIndexed(
+                items = addressesState,
+                key = { i, _ -> i }
+            ) { i, state ->
+                OutlinedTextField(
+                    modifier = Modifier
+                        .animateItem()
+                        .fillMaxWidth(),
+                    label = {
+                        Text(text = stringResource(id = R.string.location_dns))
+                    },
+                    value = state.address,
+                    onValueChange = {
+                        addressesState[i] = AddressInputState(it)
+                    },
+                    isError = state.error,
+                    supportingText = {
+                        if (state.error) {
+                            Text(text = stringResource(R.string.input_blank_error))
+                        }
+                    },
+                    trailingIcon = {
+                        if (i > 0) {
+                            TooltipIconButton(
+                                painter = rememberVectorPainter(Icons.Default.Delete),
+                                contentDescription = stringResource(R.string.action_delete),
+                                onClick = { addressesState.removeAt(i) },
+                            )
+                        }
+                    }
+                )
+            }
+
+            item(key = "item") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .animateItem(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    FilledTonalButton(
+                        onClick = { addressesState.add(AddressInputState()) },
+                    ) {
+                        Text(text = stringResource(R.string.add_address))
+                    }
+                }
+                SwitchListItem(
+                    modifier = Modifier.animateItem(),
+                    title = stringResource(id = R.string.state_dns_enabled),
+                    checked = enabledInput,
+                    clip = true,
+                    onCheckedChange = { enabledInput = !enabledInput },
+                )
+            }
         }
     }
 }
