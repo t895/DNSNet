@@ -97,9 +97,6 @@ class HomeViewModel @Inject constructor(
     private val _showDeleteHostWarningDialog = MutableStateFlow(false)
     val showDeleteHostWarningDialog = _showDeleteHostWarningDialog.asStateFlow()
 
-    private val _showStatusBarShade = MutableStateFlow(true)
-    val showStatusBarShade = _showStatusBarShade.asStateFlow()
-
     private val _isWritingLogcat = MutableStateFlow(false)
     val isWritingLogcat = _isWritingLogcat.asStateFlow()
 
@@ -422,14 +419,6 @@ class HomeViewModel @Inject constructor(
 
     fun onDismissDeleteHostWarning() {
         _showDeleteHostWarningDialog.value = false
-    }
-
-    fun showStatusBarShade() {
-        _showStatusBarShade.value = true
-    }
-
-    fun hideStatusBarShade() {
-        _showStatusBarShade.value = false
     }
 
     fun onClearBlockLog() {

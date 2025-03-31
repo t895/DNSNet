@@ -29,7 +29,6 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -67,7 +66,6 @@ import dev.clombardo.dnsnet.service.db.RuleDatabaseUpdateWorker
 import dev.clombardo.dnsnet.service.vpn.AdVpnService
 import dev.clombardo.dnsnet.ui.app.App
 import dev.clombardo.dnsnet.ui.app.viewmodel.HomeViewModel
-import dev.clombardo.dnsnet.ui.common.theme.Animation
 import dev.clombardo.dnsnet.ui.common.theme.DnsNetTheme
 import java.util.concurrent.TimeUnit
 
@@ -172,30 +170,23 @@ class MainActivity : AppCompatActivity() {
                     val localDensity = LocalDensity.current
                     val systemBarShadeHeight =
                         WindowInsets.systemBars.getTop(localDensity) / localDensity.density
-                    val showStatusBarShade by vm.showStatusBarShade.collectAsState()
-                    AnimatedVisibility(
-                        visible = showStatusBarShade,
-                        enter = Animation.ShowStatusBarShade,
-                        exit = Animation.HideStatusBarShade,
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(systemBarShadeHeight.dp)
-                                .hazeEffect(
-                                    state = hazeState,
-                                    style = HazeDefaults.style(
-                                        backgroundColor = MaterialTheme.colorScheme.surface,
-                                        blurRadius = 1.dp,
-                                    ),
-                                    block = fun HazeEffectScope.() {
-                                        mask = Brush.verticalGradient(
-                                            0f to Color.White,
-                                            1f to Color.Transparent,
-                                        )
-                                    }),
-                        )
-                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(systemBarShadeHeight.dp)
+                            .hazeEffect(
+                                state = hazeState,
+                                style = HazeDefaults.style(
+                                    backgroundColor = MaterialTheme.colorScheme.surface,
+                                    blurRadius = 1.dp,
+                                ),
+                                block = fun HazeEffectScope.() {
+                                    mask = Brush.verticalGradient(
+                                        0f to Color.White,
+                                        1f to Color.Transparent,
+                                    )
+                                }),
+                    )
                 }
             }
         }

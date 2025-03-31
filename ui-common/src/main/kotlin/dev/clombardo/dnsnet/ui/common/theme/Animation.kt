@@ -34,7 +34,4 @@ object Animation {
             clip = false,
         )
     }
-
-    val ShowStatusBarShade by lazy { fadeIn(tween()) }
-    val HideStatusBarShade by lazy { fadeOut(tween()) }
 }
