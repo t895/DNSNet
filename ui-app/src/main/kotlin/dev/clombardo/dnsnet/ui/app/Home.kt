@@ -364,7 +364,6 @@ fun App(
             composable<TopLevelDestination.Notice> {
                 NoticeScreen(
                     onContinueClick = {
-                        vm.preferences.SetupComplete = true
                         navController.popNavigate(TopLevelDestination.Presets(canGoBack = false))
                     },
                     animatedVisibilityScope = this@composable,
@@ -382,6 +381,7 @@ fun App(
                         if (route.canGoBack) {
                             navController.tryPopBackstack(backstackEntry.id)
                         } else {
+                            vm.preferences.SetupComplete = true
                             navController.popNavigate(TopLevelDestination.Home)
                         }
                     },
