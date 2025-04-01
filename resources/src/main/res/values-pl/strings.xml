@@ -71,4 +71,23 @@
         <item>Wszystkie aplikacje wykluczone domyślnie</item>
         <item>Aplikacje systemowe wykluczone domyślnie</item>
     </string-array>
+    <string name="notifications_group_updates">Aktualizacje</string>
+    <string name="button_cancel">Anuluj</string>
+    <string name="resume">Wznów</string>
+    <string name="save">Zapisz</string>
+    <string name="search">Szukaj</string>
+    <string name="ascending">Rosnąco</string>
+    <string name="warning">Ostrzeżenie</string>
+    <string name="disable">Wyłącz</string>
+    <string name="alphabetical">Alfabetycznie</string>
+    <string name="hostname">Nazwa hosta</string>
+    <string name="credits">Twórcy</string>
+    <string name="descending">Malejąco</string>
+    <string name="filter">Filtr</string>
+    <string name="sort">Sortuj</string>
+    <string name="help">Pomoc</string>
+    <string name="notice">Uwaga</string>
+    <string name="notifications">Powiadomienia</string>
+    <string name="grant">Udziel</string>
+    <string name="add">Dodaj</string>
 </resources>
