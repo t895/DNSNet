@@ -47,7 +47,7 @@ jobs:
           ./gradlew :app:assembleRelease
           ./gradlew :app:buildApksRelease
           ./gradlew :app:bundleRelease
-          ./gradlew :app:publishBundle
+          ./gradlew :app:publishReleaseBundle
       - name: Release
         uses: ncipollo/release-action@v1
         with:
