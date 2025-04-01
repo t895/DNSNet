@@ -175,7 +175,7 @@
     <string name="use_dns_servers_from_active_network">Use servers from active network</string>
     <string name="use_dns_servers_from_active_network_description">Applies servers from the network you are connected to in addition to your own</string>
     <string name="presets">Presets</string>
-    <string name="presets_description">Well known and regularly updated block lists</string>
+    <string name="presets_description">Select what kind of content that you would like to block from well-known and regularly updated block lists</string>
     <string name="select_an_option_to_continue">Select an option to continue</string>
     <string name="confirm">Confirm</string>
     <string name="view_source">View source</string>
@@ -183,7 +183,7 @@
 
     <!-- Block list defaults -->
     <string name="hagezi_dns_blocklists">hagezi\'s DNS-Blocklists</string>
-    <string name="hagezi_dns_blocklists_description">Aggregated block lists with varied sizes</string>
+    <string name="hagezi_dns_blocklists_description">Aggregated block lists with varied sizes. Blocks ads, tracking, metrics, and malware.</string>
     <string name="hagezi_dns_blocklists_source_url" translatable="false">https://github.com/hagezi/dns-blocklists</string>
     <string name="hagezi_dns_blocklists_light">hagezi - Light</string>
     <string name="hagezi_dns_blocklists_light_description">Should not lead to any restrictions and will use the least system resources.</string>
@@ -212,7 +212,7 @@
     <string name="stevenblack_hosts_social_media">StevenBlack - Social media</string>
     <string name="stevenblack_hosts_social_media_url" translatable="false">https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/social-only/hosts</string>
     <string name="oisd">oisd</string>
-    <string name="oisd_description">Prioritizes stability over blocking</string>
+    <string name="oisd_description">Increases privacy while reducing ads and malware. Prioritizes stability over blocking.</string>
     <string name="oisd_source_url" translatable="false">https://oisd.nl/</string>
     <string name="oisd_big">oisd - big</string>
     <string name="oisd_big_description">Full list that will take a significant amount of system memory. If you do not know what this means, select the small list instead.</string>
