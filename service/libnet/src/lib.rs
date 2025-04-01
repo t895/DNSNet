@@ -956,6 +956,7 @@ impl RuleDatabase {
             .reloading
             .fetch_or(true, std::sync::atomic::Ordering::Relaxed)
         {
+            info!("initialize: Already reloading, skipping");
             return Ok(());
         }
         if self
@@ -963,6 +964,7 @@ impl RuleDatabase {
             .should_stop
             .fetch_or(false, std::sync::atomic::Ordering::Relaxed)
         {
+            info!("initialize: Told to stop, skipping");
             return Ok(());
         }
         info!(
@@ -1039,10 +1041,7 @@ impl RuleDatabase {
     /// Blocks the current thread until the database has been reloaded or told to stop
     fn wait_on_init(&self) {
         loop {
-            if self.controller.is_initialized() {
-                break;
-            }
-            if !self.controller.is_reloading() {
+            if self.controller.is_initialized() && !self.controller.is_reloading() {
                 break;
             }
             if self.controller.get_should_stop() {
