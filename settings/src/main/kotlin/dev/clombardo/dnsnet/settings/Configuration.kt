@@ -528,14 +528,14 @@ object BlockListDefaults {
             singleSelection = true,
             variants = listOf(
                 BlockListVariant(
-                    titleResId = R.string.oisd_big,
-                    descriptionResId = R.string.oisd_big_description,
-                    urlResId = R.string.oisd_big_url,
-                ),
-                BlockListVariant(
                     titleResId = R.string.oisd_small,
                     descriptionResId = R.string.oisd_small_description,
                     urlResId = R.string.oisd_small_url,
+                ),
+                BlockListVariant(
+                    titleResId = R.string.oisd_big,
+                    descriptionResId = R.string.oisd_big_description,
+                    urlResId = R.string.oisd_big_url,
                 ),
             ),
         ),
