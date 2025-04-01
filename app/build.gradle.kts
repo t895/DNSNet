@@ -207,7 +207,7 @@ tasks.withType<Detekt>().configureEach {
 play {
     val keyPath = System.getenv("SERVICE_ACCOUNT_KEY_PATH")
     if (keyPath != null) {
-        serviceAccountCredentials.set(file(System.getenv("SERVICE_ACCOUNT_KEY_PATH")))
+        serviceAccountCredentials.set(file(keyPath))
     }
     track.set(System.getenv("STORE_TRACK") ?: "internal")
     releaseStatus.set(ReleaseStatus.IN_PROGRESS)

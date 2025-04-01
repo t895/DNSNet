@@ -39,8 +39,11 @@ jobs:
         run: |
           echo "${{secrets.STORE_FILE}}" | base64 --decode > ${HOME}/keyfile.jks
           export STORE_FILE_PATH=${HOME}/keyfile.jks
+          echo "${{secrets.SERVICE_ACCOUNT_KEY_FILE}}" | base64 --decode > ${HOME}/servicekey.json
+          export SERVICE_ACCOUNT_KEY_PATH=${HOME}/servicekey.json
           rustup target add x86_64-linux-android i686-linux-android aarch64-linux-android armv7-linux-androideabi
           export RUSTFLAGS=--remap-path-prefix=$HOME/.cargo=/rust/cargo
+          export STORE_TRACK=production
           ./gradlew :app:assembleRelease
           ./gradlew :app:buildApksRelease
           ./gradlew :app:bundleRelease
