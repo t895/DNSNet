@@ -90,4 +90,5 @@
     <string name="notifications">Powiadomienia</string>
     <string name="grant">Udziel</string>
     <string name="add">Dodaj</string>
+    <string name="notifications_update">Status</string>
 </resources>
