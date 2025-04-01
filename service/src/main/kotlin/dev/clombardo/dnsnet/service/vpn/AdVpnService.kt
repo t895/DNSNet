@@ -40,23 +40,18 @@ import dev.clombardo.dnsnet.log.logw
 import dev.clombardo.dnsnet.notification.NotificationChannels
 import dev.clombardo.dnsnet.resources.R
 import dev.clombardo.dnsnet.service.NativeBlockLoggerWrapper
-import dev.clombardo.dnsnet.service.NativeFileHelperWrapper
 import dev.clombardo.dnsnet.service.NetworkState
-import dev.clombardo.dnsnet.service.toNative
+import dev.clombardo.dnsnet.service.db.RuleDatabaseManager
 import dev.clombardo.dnsnet.service.vpn.VpnStatus.Companion.toVpnStatus
 import dev.clombardo.dnsnet.settings.ConfigurationManager
 import dev.clombardo.dnsnet.settings.Preferences
 import dev.clombardo.dnsnet.ui.common.FabState
-import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import uniffi.net.AdVpnCallback
-import uniffi.net.RuleDatabase
-import uniffi.net.RuleDatabaseController
 
 enum class VpnStatus(val value: Int) {
     /**
@@ -392,32 +387,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
 
     private val handler = Handler(Looper.myLooper()!!, this)
 
-    // Guard against multiple coroutines waiting to reload the database
-    private val reloadPending = atomic(false)
-    private val ruleDatabaseController = RuleDatabaseController()
-    private lateinit var ruleDatabase: RuleDatabase
-
-    private suspend fun RuleDatabase.initialize() = withContext(Dispatchers.IO) {
-        initialize(
-            androidFileHelper = NativeFileHelperWrapper(this@AdVpnService),
-            hostItems = configuration.read { hosts.items.map { it.toNative() } },
-            hostExceptions = configuration.read { hosts.exceptions.map { it.toNative() } },
-        )
-    }
-
-    private fun RuleDatabase.reload() {
-        logi("Reloading")
-        if (reloadPending.getAndSet(true)) {
-            logi("Reload already pending")
-            return
-        }
-
-        CoroutineScope(Dispatchers.IO).launch {
-            waitOnInit()
-            reloadPending.getAndSet(false)
-            initialize()
-        }
-    }
+    private lateinit var ruleDatabaseManager: RuleDatabaseManager
 
     private lateinit var vpnThread: AdVpnThread
 
@@ -505,11 +475,11 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         preferences = accessor.preferences()
         blockLogger = accessor.blockLogger()
 
-        ruleDatabase = RuleDatabase(controller = ruleDatabaseController).also {
-            CoroutineScope(Dispatchers.IO).launch {
-                it.initialize()
-            }
-        }
+        ruleDatabaseManager = RuleDatabaseManager(
+            context = applicationContext,
+            configuration = configuration,
+        )
+        ruleDatabaseManager.reload()
 
         // Action must be added after onCreate or else we'll get an NPE
         runningServiceNotificationBuilder =
@@ -575,7 +545,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
 
             Command.RECONNECT -> reconnectVpn()
 
-            Command.RELOAD_DATABASE -> ruleDatabase.reload()
+            Command.RELOAD_DATABASE -> ruleDatabaseManager.reload()
         }
 
         return START_STICKY
@@ -592,7 +562,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
             adVpnService = this,
             notify = { status -> notify(status.ordinal) },
             blockLoggerCallback = NativeBlockLoggerWrapper(blockLogger),
-            ruleDatabase = ruleDatabase,
+            ruleDatabaseManager = ruleDatabaseManager,
         )
     }
 
@@ -648,7 +618,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
 
         blockLogger.save(this)
 
-        ruleDatabaseController.setShouldStop(true)
+        ruleDatabaseManager.setShouldStop(true)
 
         updateVpnStatus(VpnStatus.STOPPED)
 
@@ -660,11 +630,9 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         super.onDestroy()
         stopVpn()
 
-        // Looks like uniffi gets confused with this setup so we need to destroy these manually
+        // Looks like uniffi gets confused with this setup so we need to destroy this manually
         // to prevent a memory leak. Just wait for it to finish whatever it's doing first.
-        ruleDatabase.waitOnInit()
-        ruleDatabase.destroy()
-        ruleDatabaseController.destroy()
+        ruleDatabaseManager.destroy()
     }
 
     override fun handleMessage(msg: Message): Boolean {

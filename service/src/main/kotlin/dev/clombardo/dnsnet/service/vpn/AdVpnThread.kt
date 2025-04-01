@@ -28,9 +28,9 @@ import dev.clombardo.dnsnet.log.loge
 import dev.clombardo.dnsnet.log.logi
 import dev.clombardo.dnsnet.log.logw
 import dev.clombardo.dnsnet.resources.R
+import dev.clombardo.dnsnet.service.db.RuleDatabaseManager
 import dev.clombardo.dnsnet.settings.AllowListMode
 import uniffi.net.BlockLoggerCallback
-import uniffi.net.RuleDatabase
 import uniffi.net.VpnController
 import uniffi.net.VpnException
 import uniffi.net.VpnResult
@@ -44,7 +44,7 @@ class AdVpnThread(
     private val adVpnService: AdVpnService,
     private val notify: (VpnStatus) -> Unit,
     private val blockLoggerCallback: BlockLoggerCallback,
-    private val ruleDatabase: RuleDatabase,
+    private val ruleDatabaseManager: RuleDatabaseManager,
 ) : Runnable {
     companion object {
         private const val MIN_RETRY_TIME = 5
@@ -136,7 +136,7 @@ class AdVpnThread(
     @Synchronized
     override fun run() {
         logi("Starting")
-        ruleDatabase.waitOnInit()
+        ruleDatabaseManager.waitOnInit()
 
         var retryTimeout = MIN_RETRY_TIME
         // Try connecting the vpn continuously
@@ -226,7 +226,7 @@ class AdVpnThread(
             upstreamDnsServers = upstreamDnsServers.map { it.address },
             vpnFd = vpnFd.detachFd(),
             vpnController = vpnController,
-            ruleDatabase = ruleDatabase,
+            ruleDatabase = ruleDatabaseManager.ruleDatabase,
         )
     }
 
