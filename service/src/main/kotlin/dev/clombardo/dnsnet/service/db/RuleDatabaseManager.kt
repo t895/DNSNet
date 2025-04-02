@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import uniffi.net.RuleDatabase
 import uniffi.net.RuleDatabaseController
+import uniffi.net.RuleDatabaseException
 
 class RuleDatabaseManager(
     private val context: Context,
@@ -30,11 +31,18 @@ class RuleDatabaseManager(
     val ruleDatabase = RuleDatabase(ruleDatabaseController)
 
     private suspend fun initialize() = withContext(Dispatchers.IO) {
-        ruleDatabase.initialize(
-            androidFileHelper = NativeFileHelperWrapper(context),
-            hostItems = configuration.read { hosts.items.map { it.toNative() } },
-            hostExceptions = configuration.read { hosts.exceptions.map { it.toNative() } },
-        )
+        try {
+            ruleDatabase.initialize(
+                androidFileHelper = NativeFileHelperWrapper(context),
+                hostItems = configuration.read { hosts.items.map { it.toNative() } },
+                hostExceptions = configuration.read { hosts.exceptions.map { it.toNative() } },
+            )
+        } catch (e: RuleDatabaseException) {
+            when (e) {
+                is RuleDatabaseException.Interrupted -> logi("Interrupted", e)
+                else -> throw IllegalStateException("Failed to initialize rule database", e)
+            }
+        }
     }
 
     fun reload() {
