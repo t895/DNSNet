@@ -201,22 +201,24 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun removeHostFile(host: HostFile) {
+        if (configuration.read { !hosts.items.contains(host) }) {
+            logw("Tried to remove host that does not exist in config! - $host")
+            return
+        }
+
         configuration.edit {
-            if (!hosts.items.contains(host)) {
-                logw("Tried to remove host that does not exist in config! - $host")
-                return@edit
-            }
             hosts.items.remove(host)
         }
         _hosts.remove(host)
     }
 
     private fun removeHostException(host: HostException) {
+        if (configuration.read { !hosts.exceptions.contains(host) }) {
+            logw("Tried to remove host that does not exist in config! - $host")
+            return
+        }
+
         configuration.edit {
-            if (!hosts.exceptions.contains(host)) {
-                logw("Tried to remove host that does not exist in config! - $host")
-                return@edit
-            }
             hosts.exceptions.remove(host)
         }
         _hosts.remove(host)
@@ -230,11 +232,12 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun replaceHostFile(oldHost: HostFile, newHost: HostFile) {
+        if (configuration.read { !hosts.items.contains(oldHost) }) {
+            logw("Tried to replace host that does not exist in config! - $oldHost")
+            return
+        }
+
         configuration.edit {
-            if (!hosts.items.contains(oldHost)) {
-                logw("Tried to replace host that does not exist in config! - $oldHost")
-                return@edit
-            }
             val oldIndex = hosts.items.indexOf(oldHost)
             hosts.items[oldIndex] = newHost
         }
@@ -243,11 +246,12 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun replaceHostException(oldHost: HostException, newHost: HostException) {
+        if (configuration.read { !hosts.exceptions.contains(oldHost) }) {
+            logw("Tried to replace host that does not exist in config! - $oldHost")
+            return
+        }
+
         configuration.edit {
-            if (!hosts.exceptions.contains(oldHost)) {
-                logw("Tried to replace host that does not exist in config! - $oldHost")
-                return@edit
-            }
             val oldIndex = hosts.exceptions.indexOf(oldHost)
             hosts.exceptions[oldIndex] = newHost
         }
@@ -303,11 +307,12 @@ class HomeViewModel @Inject constructor(
     }
 
     fun removeDnsServer(server: DnsServer) {
+        if (configuration.read { !dnsServers.items.contains(server) }) {
+            logw("Tried to remove DnsServer that does not exist in config! - $server")
+            return
+        }
+
         configuration.edit {
-            if (!dnsServers.items.contains(server)) {
-                logw("Tried to remove DnsServer that does not exist in config! - $server")
-                return@edit
-            }
             dnsServers.items.remove(server)
         }
         _dnsServers.remove(server)
@@ -317,11 +322,12 @@ class HomeViewModel @Inject constructor(
         oldServer: DnsServer,
         newDnsServer: DnsServer
     ) {
+        if (configuration.read { !dnsServers.items.contains(oldServer) }) {
+            logw("Tried to replace host that does not exist in config! - $oldServer")
+            return
+        }
+
         configuration.edit {
-            if (!dnsServers.items.contains(oldServer)) {
-                logw("Tried to replace host that does not exist in config! - $oldServer")
-                return@edit
-            }
             val oldIndex = dnsServers.items.indexOf(oldServer)
             dnsServers.items[oldIndex] = newDnsServer
         }
