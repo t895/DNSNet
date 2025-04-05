@@ -44,6 +44,7 @@ jobs:
           rustup target add x86_64-linux-android i686-linux-android aarch64-linux-android armv7-linux-androideabi
           export RUSTFLAGS=--remap-path-prefix=$HOME/.cargo=/rust/cargo
           export STORE_TRACK=production
+          ./gradlew :app:generateBaselineProfile -Pandroid.testoptions.manageddevices.emulator.gpu="swiftshader_indirect" -Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.enabledRules=BaselineProfile
           ./gradlew :app:assembleRelease
           ./gradlew :app:buildApksRelease
           ./gradlew :app:bundleRelease
