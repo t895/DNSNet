@@ -113,4 +113,10 @@
     <string name="could_not_start_vpn_description">Вы должны принять запрос о запуске VPN для DNSNet. Если он не запустится, то вам возможно придётся отключить существующий всегда включённую VPN-службу.</string>
     <string name="expand">Развернуть</string>
     <string name="collapse">Свернуть</string>
+    <string name="open_settings">Открыть настройки</string>
+    <string name="close">Закрыть</string>
+    <string name="try_again">Попробуйте снова</string>
+    <string name="blocked">Заблокировано</string>
+    <string name="allowed">Разрешено</string>
+    <string name="blocked_connections_percent">%d%%</string>
 </resources>
