@@ -124,4 +124,6 @@
     <string name="warning">Внимание</string>
     <string name="disable_block_log_warning_description">После выключения существующий журнал блокировок будет удалён навсегда.</string>
     <string name="scroll_up">Прокрутить наверх</string>
+    <string name="disable">Отключить</string>
+    <string name="alphabetical">Алфавит</string>
 </resources>
