@@ -149,4 +149,8 @@
     <string name="system_apps">Системные приложения</string>
     <string name="filter">Фильтр</string>
     <string name="logcat_written_successfully">Журнал записан успешно</string>
+    <string name="failed_to_open_network_settings">Не удалось открыть сетевые настройки</string>
+    <string name="help">Помощь</string>
+    <string name="failed_to_open_link">Не удалось открыть ссылку</string>
+    <string name="welcome_to">Добро пожаловать</string>
 </resources>
