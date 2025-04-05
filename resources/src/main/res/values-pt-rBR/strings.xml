@@ -39,7 +39,7 @@
     <string name="allowlist_tab">Apps</string>
     <string name="dns_description">Habilitar seus servidores DNS preferidos</string>
     <string name="location_dns">Endereço IP do servidor DNS (IPv4 or IPv6)</string>
-    <string name="state_dns_enabled">Ativo</string>
+    <string name="state_dns_enabled">Ativado</string>
     <string name="host_update_error_item">Erro %1$d: %2$s</string>
     <string name="update_incomplete">Atualização incompleta</string>
     <string name="update_incomplete_description">Alguns arquivos do host não puderam ser baixados. Se os arquivos fossem baixados anteriormente, as versões antigas continuarão a ser utilizadas.</string>
@@ -57,7 +57,7 @@
     <string name="action_stop">Parar</string>
     <string name="action_start">Iniciar</string>
     <string name="automatic_refresh">Atualizar diariamente</string>
-    <string name="automatic_refresh_description">As atualizações diárias ocorrem ao carregar o celular, enquanto inativo e usando uma rede fixa</string>
+    <string name="automatic_refresh_description">As atualizações diárias ocorrem ao carregar o celular, enquanto inativo e usando uma rede fixa.</string>
     <string name="watchdog">Observar a conexão</string>
     <string name="watchdog_description">Verifique a conexão em intervalos cada vez mais longos, e reconecte, se parar de funcionar</string>
     <string name="activity_edit_dns_server">Editar o servidor DNS</string>

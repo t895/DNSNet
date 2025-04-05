@@ -37,7 +37,7 @@
     <string name="activity_edit_dns_server">修改 DNS 服务器</string>
     <string name="app_version_info">版本: %s</string>
     <string name="automatic_refresh">每日更新</string>
-    <string name="automatic_refresh_description">当使用不计费的网络且处于空闲和充电状态时会触发自动更新</string>
+    <string name="automatic_refresh_description">当使用不计费的网络且处于空闲和充电状态时会触发自动更新。</string>
     <string name="button_no">否</string>
     <string name="button_yes">是</string>
     <string name="could_not_update_all_hosts">无法更新所有host文件</string>
@@ -46,7 +46,7 @@
     <string name="host_update_error_item">错误 %1$d: %2$s</string>
     <string name="invalid_url_s">URL 无效: %1$s</string>
     <string name="ipv6_support">IPv6 支持</string>
-    <string name="ipv6_support_description">如果你的网络未启用 IPv6 或你无法启动服务时禁用此选项</string>
+    <string name="ipv6_support_description">如果你的网络未启用 IPv6 或你无法启动服务时禁用此选项。</string>
     <string name="location_dns">DNS 服务器的 IP 地址 ( IPv4 或 IPv6)</string>
     <string name="missing_hosts_files_message">某些已被配置 (未忽略) 的 hosts 文件不存在. 使用‘刷新’功能来下载 hosts 文件. 你仍要继续吗？</string>
     <string name="missing_hosts_files_title">hosts 文件不存在</string>
