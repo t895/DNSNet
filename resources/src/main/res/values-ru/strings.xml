@@ -139,5 +139,9 @@
     <string name="hostname">Имя хоста</string>
     <string name="start_title">Основная настройка DNSNet</string>
     <string name="reset">Сброс</string>
-    <string name="hosts_title">Фильтровые хосты с файлами и исключениями</string>
+    <string name="hosts_title">Фильтровать хосты по файлам и исключениям</string>
+    <string name="credits">Авторство</string>
+    <string name="ascending">Восходящий</string>
+    <string name="descending">Нисходящий</string>
+    <string name="sort">Сортировка</string>
 </resources>
