@@ -122,5 +122,6 @@
     <string name="block_log">Журнал блокировок</string>
     <string name="block_log_description">Записывать каждое соединение для просмотра и анализа</string>
     <string name="warning">Внимание</string>
-    <string name="disable_block_log_warning_description">После выключения существующий журнал блоков будет удален навсегда.</string>
+    <string name="disable_block_log_warning_description">После выключения существующий журнал блокировок будет удалён навсегда.</string>
+    <string name="scroll_up">Прокрутить наверх</string>
 </resources>
