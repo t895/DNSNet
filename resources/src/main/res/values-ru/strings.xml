@@ -168,5 +168,6 @@
     <string name="select_an_option_to_continue">Выберите вариант для продолжения</string>
     <string name="confirm">Подтвердить</string>
     <string name="no_block_items">Не найдено списков блокировок или доменов</string>
-    <string name="stevenblack_hosts_description">Собирает несколько источников для заблокированных доменов.</string>
+    <string name="stevenblack_hosts_description">Собирает несколько источников для заблокированных доменов. Может сломать некоторые приложения.</string>
+    <string name="private_dns_error">Ошибка приватного DNS</string>
 </resources>
