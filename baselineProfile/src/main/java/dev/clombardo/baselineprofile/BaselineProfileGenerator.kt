@@ -14,6 +14,8 @@ import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.Until
+import dev.clombardo.dnsnet.ui.app.Home
+import dev.clombardo.dnsnet.ui.app.Presets
 import dev.clombardo.dnsnet.ui.app.Setup
 import dev.clombardo.dnsnet.ui.app.Start
 import org.junit.Rule
@@ -79,9 +81,25 @@ class BaselineProfileGenerator {
             device.wait(Until.hasObject(continueButton), 5_000)
             device.findObject(continueButton)?.click()
 
+            val providerButton = By.res(Presets.TEST_TAG_PROVIDER)
+            device.wait(Until.hasObject(providerButton), 5_000)
+            device.findObject(providerButton)?.click()
+
+            val providerOptionButton = By.res(Presets.TEST_TAG_PROVIDER_OPTION)
+            device.wait(Until.hasObject(providerOptionButton), 5_000)
+            device.findObject(providerOptionButton)?.click()
+
+            val completeButton = By.res(Presets.TEST_TAG_COMPLETE_BUTTON)
+            device.wait(Until.hasObject(completeButton), 5_000)
+            device.findObject(completeButton)?.click()
+
             val startButton = By.res(Start.TEST_TAG_START_BUTTON)
             device.wait(Until.hasObject(startButton), 5_000)
             device.findObject(startButton).clickAndWait(Until.newWindow(), 5_000)
+
+            val missingHostsButton = By.res(Home.TEST_TAG_IGNORE_MISSING_HOSTS_BUTTON)
+            device.wait(Until.hasObject(missingHostsButton), 5_000)
+            device.findObject(missingHostsButton)?.click()
 
             val vpnOkButton = By.text("OK")
             device.wait(Until.hasObject(vpnOkButton), 5_000)

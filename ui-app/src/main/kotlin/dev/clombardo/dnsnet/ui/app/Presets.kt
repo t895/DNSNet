@@ -42,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -65,6 +66,12 @@ import dev.clombardo.dnsnet.ui.common.rememberAtTop
 import dev.clombardo.dnsnet.ui.common.rememberMutableStateListOf
 import dev.clombardo.dnsnet.ui.common.theme.ListPadding
 import dev.clombardo.dnsnet.ui.common.tryOpenUri
+
+object Presets {
+    const val TEST_TAG_PROVIDER = "provider"
+    const val TEST_TAG_PROVIDER_OPTION = "provider_option"
+    const val TEST_TAG_COMPLETE_BUTTON = "complete_button"
+}
 
 @Composable
 fun PresetsScreen(
@@ -100,6 +107,7 @@ fun PresetsScreen(
                 exit = NavigationScaffold.FabExit,
             ) {
                 FloatingActionButton(
+                    modifier = Modifier.testTag(Presets.TEST_TAG_COMPLETE_BUTTON),
                     onClick = {
                         val urls = selectedProviders.map {
                             val provider = BlockListDefaults.providers[it.first]
@@ -184,6 +192,7 @@ fun PresetsScreen(
                                 item {
                                     var expanded by rememberSaveable { mutableStateOf(false) }
                                     ExpandableOptionsItem(
+                                        modifier = Modifier.testTag(Presets.TEST_TAG_PROVIDER),
                                         expanded = expanded,
                                         onExpandClick = { expanded = !expanded },
                                         title = stringResource(provider.titleResId),
@@ -220,6 +229,7 @@ fun PresetsScreen(
                                         provider.variants.forEachIndexed { variantIndex, variant ->
                                             if (provider.singleSelection) {
                                                 RadioListItem(
+                                                    modifier = Modifier.testTag(Presets.TEST_TAG_PROVIDER_OPTION),
                                                     title = stringResource(variant.titleResId),
                                                     details = if (variant.descriptionResId != 0) {
                                                         stringResource(variant.descriptionResId)
@@ -253,6 +263,7 @@ fun PresetsScreen(
                                                 )
                                             } else {
                                                 CheckboxListItem(
+                                                    modifier = Modifier.testTag(Presets.TEST_TAG_PROVIDER_OPTION),
                                                     title = stringResource(variant.titleResId),
                                                     details = if (variant.descriptionResId != 0) {
                                                         stringResource(variant.descriptionResId)
@@ -292,6 +303,7 @@ fun PresetsScreen(
                             is BlockListUrlProvider -> {
                                 item {
                                     CheckboxListItem(
+                                        modifier = Modifier.testTag(Presets.TEST_TAG_PROVIDER),
                                         title = stringResource(provider.titleResId),
                                         details = if (provider.descriptionResId != 0) {
                                             stringResource(provider.descriptionResId)

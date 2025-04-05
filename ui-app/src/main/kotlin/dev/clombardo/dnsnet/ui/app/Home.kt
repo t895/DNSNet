@@ -47,12 +47,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -205,9 +208,11 @@ object Home {
                     fadeOut(animationSpec = TopLevelFadeExitSpec)
         }
     }
+
+    const val TEST_TAG_IGNORE_MISSING_HOSTS_BUTTON = "ignore_missing_hosts_button"
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalComposeUiApi::class)
 @SuppressLint("RestrictedApi")
 @Composable
 fun App(
@@ -253,9 +258,11 @@ fun App(
     val showHostsFilesNotFoundDialog by vm.showHostsFilesNotFoundDialog.collectAsState()
     if (showHostsFilesNotFoundDialog) {
         BasicDialog(
+            modifier = Modifier.semantics { testTagsAsResourceId = true },
             title = stringResource(R.string.missing_hosts_files_title),
             text = stringResource(R.string.missing_hosts_files_message),
             primaryButton = DialogButton(
+                modifier = Modifier.testTag(Home.TEST_TAG_IGNORE_MISSING_HOSTS_BUTTON),
                 text = stringResource(R.string.button_yes),
                 onClick = {
                     onStartWithoutHostsCheck()
