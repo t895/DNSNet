@@ -148,5 +148,5 @@
     <string name="search">Поиск</string>
     <string name="system_apps">Системные приложения</string>
     <string name="filter">Фильтр</string>
-    <string name="logcat_written_successfully">Logcat написан успешно</string>
+    <string name="logcat_written_successfully">Журнал записан успешно</string>
 </resources>
