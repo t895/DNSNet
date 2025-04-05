@@ -59,7 +59,7 @@
     <string name="automatic_refresh">Täglich aktualisieren</string>
     <string name="automatic_refresh_description">Tägliche Aktualisierungen finden statt, wenn das Gerät lädt, nicht genutzt wird und die Verbindung gebührenfrei ist.</string>
     <string name="watchdog">Überwache Verbindung</string>
-    <string name="watchdog_description">Prüfe die Verbindung in ansteigenden Abständen und verbinde erneut, falls keine Anfragen mehr verarbeitet werden können.</string>
+    <string name="watchdog_description">Prüfe die Verbindung in ansteigenden Abständen und verbinde erneut, falls keine Anfragen mehr verarbeitet werden können</string>
     <string name="activity_edit_dns_server">DNS Server bearbeiten</string>
     <string name="notification_action_pause">Unterbrechen</string>
     <string-array name="allowlist_defaults">
@@ -122,7 +122,7 @@
     <string name="notice_vpn_service">Für den Betrieb wird ein VPN-Dienst (Virtual Private Network) verwendet. Normalerweise leiten VPNs den Internetverkehr über einen entfernten Server um, aber das ist bei DNSNet nicht der Fall. Diese Art von Dienst wird verwendet, um sämtlichen Internetverkehr zu filtern, wobei die Verarbeitung auf dem Gerät erfolgt. Das bedeutet auch, dass Sie keinen anderen „VPN-Dienst“ gleichzeitig mit DNSNet nutzen können.</string>
     <string name="notice_application">Inhalte werden auf der Grundlage des Hostnamens (z. B. google.com) blockiert, der für die Verbindung mit einem Dienst verwendet wird. Wenn ein Dienst seinen Hauptinhalt und unerwünschte Inhalte über denselben Hostnamen lädt, können unerwünschte Inhalte nicht blockiert werden.</string>
     <string name="grant">Erteilen</string>
-    <string name="acknowledge">Bestätigen</string>
+    <string name="acknowledge">Anerkennen</string>
     <string name="complete">Erledigt</string>
     <string name="use_dns_servers_from_active_network">Server aus dem aktiven Netzwerk verwenden</string>
     <string name="use_dns_servers_from_active_network_description">Verwendet Server aus dem Netzwerk, mit dem Sie verbunden sind, zusätzlich zu Ihren eigenen</string>

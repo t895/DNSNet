@@ -45,7 +45,7 @@
     <string name="update_incomplete_description">Noen vertsfiler kunne ikke bli lastet ned. Dersom filene ble lastet ned tidligere, vil de gamle versjonene fortsatt bli brukt.</string>
     <string name="updating_hostfiles">Oppdaterer vertsfiler</string>
     <string name="action_use_file">Bruk fil</string>
-    <string name="persistable_uri_permission_failed">Kan ikke bruke den ønskede filen: Har ikke tillatelse til å kontinuerlig bruke den ønskede filen.</string>
+    <string name="persistable_uri_permission_failed">Kan ikke bruke den ønskede filen: Har ikke tillatelse til å kontinuerlig bruke den ønskede filen</string>
     <string name="updating_n_host_files">Oppdaterer %1$d vertsfiler</string>
     <string name="could_not_update_all_hosts">Klarte ikke å oppdatere alle vertsfilene</string>
     <string name="permission_denied">Tillatelse avslåttPermission denied</string>
@@ -59,7 +59,7 @@
     <string name="automatic_refresh">Oppfrisk daglig</string>
     <string name="automatic_refresh_description">Daglige oppdateringer skjer når enheten lader, ikke brukes, og er på et ikke-datamengdebegrenset nettverk.</string>
     <string name="watchdog">Overvåk tilkoblingen</string>
-    <string name="watchdog_description">Sjekk tilkoblingen med stadig lengre intervaller, og koble til på nytt dersom den sluttet å fungere.</string>
+    <string name="watchdog_description">Sjekk tilkoblingen med stadig lengre intervaller, og koble til på nytt dersom den sluttet å fungere</string>
     <string name="activity_edit_dns_server">Rediger DNS-tjeneren</string>
     <string name="notification_action_pause">Pause</string>
     <string name="ipv6_support_description">Skru av dette dersom nettverket ditt ikke bruker IPv6, eller hvis du ikke får startet tjenesten.</string>
