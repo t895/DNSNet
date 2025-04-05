@@ -105,9 +105,9 @@
     <string name="input_blank_error">Поле не должно быть пустым</string>
     <string name="allowlist_description">Не использовать DNSNet для отмеченных приложений</string>
     <string name="load_defaults_description">Сбросить все настройки обратно к значениям по умолчанию</string>
-    <string name="allowlist_defaults_title">Списки разрешённых по умолчанию</string>
+    <string name="allowlist_defaults_title">Список разрешённых по умолчанию</string>
     <string name="export_description">Создайте резервную копию вашей конфигурации</string>
     <string name="dns66_credit">Основано на DNS66 созданном Julian Andres Klode</string>
     <string name="unstable_watchdog_message">Просмотр соединения может привести к пересоединению и соединение может застрять</string>
-    <string name="notification_permission_description">Нам нужно разрешение на уведомление, чтобы показать статус блокатора хоста и обновления для него.</string>
+    <string name="notification_permission_description">Нам нужно разрешение на уведомления, чтобы показывать состояние блокировщика хостов и его обновлений.</string>
 </resources>
