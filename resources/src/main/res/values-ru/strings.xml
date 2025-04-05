@@ -159,4 +159,9 @@
     <string name="notice_application">Мы блокируем соединения на основе имени хоста (например, google.com) используемого для подключения к сервису. Если сервис загружает свои основные данные и что-либо нежелательное используя одно и то же имя хоста, мы не сможем отделить их и блокировать только дрянь.</string>
     <string name="grant">Предоставить разрешение</string>
     <string name="acknowledge">Благодарности</string>
+    <string name="learn_more">Узнать больше</string>
+    <string name="button_continue">Продолжить</string>
+    <string name="use_dns_servers_from_active_network">Использовать серверы из активной сети</string>
+    <string name="use_dns_servers_from_active_network_description">Применяет серверы из сети, к которой вы подключены в дополнение к вашей собственной</string>
+    <string name="presets">Предустановления</string>
 </resources>
