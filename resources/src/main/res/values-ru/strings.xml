@@ -170,5 +170,8 @@
     <string name="no_block_items">Не найдено списков блокировок или доменов</string>
     <string name="stevenblack_hosts_description">Собирает несколько источников для заблокированных доменов. Может сломать некоторые приложения.</string>
     <string name="private_dns_error">Ошибка приватного DNS</string>
-    <string name="private_dns_error_description">При включении частного DNS мы не можем правильно создавать и блокировать соединения.\nВы должны отключить его в сетевых настройках, чтобы продолжить.</string>
+    <string name="private_dns_error_description">Когда Приватный DNS включён, мы не можем правильно блокировать соединения.\nВы должны отключить его в сетевых настройках, чтобы продолжить.</string>
+    <string name="view_source">Просмотреть источник</string>
+    <string name="notice">Обратите внимание</string>
+    <string name="complete">Завершить</string>
 </resources>
