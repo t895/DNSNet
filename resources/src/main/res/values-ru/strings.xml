@@ -174,4 +174,5 @@
     <string name="view_source">Просмотреть источник</string>
     <string name="notice">Обратите внимание</string>
     <string name="complete">Завершить</string>
+    <string name="hagezi_dns_blocklists_description">Совокупные списки блоков с различной агрессивностью</string>
 </resources>
