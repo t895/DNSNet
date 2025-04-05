@@ -167,5 +167,5 @@
     <string name="presets_description">Выберите какое содержимое вы хотели бы заблокировать по известным и регулярно обновляемым спискам блокировок</string>
     <string name="select_an_option_to_continue">Выберите вариант для продолжения</string>
     <string name="confirm">Подтвердить</string>
-    <string name="no_block_items">Не найдено списков блоков или доменов</string>
+    <string name="no_block_items">Не найдено списков блокировок или доменов</string>
 </resources>
