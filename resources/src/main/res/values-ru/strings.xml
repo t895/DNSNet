@@ -162,6 +162,7 @@
     <string name="learn_more">Узнать больше</string>
     <string name="button_continue">Продолжить</string>
     <string name="use_dns_servers_from_active_network">Использовать серверы из активной сети</string>
-    <string name="use_dns_servers_from_active_network_description">Применяет серверы из сети, к которой вы подключены в дополнение к вашей собственной</string>
-    <string name="presets">Предустановления</string>
+    <string name="use_dns_servers_from_active_network_description">Использовать серверы из сети к которой вы подключены в дополнение к вашим собственным</string>
+    <string name="presets">Предустановки</string>
+    <string name="presets_description">Выберите какое содержимое вы хотели бы заблокировать по известным и регулярно обновляемым спискам блокировок</string>
 </resources>
