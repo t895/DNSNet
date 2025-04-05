@@ -120,4 +120,5 @@
     <string name="allowed">Разрешено</string>
     <string name="blocked_connections_percent">%d%% заблокировано</string>
     <string name="block_log">Журнал блокировок</string>
+    <string name="block_log_description">Запись каждого соединения для просмотра и анализа</string>
 </resources>
