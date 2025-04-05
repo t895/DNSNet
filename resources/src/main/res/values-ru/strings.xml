@@ -137,5 +137,6 @@
     <string name="add_host">Добавить хост</string>
     <string name="edit_host">Редактировать хост</string>
     <string name="hostname">Имя хоста</string>
-    <string name="start_title">Конфигурация DNSNet</string>
+    <string name="start_title">Основная настройка DNSNet</string>
+    <string name="reset">Сброс</string>
 </resources>
