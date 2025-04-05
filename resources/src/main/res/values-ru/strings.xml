@@ -110,5 +110,7 @@
     <string name="dns66_credit">Основано на DNS66 созданном Julian Andres Klode</string>
     <string name="unstable_watchdog_message">Просмотр соединения может привести к пересоединению и соединение может застрять</string>
     <string name="notification_permission_description">Нам нужно разрешение на уведомления, чтобы показывать состояние блокировщика хостов и его обновлений.</string>
-    <string name="could_not_start_vpn_description">Вы должны принять запрос о запуске VPN для DNSNet. Если это все еще не удается, вам, возможно, придется отключить существующий всегда VPN-сервис.</string>
+    <string name="could_not_start_vpn_description">Вы должны принять запрос о запуске VPN для DNSNet. Если он не запустится, то вам возможно придётся отключить существующий всегда включённую VPN-службу.</string>
+    <string name="expand">Развернуть</string>
+    <string name="collapse">Свернуть</string>
 </resources>
