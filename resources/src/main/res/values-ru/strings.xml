@@ -165,4 +165,6 @@
     <string name="use_dns_servers_from_active_network_description">Использовать серверы из сети к которой вы подключены в дополнение к вашим собственным</string>
     <string name="presets">Предустановки</string>
     <string name="presets_description">Выберите какое содержимое вы хотели бы заблокировать по известным и регулярно обновляемым спискам блокировок</string>
+    <string name="select_an_option_to_continue">Выберите вариант для продолжения</string>
+    <string name="confirm">Подтверждение</string>
 </resources>
