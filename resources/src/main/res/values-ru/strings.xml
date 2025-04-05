@@ -152,5 +152,5 @@
     <string name="failed_to_open_network_settings">Не удалось открыть сетевые настройки</string>
     <string name="help">Помощь</string>
     <string name="failed_to_open_link">Не удалось открыть ссылку</string>
-    <string name="welcome_to">Добро пожаловать</string>
+    <string name="welcome_to">Добро пожаловать в</string>
 </resources>
