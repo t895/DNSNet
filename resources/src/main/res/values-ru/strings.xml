@@ -115,8 +115,9 @@
     <string name="collapse">Свернуть</string>
     <string name="open_settings">Открыть настройки</string>
     <string name="close">Закрыть</string>
-    <string name="try_again">Попробуйте снова</string>
+    <string name="try_again">Попробовать снова</string>
     <string name="blocked">Заблокировано</string>
     <string name="allowed">Разрешено</string>
-    <string name="blocked_connections_percent">%d%%</string>
+    <string name="blocked_connections_percent">%d%% заблокировано</string>
+    <string name="block_log">Журнал блокировок</string>
 </resources>
