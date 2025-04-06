@@ -190,7 +190,7 @@
     <string name="hagezi_dns_blocklists_light_url" translatable="false">https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/light.txt</string>
     <string name="hagezi_dns_blocklists_normal">hagezi - Normal</string>
     <string name="hagezi_dns_blocklists_normal_description">Should not lead to any restrictions for the most part.</string>
-    <string name="hagezi_dns_blocklists_normal_url" translatable="false">https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/normal.txt</string>
+    <string name="hagezi_dns_blocklists_normal_url" translatable="false">https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/multi.txt</string>
     <string name="hagezi_dns_blocklists_pro">hagezi - Pro</string>
     <string name="hagezi_dns_blocklists_pro_description">Should only very rarely lead to restrictions. You may have to unblock specific domains.</string>
     <string name="hagezi_dns_blocklists_pro_url" translatable="false">https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/pro.txt</string>
