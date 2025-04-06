@@ -37,13 +37,14 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
           ls /dev/kvm
+      - name: Generate baseline profile
+        run: ./gradlew :app:generateBaselineProfile -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect
       - name: Build
         env:
           KEY_ALIAS: ${{secrets.KEY_ALIAS}}
           KEY_PASSWORD: ${{secrets.KEY_PASSWORD}}
           STORE_PASSWORD: ${{secrets.KEY_PASSWORD}}
         run: |
-          ./gradlew :app:generateBaselineProfile --stacktrace
           echo "${{secrets.STORE_FILE}}" | base64 --decode > ${HOME}/keyfile.jks
           export STORE_FILE_PATH=${HOME}/keyfile.jks
           echo "${{secrets.SERVICE_ACCOUNT_KEY_FILE}}" | base64 --decode > ${HOME}/servicekey.json
