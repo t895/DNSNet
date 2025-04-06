@@ -199,7 +199,7 @@
     <string name="hagezi_dns_blocklists_pro_plus_plus_url" translatable="false">https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/pro.plus.txt</string>
     <string name="hagezi_dns_blocklists_ultimate">hagezi - Ultimate</string>
     <string name="hagezi_dns_blocklists_ultimate_description">Will limit functionality in many apps and websites. Should only be used by very experienced users.</string>
-    <string name="hagezi_dns_blocklists_ultimate_url">https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/ultimate.txt</string>
+    <string name="hagezi_dns_blocklists_ultimate_url" translatable="false">https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/ultimate.txt</string>
     <string name="stevenblack_hosts">StevenBlack\'s hosts</string>
     <string name="stevenblack_hosts_source_url" translatable="false">https://github.com/StevenBlack/hosts</string>
     <string name="stevenblack_hosts_description">Aggregates several sources for blocked domains. May break some apps.</string>
@@ -211,7 +211,7 @@
     <string name="stevenblack_hosts_nsfw_url" translatable="false">https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/porn-only/hosts</string>
     <string name="stevenblack_hosts_social_media">StevenBlack - Social media</string>
     <string name="stevenblack_hosts_social_media_url" translatable="false">https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/social-only/hosts</string>
-    <string name="oisd">oisd</string>
+    <string name="oisd" translatable="false">oisd</string>
     <string name="oisd_description">Increases privacy while reducing ads and malware. Prioritizes stability over blocking.</string>
     <string name="oisd_source_url" translatable="false">https://oisd.nl/</string>
     <string name="oisd_big">oisd - big</string>
