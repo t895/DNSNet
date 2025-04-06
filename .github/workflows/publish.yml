@@ -31,13 +31,19 @@ jobs:
           python-version: '3.13'
       - name: Give execution permissions to the gradle wrapper
         run: chmod +x ./gradlew
+      - name: Enable KVM group perms
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls /dev/kvm
       - name: Build
         env:
           KEY_ALIAS: ${{secrets.KEY_ALIAS}}
           KEY_PASSWORD: ${{secrets.KEY_PASSWORD}}
           STORE_PASSWORD: ${{secrets.KEY_PASSWORD}}
         run: |
-          ./gradlew generateBaselineProfile
+          ./gradlew :app:generateBaselineProfile --stacktrace
           echo "${{secrets.STORE_FILE}}" | base64 --decode > ${HOME}/keyfile.jks
           export STORE_FILE_PATH=${HOME}/keyfile.jks
           echo "${{secrets.SERVICE_ACCOUNT_KEY_FILE}}" | base64 --decode > ${HOME}/servicekey.json
