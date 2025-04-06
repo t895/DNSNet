@@ -25,6 +25,7 @@ import dev.clombardo.dnsnet.blocklogger.LoggedConnection
 import dev.clombardo.dnsnet.log.logd
 import dev.clombardo.dnsnet.log.logw
 import dev.clombardo.dnsnet.settings.BlockList
+import dev.clombardo.dnsnet.settings.Configuration
 import dev.clombardo.dnsnet.settings.ConfigurationManager
 import dev.clombardo.dnsnet.settings.DnsServer
 import dev.clombardo.dnsnet.settings.Host
@@ -40,6 +41,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.BufferedReader
+import java.io.File
 import java.io.InputStreamReader
 import javax.inject.Inject
 
@@ -492,6 +494,9 @@ class HomeViewModel @Inject constructor(
         _hosts.clear()
         _hosts.addAll(configuration.read { hosts.getAllHosts() })
     }
+
+    fun hasCompletedEmptyConfigMigration(): Boolean =
+        File(context.filesDir, Configuration.DEFAULT_CONFIG_FILENAME).exists()
 
     companion object {
         const val KEY_SETUP_SHOWN = "setupShown"

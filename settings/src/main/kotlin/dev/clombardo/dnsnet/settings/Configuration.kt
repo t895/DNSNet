@@ -40,6 +40,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
+import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import javax.inject.Singleton
@@ -92,6 +93,8 @@ class ConfigurationManager(private val context: Context) {
         configuration.save(writer)
 
     private fun saveAsync() {
+        // File must be created here because we rely on it to know if we should show the Presets screen
+        File(context.filesDir, Configuration.DEFAULT_CONFIG_FILENAME).createNewFile()
         if (pendingSave.getAndSet(true)) {
             return
         }
