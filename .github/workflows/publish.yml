@@ -37,7 +37,7 @@ jobs:
           KEY_PASSWORD: ${{secrets.KEY_PASSWORD}}
           STORE_PASSWORD: ${{secrets.KEY_PASSWORD}}
         run: |
-          ./gradlew :app:generateBaselineProfile
+          ./gradlew generateBaselineProfile
           echo "${{secrets.STORE_FILE}}" | base64 --decode > ${HOME}/keyfile.jks
           export STORE_FILE_PATH=${HOME}/keyfile.jks
           echo "${{secrets.SERVICE_ACCOUNT_KEY_FILE}}" | base64 --decode > ${HOME}/servicekey.json
