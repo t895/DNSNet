@@ -1,9 +1,16 @@
 name: DNSNet Publish
 
-on: 
-  push:
-    tags:
-    - '*'
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name to create for the release'
+        required: true
+        type: string
+      version_code:
+        description: 'Version code to set for the release'
+        required: true
+        type: number
 
 jobs:
   publish:
@@ -11,34 +18,68 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: recursive
+
       - name: Gradle cache
         uses: gradle/actions/setup-gradle@v3
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
+
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+
       - name: Give execution permissions to the gradle wrapper
         run: chmod +x ./gradlew
+
       - name: Enable KVM group perms
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
           ls /dev/kvm
+
       - name: Generate baseline profile
         run: ./gradlew :app:generateBaselineProfile -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect
+
+      - name: Commit baseline profile update
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Update baseline profile
+          push_options: --force-with-lease
+          file_pattern: '**/baseline-prof.txt **/startup-prof.txt'
+
+      - name: Update version name and code
+        run: |
+          sed -i \
+            -e "s/\(val versionCode by extra { \)[0-9]\+\( }\)/\1${{inputs.version_code}}\2/" \
+            -e "s/\(val versionName by extra { \"\)[^\"]\+\(\"\s*}\)/\1${{inputs.tag_name}}\2/" \
+            build.gradle.kts
+
+      - name: Commit baseline profile update
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Bump version to ${{inputs.tag_name}}
+          push_options: --force-with-lease
+          file_pattern: 'build.gradle.kts'
+
+      - uses: actions-ecosystem/action-push-tag@v1
+        with:
+          tag: ${{ inputs.tag_name }}
+
       - name: Build
         env:
           KEY_ALIAS: ${{secrets.KEY_ALIAS}}
@@ -56,7 +97,9 @@ jobs:
           ./gradlew :app:buildApksRelease
           ./gradlew :app:bundleRelease
           ./gradlew :app:publishReleaseBundle
+
       - name: Release
         uses: ncipollo/release-action@v1
         with:
+          tag: ${{inputs.tag_name}}
           artifacts: "./**/app-release.apk,./**/app-release.apks,./**/app-release.aab"
