@@ -2,34 +2,12 @@ name: DNSNet Test
 
 on:
   pull_request:
-    paths:
-      - 'app/*'
-      - 'blocklogger/*'
-      - 'file/*'
-      - 'log/*'
-      - 'notification/*'
-      - 'resources/*'
-      - 'service/*'
-      - 'settings/*'
-      - 'ui-app/*'
-      - 'ui-common/*'
     paths-ignore:
       - '**/baseline-prof.txt'
       - '**/startup-prof.txt'
   push:
     branches:
       - a-couple-updates
-    paths:
-      - 'app/*'
-      - 'blocklogger/*'
-      - 'file/*'
-      - 'log/*'
-      - 'notification/*'
-      - 'resources/*'
-      - 'service/*'
-      - 'settings/*'
-      - 'ui-app/*'
-      - 'ui-common/*'
     paths-ignore:
       - '**/baseline-prof.txt'
       - '**/startup-prof.txt'
