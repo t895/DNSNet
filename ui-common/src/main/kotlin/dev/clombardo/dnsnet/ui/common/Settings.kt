@@ -471,8 +471,8 @@ fun SwitchListItem(
                 checked = checked,
                 onCheckedChange = onCheckedChange,
                 interactionSource = sharedInteractionSource,
-                thumbContent = {
-                    if (checked) {
+                thumbContent = { mostlyEnabled ->
+                    if (mostlyEnabled) {
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = null,
@@ -533,8 +533,8 @@ fun SplitSwitchListItem(
                 enabled = switchEnabled,
                 checked = checked,
                 onCheckedChange = onCheckedChange,
-                thumbContent = {
-                    if (checked) {
+                thumbContent = { mostlyEnabled ->
+                    if (mostlyEnabled) {
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = null,
