@@ -630,7 +630,7 @@ fun HomeScreen(
     }
 
     if (!vm.hasCompletedEmptyConfigMigration()) {
-        topLevelNavController.navigate(TopLevelDestination.Presets(canGoBack = false))
+        topLevelNavController.popNavigate(TopLevelDestination.Presets(canGoBack = false))
     }
 
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
