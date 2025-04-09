@@ -50,21 +50,27 @@ import javax.inject.Singleton
 class ConfigurationModule {
     @Provides
     @Singleton
-    fun provideConfigurationManager(@ApplicationContext context: Context): ConfigurationManager {
-        return ConfigurationManager(context)
+    fun provideConfigurationManager(
+        @ApplicationContext context: Context,
+        preferences: Preferences,
+    ): ConfigurationManager {
+        return ConfigurationManager(context, preferences)
     }
 }
 
-class ConfigurationManager(private val context: Context) {
+class ConfigurationManager(
+    private val context: Context,
+    private val preferences: Preferences,
+) {
     private val configLock = Object()
-    private var configuration = Configuration.load(context)
+    private var configuration = Configuration.load(context, preferences)
 
     private val pendingSave = atomic(false)
     private var saving by atomic(false)
 
     fun replaceInstance(newConfigStream: InputStream) {
         synchronized(configLock) {
-            val newConfig = Configuration.load(newConfigStream)
+            val newConfig = Configuration.load(newConfigStream, preferences)
             configuration = newConfig
         }
         saveAsync()
@@ -134,7 +140,7 @@ data class Configuration(
         private const val VERSION = 1
 
         /* Default tweak level */
-        private const val MINOR_VERSION = 1
+        private const val MINOR_VERSION = 2
 
         private val json by lazy {
             Json {
@@ -143,7 +149,7 @@ data class Configuration(
         }
 
         @OptIn(ExperimentalSerializationApi::class)
-        internal fun load(inputStream: InputStream): Configuration {
+        internal fun load(inputStream: InputStream, preferences: Preferences): Configuration {
             val config = try {
                 json.decodeFromStream<Configuration>(inputStream)
             } catch (e: Exception) {
@@ -156,29 +162,34 @@ data class Configuration(
             }
 
             for (i in config.minorVersion + 1..MINOR_VERSION) {
-                config.runMinorUpdate(i)
+                config.runMinorUpdate(i, preferences)
             }
 
             return config
         }
 
-        internal fun load(context: Context): Configuration {
+        internal fun load(context: Context, preferences: Preferences): Configuration {
             val inputStream = FileHelper.openRead(context, DEFAULT_CONFIG_FILENAME)
             if (inputStream == null) {
                 logd("Config file not found, creating new file")
                 return Configuration()
             }
 
-            return load(inputStream)
+            return load(inputStream, preferences)
         }
     }
 
-    fun runMinorUpdate(level: Int) {
+    fun runMinorUpdate(level: Int, preferences: Preferences) {
         when (level) {
             1 -> {
                 // This is always enabled after v0.2.3
                 hosts.enabled = true
                 logi("Updated to config v1.1 successfully")
+            }
+
+            2 -> {
+                preferences.ShouldShowPresetsWhenNoBlockLists = true
+                logi("Updated to config v1.2 successfully")
             }
         }
         minorVersion = level

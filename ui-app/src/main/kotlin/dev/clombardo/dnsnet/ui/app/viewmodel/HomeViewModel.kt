@@ -495,8 +495,13 @@ class HomeViewModel @Inject constructor(
         _hosts.addAll(configuration.read { hosts.getAllHosts() })
     }
 
-    fun hasCompletedEmptyConfigMigration(): Boolean =
-        File(context.filesDir, Configuration.DEFAULT_CONFIG_FILENAME).exists()
+    fun hasCompletedEmptyConfigMigration(): Boolean {
+        val configExists = File(context.filesDir, Configuration.DEFAULT_CONFIG_FILENAME).exists()
+        val shouldShowPresets = preferences.ShouldShowPresetsWhenNoBlockLists &&
+                configuration.read { hosts.items.isEmpty() }
+        preferences.ShouldShowPresetsWhenNoBlockLists = false
+        return configExists && !shouldShowPresets
+    }
 
     companion object {
         const val KEY_SETUP_SHOWN = "setupShown"

@@ -58,6 +58,16 @@ class Preferences(val sharedPreferences: SharedPreferences) {
         key = "setupComplete",
         defaultValue = false,
     )
+
+    /**
+     * Single fire preference to tell users to select a preset when they upgrade from
+     * config v1.1 to v1.2 if they have no block lists.
+     */
+    var ShouldShowPresetsWhenNoBlockLists by BooleanPreference(
+        preferences = sharedPreferences,
+        key = "shouldShowPresetsWhenNoBlockLists",
+        defaultValue = false,
+    )
 }
 
 interface Preference<T> {
