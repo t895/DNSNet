@@ -70,6 +70,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import androidx.window.core.layout.WindowWidthSizeClass
 import dev.clombardo.dnsnet.settings.DnsServer
+import dev.clombardo.dnsnet.settings.DnsServerType
 import dev.clombardo.dnsnet.settings.Host
 import dev.clombardo.dnsnet.settings.HostException
 import dev.clombardo.dnsnet.settings.HostFile
@@ -710,9 +711,9 @@ fun HomeScreen(
                 } else {
                     FloatingActionButton(
                         onClick = {
-                            if (currentDestination == HomeDestinations.Hosts) {
-                                topLevelNavController.navigate(HostFile())
-                            } else if (currentDestination == HomeDestinations.DNS) {
+                            if (vm.configuration.read { dnsServers.doh3 }) {
+                                topLevelNavController.navigate(DnsServer(type = DnsServerType.DoH3))
+                            } else {
                                 topLevelNavController.navigate(DnsServer())
                             }
                         },
@@ -874,6 +875,9 @@ fun HomeScreen(
                 var customDnsServers by remember {
                     mutableStateOf(vm.configuration.read { dnsServers.enabled })
                 }
+                var doh3 by remember {
+                    mutableStateOf(vm.configuration.read { dnsServers.doh3 })
+                }
                 var ipV6SupportToggle by remember {
                     mutableStateOf(vm.configuration.read { ipV6Support })
                 }
@@ -906,6 +910,14 @@ fun HomeScreen(
                         vm.configuration.edit {
                             this.useNetworkDnsServers = !useNetworkDnsServers
                             useNetworkDnsServers = this.useNetworkDnsServers
+                        }
+                        onReloadVpn()
+                    },
+                    doh3Support = doh3,
+                    onDoh3SupportClick = {
+                        vm.configuration.edit {
+                            this.dnsServers.doh3 = !doh3
+                            doh3 = this.dnsServers.doh3
                         }
                         onReloadVpn()
                     },
