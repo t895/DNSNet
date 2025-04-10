@@ -180,6 +180,13 @@
     <string name="confirm">Confirm</string>
     <string name="view_source">View source</string>
     <string name="no_block_items">No block lists or domains found</string>
+    <string name="doh3">DNS over HTTPS/3 (DoH3)</string>
+    <string name="doh3_description">Securely send your DNS requests. Uses \"https://example.com/dns-query\" URLs.</string>
+    <string name="doh3_warning">At least one server must be selected or the service will fall back to insecure DNS</string>
+    <string name="alerts">Alerts</string>
+    <string name="alerts_description">Notifications for when something goes wrong with the service</string>
+    <string name="doh3_error_notification">DoH3 configuration error</string>
+    <string name="doh3_error_notification_description">An internal error occurred that forced the service to restart with DoH3 disabled</string>
 
     <!-- Block list defaults -->
     <string name="hagezi_dns_blocklists">hagezi\'s DNS-Blocklists</string>

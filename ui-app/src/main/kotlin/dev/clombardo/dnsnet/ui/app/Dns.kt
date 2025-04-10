@@ -10,8 +10,11 @@ package dev.clombardo.dnsnet.ui.app
 
 import android.os.Parcelable
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,27 +27,29 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastJoinToString
 import dev.clombardo.dnsnet.settings.DnsServer
+import dev.clombardo.dnsnet.settings.DnsServerType
 import dev.clombardo.dnsnet.ui.common.BasicTooltipButton
 import dev.clombardo.dnsnet.ui.common.FloatingTopActions
 import dev.clombardo.dnsnet.ui.common.InsetScaffold
@@ -71,9 +76,14 @@ fun DnsScreen(
     onIpv6SupportClick: () -> Unit,
     useNetworkDnsServers: Boolean,
     onUseNetworkDnsServersClick: () -> Unit,
+    doh3Support: Boolean,
+    onDoh3SupportClick: () -> Unit,
     onItemClick: (DnsServer) -> Unit,
     onItemCheckClicked: (DnsServer) -> Unit,
 ) {
+    val serversState = servers.filter {
+        it.type == if (doh3Support) { DnsServerType.DoH3 } else { DnsServerType.Standard }
+    }
     LazyColumn(
         modifier = modifier,
         contentPadding = contentPadding,
@@ -92,22 +102,30 @@ fun DnsScreen(
 
                 item {
                     SwitchListItem(
+                        title = stringResource(R.string.doh3),
+                        details = stringResource(R.string.doh3_description),
+                        checked = doh3Support,
+                        onCheckedChange = { onDoh3SupportClick() },
+                    )
+                }
+
+                item {
+                    SwitchListItem(
+                        enabled = !doh3Support,
                         title = stringResource(id = R.string.ipv6_support),
                         details = stringResource(id = R.string.ipv6_support_description),
-                        checked = ipv6Support,
+                        checked = ipv6Support || doh3Support,
                         onCheckedChange = { onIpv6SupportClick() },
                     )
                 }
 
                 item {
-                    val allServersDisabled by remember {
-                        derivedStateOf { servers.all { !it.enabled } }
-                    }
+                    val allServersDisabled = serversState.all { !it.enabled }
                     SwitchListItem(
-                        enabled = customDnsServers && !allServersDisabled,
+                        enabled = customDnsServers && !allServersDisabled && !doh3Support,
                         title = stringResource(R.string.use_dns_servers_from_active_network),
                         details = stringResource(R.string.use_dns_servers_from_active_network_description),
-                        checked = useNetworkDnsServers || !customDnsServers || allServersDisabled,
+                        checked = if (doh3Support) allServersDisabled else useNetworkDnsServers || !customDnsServers || allServersDisabled,
                         onCheckedChange = { onUseNetworkDnsServersClick() },
                     )
                 }
@@ -115,7 +133,35 @@ fun DnsScreen(
             Spacer(modifier = Modifier.padding(vertical = 4.dp))
         }
 
-        items(servers) {
+        if (doh3Support && serversState.all { it.type == DnsServerType.DoH3 && !it.enabled }) {
+            item(key = "doh3-warning") {
+                Column(
+                    modifier = Modifier
+                        .animateItem()
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                    Text(
+                        text = stringResource(R.string.doh3_warning),
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        }
+
+        items(
+            items = serversState,
+            key = { it.hashCode() },
+        ) {
             SplitCheckboxListItem(
                 modifier = Modifier.animateItem(),
                 title = it.title,
@@ -147,6 +193,8 @@ private fun DnsScreenPreview() {
             useNetworkDnsServers = false,
             onUseNetworkDnsServersClick = {},
             onItemCheckClicked = {},
+            doh3Support = false,
+            onDoh3SupportClick = {},
         )
     }
 }
@@ -230,7 +278,8 @@ fun EditDnsScreen(
                                     DnsServer(
                                         titleInput,
                                         addressesState.fastJoinToString(separator = ",") { it.address },
-                                        enabledInput
+                                        enabledInput,
+                                        server.type,
                                     )
                                 )
                             },

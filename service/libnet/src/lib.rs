@@ -4,7 +4,7 @@ use std::{
     io::{self, BufRead, Read, Write},
     mem::{self, MaybeUninit},
     net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6},
-    os::fd::{AsRawFd, FromRawFd, RawFd},
+    os::fd::{AsRawFd, FromRawFd},
     sync::{Arc, RwLock, atomic::AtomicBool},
     thread,
     time::{Duration, SystemTime, UNIX_EPOCH},
@@ -51,18 +51,11 @@ pub fn rust_init(debug: bool) {
 pub fn run_vpn_native(
     ad_vpn_callback: Box<dyn AdVpnCallback>,
     block_logger_callback: Box<dyn BlockLoggerCallback>,
-    upstream_dns_servers: Vec<Vec<u8>>,
-    vpn_fd: i32,
     vpn_controller: Arc<VpnController>,
     rule_database: Arc<RuleDatabase>,
 ) -> Result<VpnResult, VpnError> {
-    let mut vpn = AdVpn::new(vpn_fd, vpn_controller);
-    let result = vpn.run(
-        ad_vpn_callback,
-        block_logger_callback,
-        rule_database,
-        upstream_dns_servers,
-    );
+    let mut vpn = AdVpn::new(vpn_controller);
+    let result = vpn.run(ad_vpn_callback, block_logger_callback, rule_database);
     info!("run_vpn_native: Stopped");
     return result;
 }
@@ -393,19 +386,40 @@ pub enum VpnError {
 
     #[error("Watchdog timed out")]
     Timeout,
+
+    #[error("Not connected to a network")]
+    NoNetwork,
+
+    #[error("Failed to create the tunnel file descriptor")]
+    ConfigurationFailure,
+}
+
+#[derive(uniffi::Enum)]
+pub enum VpnConfigurationResult {
+    // The device is not connected to any networks and should wait before establishing the VPN
+    NoNetwork,
+
+    // The Android VpnService builder returned a null file descriptor and we should restart
+    BuilderFailure,
+
+    // The VpnService was established correctly with a valid file descriptor and the upstream DNS servers
+    Success(i32, Vec<String>),
 }
 
 /// Callback interface to be implemented by a Kotlin class and then passed into the main loop
 #[uniffi::export(callback_interface)]
 pub trait AdVpnCallback: Send + Sync {
+    fn configure(&self) -> VpnConfigurationResult;
+
     fn protect_raw_socket_fd(&self, socket_fd: i32) -> bool;
 
     fn notify(&self, native_status: i32);
+
+    fn send_doh3_configuration_error_notification(&self);
 }
 
 /// Main struct that holds the state of the VPN and runs the main loop
 struct AdVpn {
-    vpn_file: File,
     vpn_controller: Arc<VpnController>,
     device_writes: VecDeque<Vec<u8>>,
     wosp_list: WospList,
@@ -418,11 +432,8 @@ impl AdVpn {
 
     const DNS_RESPONSE_PACKET_SIZE: usize = 1024;
 
-    fn new(vpn_fd: RawFd, vpn_controller: Arc<VpnController>) -> Self {
-        let vpn_file = unsafe { File::from_raw_fd(vpn_fd) };
-
+    fn new(vpn_controller: Arc<VpnController>) -> Self {
         AdVpn {
-            vpn_file,
             vpn_controller,
             device_writes: VecDeque::new(),
             wosp_list: WospList::new(),
@@ -447,15 +458,44 @@ impl AdVpn {
         android_vpn_callback: Box<dyn AdVpnCallback>,
         block_logger_callback: Box<dyn BlockLoggerCallback>,
         rule_database: Arc<RuleDatabase>,
-        upstream_dns_servers: Vec<Vec<u8>>,
     ) -> Result<VpnResult, VpnError> {
         let mut packet = vec![0u8; i16::MAX as usize];
+
+        let (vpn_fd, upstream_dns_servers) = match android_vpn_callback.configure() {
+            VpnConfigurationResult::NoNetwork => {
+                error!("run: No network available");
+                return Result::Err(VpnError::NoNetwork);
+            }
+            VpnConfigurationResult::BuilderFailure => {
+                error!("run: Failed to configure VPN");
+                return Result::Err(VpnError::ConfigurationFailure);
+            }
+            VpnConfigurationResult::Success(fd, servers) => (fd, servers),
+        };
+
+        // SAFETY: The descriptor is guaranteed to be valid by Android and detached from the Kotlin side
+        let mut vpn_file = unsafe { File::from_raw_fd(vpn_fd) };
 
         let mut dns_packet_proxy = DnsPacketProxy::new(
             &android_vpn_callback,
             block_logger_callback,
             rule_database,
-            upstream_dns_servers,
+            upstream_dns_servers
+                .iter()
+                .filter_map(|server| {
+                    let ipv4_addr: Result<Ipv4Addr, _> = server.parse();
+                    if ipv4_addr.is_ok() {
+                        return Some(ipv4_addr.unwrap().octets().to_vec());
+                    }
+
+                    let ipv6_addr: Result<Ipv6Addr, _> = server.parse();
+                    if ipv6_addr.is_ok() {
+                        return Some(ipv6_addr.unwrap().octets().to_vec());
+                    }
+
+                    return None;
+                })
+                .collect(),
         );
 
         let poller = match Poller::new() {
@@ -484,6 +524,7 @@ impl AdVpn {
             match self.do_one(
                 &poller,
                 &mut events,
+                &mut vpn_file,
                 &mut dns_packet_proxy,
                 packet.as_mut_slice(),
             ) {
@@ -503,12 +544,13 @@ impl AdVpn {
         &mut self,
         poller: &Poller,
         events: &mut Events,
+        vpn_file: &mut File,
         dns_packet_proxy: &mut DnsPacketProxy,
         packet: &mut [u8],
     ) -> Result<VpnResult, VpnError> {
         unsafe {
             match poller.add_with_mode(
-                self.vpn_file.as_raw_fd(),
+                vpn_file.as_raw_fd(),
                 Event::new(Self::VPN_EVENT_KEY, true, !self.device_writes.is_empty())
                     .with_priority(),
                 polling::PollMode::Edge,
@@ -607,14 +649,14 @@ impl AdVpn {
         }
 
         if write_to_device {
-            self.write_to_device()?;
+            self.write_to_device(vpn_file)?;
         }
 
         if read_from_device {
-            self.read_packet_from_device(dns_packet_proxy, packet)?;
+            self.read_packet_from_device(vpn_file, dns_packet_proxy, packet)?;
         }
 
-        match poller.delete(&self.vpn_file) {
+        match poller.delete(vpn_file) {
             Ok(_) => {}
             Err(e) => {
                 error!("do_one: Failed to remove VPN FD from poller! - {:?}", e);
@@ -626,7 +668,7 @@ impl AdVpn {
     }
 
     /// Writes a packet to the tunnel from the device_writes queue
-    fn write_to_device(&mut self) -> Result<(), VpnError> {
+    fn write_to_device(&mut self, vpn_file: &mut File) -> Result<(), VpnError> {
         let device_write = match self.device_writes.pop_front() {
             Some(value) => value,
             None => {
@@ -635,7 +677,7 @@ impl AdVpn {
             }
         };
 
-        match self.vpn_file.write(&device_write) {
+        match vpn_file.write(&device_write) {
             Ok(_) => Result::Ok(()),
             Err(e) => {
                 error!("write_to_device: Failed writing - {:?}", e);
@@ -647,10 +689,11 @@ impl AdVpn {
     /// Reads a packet from the tunnel and then handles a DNS request if there is one
     fn read_packet_from_device(
         &mut self,
+        vpn_file: &mut File,
         dns_packet_proxy: &mut DnsPacketProxy,
         packet: &mut [u8],
     ) -> Result<(), VpnError> {
-        let length = match self.vpn_file.read(packet) {
+        let length = match vpn_file.read(packet) {
             Ok(value) => value,
             Err(e) => {
                 error!("read_packet_from_device: Cannot read from device - {:?}", e);
@@ -982,12 +1025,7 @@ impl RuleDatabase {
         sorted_host_items.sort_by(|a, b| a.state.partial_cmp(&b.state).unwrap());
 
         for item in sorted_host_items.iter() {
-            match load_item(
-                &android_file_helper,
-                &self.controller,
-                &mut map,
-                item,
-            ) {
+            match load_item(&android_file_helper, &self.controller, &mut map, item) {
                 Ok(_) => {}
                 Err(error) => match error {
                     RuleDatabaseError::BadHostFormat => {}
@@ -1227,10 +1265,16 @@ fn add_host(
                         match state {
                             NativeHostState::IGNORE => {}
                             NativeHostState::DENY => {
-                                map.insert(value.to_owned(), (HostnameType::Wildcard, HostnameAction::Deny));
+                                map.insert(
+                                    value.to_owned(),
+                                    (HostnameType::Wildcard, HostnameAction::Deny),
+                                );
                             }
                             NativeHostState::ALLOW => {
-                                map.insert(value.to_owned(), (HostnameType::Wildcard, HostnameAction::Allow));
+                                map.insert(
+                                    value.to_owned(),
+                                    (HostnameType::Wildcard, HostnameAction::Allow),
+                                );
                             }
                         };
                         Ok(())
@@ -1247,10 +1291,16 @@ fn add_host(
                                     match state {
                                         NativeHostState::IGNORE => {}
                                         NativeHostState::DENY => {
-                                            map.insert(value.to_owned(), (HostnameType::Wildcard, HostnameAction::Deny));
+                                            map.insert(
+                                                value.to_owned(),
+                                                (HostnameType::Wildcard, HostnameAction::Deny),
+                                            );
                                         }
                                         NativeHostState::ALLOW => {
-                                            map.insert(value.to_owned(), (HostnameType::Wildcard, HostnameAction::Allow));
+                                            map.insert(
+                                                value.to_owned(),
+                                                (HostnameType::Wildcard, HostnameAction::Allow),
+                                            );
                                         }
                                     };
                                     Ok(())
@@ -1374,6 +1424,7 @@ impl<'a> DnsPacketProxy<'a> {
             Self::NEGATIVE_CACHE_TTL_SECONDS,
             soa_record,
         );
+        error!("wut - {:?}", upstream_dns_servers);
         DnsPacketProxy {
             android_vpn_callback,
             block_logger_callback,

@@ -343,8 +343,14 @@ data class DnsServer(
     var title: String = "",
     @SerialName("location") var addresses: String = "",
     var enabled: Boolean = false,
+    var type: DnsServerType = DnsServerType.Standard,
 ) : Parcelable {
     fun getAddresses(): List<String> = addresses.split(",").map { it.trim() }
+}
+
+@Serializable
+enum class DnsServerType {
+    Standard, DoH3
 }
 
 sealed interface Host : Parcelable {
@@ -397,6 +403,7 @@ value class ImmutableHosts(private val hosts: Hosts) {
 @Serializable
 data class DnsServers(
     var enabled: Boolean = false,
+    var doh3: Boolean = false,
     var items: MutableList<DnsServer> = defaultServers.toMutableList(),
 ) {
     fun asImmutable(): ImmutableDnsServers = ImmutableDnsServers(this)
@@ -406,12 +413,32 @@ data class DnsServers(
             DnsServer(
                 title = "Cloudflare",
                 addresses = "1.1.1.1,1.0.0.1",
-                enabled = false,
+                enabled = true,
+                type = DnsServerType.Standard,
             ),
             DnsServer(
                 title = "Quad9",
                 addresses = "9.9.9.9",
                 enabled = false,
+                type = DnsServerType.Standard,
+            ),
+            DnsServer(
+                title = "Cloudflare DoH3",
+                addresses = "cloudflare-dns.com",
+                enabled = true,
+                type = DnsServerType.DoH3,
+            ),
+            DnsServer(
+                title = "Google DoH3",
+                addresses = "dns.google",
+                enabled = false,
+                type = DnsServerType.DoH3,
+            ),
+            DnsServer(
+                title = "Google DoH3 IPv6-only",
+                addresses = "dns64.dns.google",
+                enabled = false,
+                type = DnsServerType.DoH3,
             ),
         )
     }
@@ -420,6 +447,7 @@ data class DnsServers(
 @JvmInline
 value class ImmutableDnsServers(private val dnsServers: DnsServers) {
     val enabled get() = dnsServers.enabled
+    val doh3 get() = dnsServers.doh3
     val items get() = dnsServers.items.toList()
 }
 
