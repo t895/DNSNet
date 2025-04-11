@@ -348,6 +348,7 @@ data class DnsServer(
     fun getAddresses(): List<String> = addresses.split(",").map { it.trim() }
 }
 
+@Keep
 @Serializable
 enum class DnsServerType {
     Standard, DoH3
