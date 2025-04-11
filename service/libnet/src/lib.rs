@@ -2,7 +2,7 @@ use std::{
     collections::{HashMap, VecDeque},
     fs::File,
     io::{self, BufRead, Read, Write},
-    net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6, UdpSocket},
+    net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6},
     os::fd::{AsRawFd, FromRawFd},
     sync::{atomic::AtomicBool, Arc, RwLock},
     thread,
@@ -16,7 +16,8 @@ use etherparse::{
     PacketBuilderStep, SlicedPacket, TransportSlice, UdpSlice, ip_number,
 };
 use log::LevelFilter;
-use polling::{Event, Events, Poller};
+use mio::{net::UdpSocket, Events, Interest, Poll, Token};
+use mio::unix::SourceFd;
 use simple_dns::{Name, PacketFlag, ResourceRecord, rdata::RData};
 
 #[macro_use]
@@ -421,21 +422,21 @@ struct AdVpn {
     vpn_controller: Arc<VpnController>,
     device_writes: VecDeque<Vec<u8>>,
     wosp_list: WospList,
-    ipv6_unspecified: SocketAddrV6,
+    unspecified_bind_address: SocketAddr,
 }
 
 impl AdVpn {
-    /// Key for the VPN event in the poller
-    const VPN_EVENT_KEY: usize = usize::MAX - 1;
-
     const DNS_RESPONSE_PACKET_SIZE: usize = 1024;
+
+    const VPN_TOKEN: Token = Token(usize::MAX);
+    const VPN_CONTROLLER_TOKEN: Token = Token(usize::MAX - 1);
 
     fn new(vpn_controller: Arc<VpnController>) -> Self {
         AdVpn {
             vpn_controller,
             device_writes: VecDeque::new(),
             wosp_list: WospList::new(),
-            ipv6_unspecified: SocketAddrV6::new(Ipv6Addr::UNSPECIFIED, 0, 0, 0),
+            unspecified_bind_address: SocketAddr::new(std::net::IpAddr::V6(Ipv6Addr::UNSPECIFIED), 0),
         }
     }
 
@@ -496,17 +497,18 @@ impl AdVpn {
                 .collect(),
         );
 
-        let poller = match Poller::new() {
+        let mut poll = match Poll::new() {
             Ok(value) => value,
             Err(e) => {
                 error!("do_one: Failed to create poller! - {:?}", e);
                 return Result::Err(VpnError::TunnelPollFailure);
             }
         };
-        unsafe {
-            match poller.add(
-                self.vpn_controller.event_fd,
-                Event::readable(usize::MAX - 2),
+        match poll.registry()
+            .register(
+                &mut SourceFd(&self.vpn_controller.event_fd),
+                Self::VPN_CONTROLLER_TOKEN,
+                Interest::READABLE,
             ) {
                 Ok(_) => {}
                 Err(e) => {
@@ -514,13 +516,12 @@ impl AdVpn {
                     return Result::Err(VpnError::TunnelPollFailure);
                 }
             };
-        }
-        let mut events = Events::new();
+        let mut events = Events::with_capacity(WospList::DNS_MAXIMUM_WAITING + 2);
 
         android_vpn_callback.notify(VpnStatus::Running as i32);
         loop {
             match self.do_one(
-                &poller,
+                &mut poll,
                 &mut events,
                 &mut vpn_file,
                 &mut dns_packet_proxy,
@@ -540,18 +541,21 @@ impl AdVpn {
     /// One iteration of the main loop that polls the VPN, DNS sockets, and the controller's event file descriptor
     fn do_one(
         &mut self,
-        poller: &Poller,
+        poll: &mut Poll,
         events: &mut Events,
         vpn_file: &mut File,
         dns_packet_proxy: &mut DnsPacketProxy,
         packet: &mut [u8],
     ) -> Result<VpnResult, VpnError> {
-        unsafe {
-            match poller.add_with_mode(
-                vpn_file.as_raw_fd(),
-                Event::new(Self::VPN_EVENT_KEY, true, !self.device_writes.is_empty())
-                    .with_priority(),
-                polling::PollMode::Edge,
+        match poll.registry()
+            .register(
+                &mut SourceFd(&vpn_file.as_raw_fd()),
+                Self::VPN_TOKEN,
+                if !self.device_writes.is_empty() {
+                    Interest::READABLE | Interest::WRITABLE
+                } else {
+                    Interest::READABLE
+                },
             ) {
                 Ok(_) => {}
                 Err(e) => {
@@ -559,13 +563,12 @@ impl AdVpn {
                     return Result::Err(VpnError::TunnelPollFailure);
                 }
             };
-        }
 
         let mut waiting_sockets = 1;
         let mut bad_sockets = Vec::<usize>::new();
-        for (index, wosp) in self.wosp_list.list.iter().enumerate() {
-            unsafe {
-                match poller.add(&wosp.socket, Event::readable(wosp.time as usize)) {
+        for (index, wosp) in self.wosp_list.list.iter_mut().enumerate() {
+            match poll.registry()
+                .register(&mut wosp.socket, Token(wosp.time as usize), Interest::READABLE) {
                     Ok(_) => waiting_sockets += 1,
                     Err(e) => {
                         if e.kind() == std::io::ErrorKind::AlreadyExists {
@@ -579,15 +582,14 @@ impl AdVpn {
                         }
                     }
                 };
-            }
         }
         for index in bad_sockets {
             self.wosp_list.list.remove(index);
         }
 
         debug!("do_one: Polling {} socket(s)", waiting_sockets);
-        match poller.wait(events, None) {
-            Ok(events_length) => info!("do_one: Found {} event(s)", events_length),
+        match poll.poll(events, None) {
+            Ok(_) => {},
             Err(e) => {
                 debug!("do_one: Poll timed out - {:?}", e);
                 return Result::Err(VpnError::Timeout);
@@ -610,20 +612,20 @@ impl AdVpn {
         let mut wosps_to_process = Vec::<WaitingOnSocketPacket>::new();
         for event in events.iter() {
             debug!("do_one: Got event {:?}", event);
-            if event.key == Self::VPN_EVENT_KEY {
-                read_from_device = event.readable;
-                write_to_device = event.writable;
+            if event.token() == Self::VPN_TOKEN {
+                read_from_device = read_from_device || event.is_readable();
+                write_to_device = write_to_device || event.is_writable();
             } else {
                 let index = self
                     .wosp_list
                     .list
                     .iter()
-                    .position(|value| (value.time as usize) == event.key)
+                    .position(|value| (value.time as usize) == event.token().0)
                     .unwrap_or(usize::MAX);
                 match self.wosp_list.list.remove(index) {
-                    Some(wosp) => {
+                    Some(mut wosp) => {
                         debug!("do_one: Read from DNS socket: {:?}", wosp.socket);
-                        match poller.delete(&wosp.socket) {
+                        match poll.registry().deregister(&mut wosp.socket) {
                             Ok(_) => {}
                             Err(e) => {
                                 warn!("do_one: Failed to remove socket from poller! - {:?}", e)
@@ -654,13 +656,14 @@ impl AdVpn {
             self.read_packet_from_device(vpn_file, dns_packet_proxy, packet)?;
         }
 
-        match poller.delete(vpn_file) {
-            Ok(_) => {}
-            Err(e) => {
-                error!("do_one: Failed to remove VPN FD from poller! - {:?}", e);
-                return Result::Err(VpnError::TunnelPollFailure);
-            }
-        };
+        match poll.registry()
+            .deregister(&mut SourceFd(&vpn_file.as_raw_fd())) {
+                Ok(_) => {}
+                Err(e) => {
+                    error!("do_one: Failed to remove VPN FD from poller! - {:?}", e);
+                    return Result::Err(VpnError::TunnelPollFailure);
+                }
+            };
 
         return Result::Ok(VpnResult::Continuing);
     }
@@ -743,24 +746,13 @@ impl AdVpn {
         request_packet: &[u8],
         destination_address: SocketAddr,
     ) -> bool {
-        let socket = match UdpSocket::bind(self.ipv6_unspecified) {
+        let socket = match UdpSocket::bind(self.unspecified_bind_address) {
             Ok(value) => value,
             Err(e) => {
                 error!("forward_packet: Failed to create socket! - {:?}", e);
                 return false;
             }
         };
-
-        match socket.set_nonblocking(true) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "forward_packet: Failed to set socket to non-blocking! - {:?}",
-                    e
-                );
-                return false;
-            }
-        }
 
         // Packets to be sent to the real DNS server will need to be protected from the VPN
         if !android_vpn_service.protect_raw_socket_fd(socket.as_raw_fd()) {
@@ -775,7 +767,7 @@ impl AdVpn {
         // };
 
         let destination_sockaddr = SocketAddr::from(destination_address);
-        match socket.send_to(packet, &destination_sockaddr) {
+        match socket.send_to(packet, destination_sockaddr) {
             Ok(_) => {
                 self.wosp_list
                     .add(WaitingOnSocketPacket::new(socket, request_packet.to_vec()));
