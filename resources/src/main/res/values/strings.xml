@@ -235,8 +235,8 @@
     <string name="libc_license_link" translatable="false">https://github.com/rust-lang/libc/tree/0.2.170</string>
     <string name="log" translatable="false">log</string>
     <string name="log_license_link" translatable="false">https://github.com/rust-lang/log/tree/0.4.26</string>
-    <string name="polling" translatable="false">polling</string>
-    <string name="polling_license_link" translatable="false">https://github.com/smol-rs/polling/tree/v3.7.4</string>
+    <string name="mio" translatable="false">mio</string>
+    <string name="mio_license_link" translatable="false">https://github.com/tokio-rs/mio/blob/v1.0.3/LICENSE</string>
     <string name="simple_dns" translatable="false">simple-dns</string>
     <string name="simple_dns_license_link" translatable="false">https://github.com/balliegojr/simple-dns</string>
     <string name="thiserror" translatable="false">thiserror</string>

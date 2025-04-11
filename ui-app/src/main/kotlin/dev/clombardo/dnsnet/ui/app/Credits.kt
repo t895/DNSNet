@@ -176,8 +176,8 @@ fun CreditsScreen(
 
             item {
                 LicenseListItem(
-                    title = stringResource(R.string.polling),
-                    licenseLink = stringResource(R.string.polling_license_link),
+                    title = stringResource(R.string.mio),
+                    licenseLink = stringResource(R.string.mio_license_link),
                 )
             }
 
