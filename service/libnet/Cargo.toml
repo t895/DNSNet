@@ -19,7 +19,6 @@ log = "0.4.26"
 polling = "3.7.4"
 quiche = "0.23.7"
 simple-dns = "0.10.0"
-socket2 = "0.5.9"
 thiserror = "2.0.12"
 uniffi = { version = "0.29.0", features = ["cli"] }
 url = "2.5.4"

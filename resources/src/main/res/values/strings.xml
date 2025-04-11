@@ -239,8 +239,6 @@
     <string name="polling_license_link" translatable="false">https://github.com/smol-rs/polling/tree/v3.7.4</string>
     <string name="simple_dns" translatable="false">simple-dns</string>
     <string name="simple_dns_license_link" translatable="false">https://github.com/balliegojr/simple-dns</string>
-    <string name="socket2" translatable="false">socket2</string>
-    <string name="socket2_license_link" translatable="false">https://github.com/rust-lang/socket2/tree/60d118fa4724f756c31944c86dc1ecd5dfc4c9b7</string>
     <string name="thiserror" translatable="false">thiserror</string>
     <string name="thiserror_license_link" translatable="false">https://github.com/dtolnay/thiserror/tree/2.0.12</string>
     <string name="uniffi" translatable="false">uniffi</string>

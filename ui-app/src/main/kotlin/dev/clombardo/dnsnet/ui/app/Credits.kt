@@ -190,13 +190,6 @@ fun CreditsScreen(
 
             item {
                 LicenseListItem(
-                    title = stringResource(R.string.socket2),
-                    licenseLink = stringResource(R.string.socket2_license_link),
-                )
-            }
-
-            item {
-                LicenseListItem(
                     title = stringResource(R.string.thiserror),
                     licenseLink = stringResource(R.string.thiserror_license_link),
                 )

@@ -2,10 +2,9 @@ use std::{
     collections::{HashMap, VecDeque},
     fs::File,
     io::{self, BufRead, Read, Write},
-    mem::{self, MaybeUninit},
-    net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6},
+    net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6, UdpSocket},
     os::fd::{AsRawFd, FromRawFd},
-    sync::{Arc, RwLock, atomic::AtomicBool},
+    sync::{atomic::AtomicBool, Arc, RwLock},
     thread,
     time::{Duration, SystemTime, UNIX_EPOCH},
     usize,
@@ -19,7 +18,6 @@ use etherparse::{
 use log::LevelFilter;
 use polling::{Event, Events, Poller};
 use simple_dns::{Name, PacketFlag, ResourceRecord, rdata::RData};
-use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
 #[macro_use]
 extern crate log;
@@ -717,17 +715,14 @@ impl AdVpn {
         dns_packet_proxy: &DnsPacketProxy,
         wosp: WaitingOnSocketPacket,
     ) {
-        let mut response_payload =
-            vec![MaybeUninit::<u8>::uninit(); Self::DNS_RESPONSE_PACKET_SIZE];
+        let mut response_payload = vec![0; Self::DNS_RESPONSE_PACKET_SIZE];
 
         match wosp.socket.recv(response_payload.as_mut_slice()) {
-            Ok(_) => {
-                let initialized_response_payload =
-                    unsafe { mem::transmute::<_, Vec<u8>>(response_payload) };
+            Ok(size) => {
                 dns_packet_proxy.handle_dns_response(
                     self,
                     &wosp.packet,
-                    &initialized_response_payload,
+                    &response_payload[..size],
                 );
             }
             Err(e) => {
@@ -748,7 +743,7 @@ impl AdVpn {
         request_packet: &[u8],
         destination_address: SocketAddr,
     ) -> bool {
-        let socket = match Socket::new_raw(Domain::IPV6, Type::DGRAM, Some(Protocol::UDP)) {
+        let socket = match UdpSocket::bind(self.ipv6_unspecified) {
             Ok(value) => value,
             Err(e) => {
                 error!("forward_packet: Failed to create socket! - {:?}", e);
@@ -773,13 +768,13 @@ impl AdVpn {
             return false;
         }
 
-        let bind_address = SockAddr::from(self.ipv6_unspecified);
-        match socket.bind(&bind_address) {
-            Ok(_) => debug!("forward_packet: Successfully bound socket - {:?}", socket),
-            Err(e) => error!("forward_packet: Failed to bind socket! - {:?}", e),
-        };
+        // let bind_address = SockAddr::from(self.ipv6_unspecified);
+        // match socket.bind(&bind_address) {
+        //     Ok(_) => debug!("forward_packet: Successfully bound socket - {:?}", socket),
+        //     Err(e) => error!("forward_packet: Failed to bind socket! - {:?}", e),
+        // };
 
-        let destination_sockaddr = SockAddr::from(destination_address);
+        let destination_sockaddr = SocketAddr::from(destination_address);
         match socket.send_to(packet, &destination_sockaddr) {
             Ok(_) => {
                 self.wosp_list
@@ -813,13 +808,13 @@ impl AdVpn {
 /// Additionally holds the time that we started waiting on it to see if we need to drop it.
 #[derive(Debug)]
 struct WaitingOnSocketPacket {
-    socket: Socket,
+    socket: UdpSocket,
     packet: Vec<u8>,
     time: u128,
 }
 
 impl WaitingOnSocketPacket {
-    fn new(socket: Socket, packet: Vec<u8>) -> Self {
+    fn new(socket: UdpSocket, packet: Vec<u8>) -> Self {
         Self {
             socket,
             packet,
