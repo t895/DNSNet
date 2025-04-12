@@ -153,7 +153,7 @@
     <string name="blocked_connections_percent">%d%% Bloccato</string>
     <string name="block_log">Registro blocchi</string>
     <string name="block_log_description">Registra ogni connessione per visualizzarla e analizzarla</string>
-    <string name="warning">Avvertimento</string>
+    <string name="warning">Avvertenza</string>
     <string name="disable_block_log_warning_description">Una volta disabilitato, il registro blocchi esistente verrà eliminato permanentemente.</string>
     <string name="disable">Disattiva</string>
     <string name="scroll_up">Scorri verso l\'alto</string>
@@ -161,7 +161,7 @@
     <string name="attempts">Tentativi</string>
     <string name="modify_list">Modifica l\'elenco</string>
     <string name="last_connected">Ultima connessione</string>
-    <string name="reset">Reset</string>
+    <string name="reset">Ripristino</string>
     <string name="reset_settings_warning_description">Questa operazione eliminerà in modo permanente le impostazioni correnti.</string>
     <string name="permanently_delete_warning_description">Questo eliminerà in modo permanente %s</string>
     <string name="create_exception">Creare un\'eccezione</string>
