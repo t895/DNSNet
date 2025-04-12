@@ -193,4 +193,6 @@
     <string name="button_continue">Devam et</string>
     <string name="use_dns_servers_from_active_network">Etkin ağdan sunucular kullan</string>
     <string name="hagezi_dns_blocklists_description">Farklı boyutlara sahip derleme engel listeleri. Reklamları, takip ölçevlerini, ve zararlı yazılımları engeller.</string>
+    <string name="oisd_big_description">Önemli miktarda sistem belleği alacak tam liste. Bunun ne anlama geldiğini bilmiyorsanız, bunun yerine küçük listeyi seçin.</string>
+    <string name="hagezi_dns_blocklists_ultimate_description">Birçok uygulamada ve web sitelerinde işlevselliği sınırlayacaktır. Sadece çok deneyimli kullanıcılar tarafından kullanılmalıdır.</string>
 </resources>
