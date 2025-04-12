@@ -1,0 +1,4 @@
+DNSNet cihazınızdan hangi internet trafiğinin girip çıktığına dair daha fazla kontrol ele almanızı sağlar. Bilinen bir dizi reklam ya da kötü niyetli sunucu adreslerini engellemek için "host dosyaları" indirip, gerek gördüğünüz yerde istisnalar oluşturabilirsiniz.
+
+
+Cihazınızı kullandıkça internet trafiğinizi süzgüden geçiren hafif bir VPN hizmeti oluşturarak çalışır. Eğer bir siteye bağlanmakta ya da bir uygulamayı açmakta sorun yaşarsanız, bir uygulamayı ya da sunucu adresini süzgüye istisna olarak ayarlayabilirsiniz.
