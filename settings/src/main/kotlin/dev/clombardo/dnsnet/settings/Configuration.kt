@@ -145,6 +145,7 @@ data class Configuration(
         private val json by lazy {
             Json {
                 ignoreUnknownKeys = true
+                encodeDefaults = true
             }
         }
 
@@ -404,7 +405,7 @@ value class ImmutableHosts(private val hosts: Hosts) {
 @Serializable
 data class DnsServers(
     var enabled: Boolean = false,
-    var doh3: Boolean = false,
+    var type: DnsServerType = DnsServerType.Standard,
     var items: MutableList<DnsServer> = defaultServers.toMutableList(),
 ) {
     fun asImmutable(): ImmutableDnsServers = ImmutableDnsServers(this)
@@ -448,7 +449,7 @@ data class DnsServers(
 @JvmInline
 value class ImmutableDnsServers(private val dnsServers: DnsServers) {
     val enabled get() = dnsServers.enabled
-    val doh3 get() = dnsServers.doh3
+    val type get() = dnsServers.type
     val items get() = dnsServers.items.toList()
 }
 
@@ -490,20 +491,20 @@ data class BlockListVariantProvider(
     override val sourceUrlResId: Int,
     val singleSelection: Boolean,
     val variants: List<BlockListVariant>,
-): BlockListProvider
+) : BlockListProvider
 
 data class BlockListVariant(
     override val titleResId: Int,
     override val descriptionResId: Int = 0,
     override val urlResId: Int,
-): BlockList
+) : BlockList
 
 data class BlockListUrlProvider(
     override val titleResId: Int,
     override val descriptionResId: Int = 0,
     override val sourceUrlResId: Int,
     override val urlResId: Int,
-): BlockListProvider, BlockList
+) : BlockListProvider, BlockList
 
 object BlockListDefaults {
     val providers = listOf<BlockListProvider>(

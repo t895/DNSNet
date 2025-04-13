@@ -711,10 +711,11 @@ fun HomeScreen(
                 } else {
                     FloatingActionButton(
                         onClick = {
-                            if (vm.configuration.read { dnsServers.doh3 }) {
-                                topLevelNavController.navigate(DnsServer(type = DnsServerType.DoH3))
-                            } else {
-                                topLevelNavController.navigate(DnsServer())
+                            when (vm.configuration.read { dnsServers.type }) {
+                                DnsServerType.Standard -> topLevelNavController.navigate(DnsServer())
+                                DnsServerType.DoH3 -> {
+                                    topLevelNavController.navigate(DnsServer(type = DnsServerType.DoH3))
+                                }
                             }
                         },
                     ) {
@@ -875,8 +876,8 @@ fun HomeScreen(
                 var customDnsServers by remember {
                     mutableStateOf(vm.configuration.read { dnsServers.enabled })
                 }
-                var doh3 by remember {
-                    mutableStateOf(vm.configuration.read { dnsServers.doh3 })
+                var type by remember {
+                    mutableStateOf(vm.configuration.read { dnsServers.type })
                 }
                 var ipV6SupportToggle by remember {
                     mutableStateOf(vm.configuration.read { ipV6Support })
@@ -913,11 +914,14 @@ fun HomeScreen(
                         }
                         onReloadVpn()
                     },
-                    doh3Support = doh3,
+                    doh3Support = type == DnsServerType.DoH3,
                     onDoh3SupportClick = {
                         vm.configuration.edit {
-                            this.dnsServers.doh3 = !doh3
-                            doh3 = this.dnsServers.doh3
+                            this.dnsServers.type = when (this.dnsServers.type) {
+                                DnsServerType.Standard -> DnsServerType.DoH3
+                                DnsServerType.DoH3 -> DnsServerType.Standard
+                            }
+                            type = this.dnsServers.type
                         }
                         onReloadVpn()
                     },
