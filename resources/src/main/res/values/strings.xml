@@ -180,13 +180,9 @@
     <string name="confirm">Confirm</string>
     <string name="view_source">View source</string>
     <string name="no_block_items">No block lists or domains found</string>
-    <string name="doh3">DNS over HTTPS/3 (DoH3)</string>
+    <string name="doh3">DNS over HTTP/3</string>
     <string name="doh3_description">Securely send your DNS requests. Uses \"https://example.com/dns-query\" URLs.</string>
-    <string name="doh3_warning">At least one server must be selected or the service will fall back to insecure DNS</string>
-    <string name="alerts">Alerts</string>
-    <string name="alerts_description">Notifications for when something goes wrong with the service</string>
-    <string name="doh3_error_notification">DoH3 configuration error</string>
-    <string name="doh3_error_notification_description">An internal error occurred that forced the service to restart with DoH3 disabled</string>
+    <string name="doh3_warning">At least one server must be selected</string>
 
     <!-- Block list defaults -->
     <string name="hagezi_dns_blocklists">hagezi\'s DNS-Blocklists</string>
@@ -232,17 +228,23 @@
     <string name="etherparse" translatable="false">etherparse</string>
     <string name="etherparse_license_link" translatable="false">https://github.com/JulianSchmid/etherparse/tree/v0.17.0</string>
     <string name="libc" translatable="false">libc</string>
-    <string name="libc_license_link" translatable="false">https://github.com/rust-lang/libc/tree/0.2.170</string>
+    <string name="libc_license_link" translatable="false">https://github.com/rust-lang/libc/tree/0.2.172</string>
     <string name="log" translatable="false">log</string>
-    <string name="log_license_link" translatable="false">https://github.com/rust-lang/log/tree/0.4.26</string>
+    <string name="log_license_link" translatable="false">https://github.com/rust-lang/log/tree/0.4.27</string>
     <string name="mio" translatable="false">mio</string>
     <string name="mio_license_link" translatable="false">https://github.com/tokio-rs/mio/blob/v1.0.3/LICENSE</string>
     <string name="simple_dns" translatable="false">simple-dns</string>
-    <string name="simple_dns_license_link" translatable="false">https://github.com/balliegojr/simple-dns</string>
+    <string name="simple_dns_license_link" translatable="false">https://github.com/balliegojr/simple-dns/blob/simple-dns/0.10.1/LICENSE</string>
     <string name="thiserror" translatable="false">thiserror</string>
     <string name="thiserror_license_link" translatable="false">https://github.com/dtolnay/thiserror/tree/2.0.12</string>
     <string name="uniffi" translatable="false">uniffi</string>
-    <string name="uniffi_license_link" translatable="false">https://github.com/mozilla/uniffi-rs/blob/v0.29.0/LICENSE</string>
+    <string name="uniffi_license_link" translatable="false">https://github.com/mozilla/uniffi-rs/blob/v0.29.1/LICENSE</string>
     <string name="android_logger" translatable="false">android_logger</string>
     <string name="android_logger_license_link" translatable="false">https://github.com/rust-mobile/android_logger-rs/tree/0.14.1</string>
+    <string name="quiche" translatable="false">quiche</string>
+    <string name="quiche_license_link" translatable="false">https://github.com/cloudflare/quiche/blob/0.24.0/COPYING</string>
+    <string name="getrandom" translatable="false">getrandom</string>
+    <string name="getrandom_license_link" translatable="false">https://github.com/rust-random/getrandom/blob/v0.3.2/LICENSE-MIT</string>
+    <string name="base64" translatable="false">base64</string>
+    <string name="base64_license_link" translatable="false">https://github.com/marshallpierce/rust-base64/tree/v0.22.1</string>
 </resources>

@@ -209,6 +209,27 @@ fun CreditsScreen(
                 )
             }
 
+            item {
+                LicenseListItem(
+                    title = stringResource(R.string.quiche),
+                    licenseLink = stringResource(R.string.quiche_license_link),
+                )
+            }
+
+            item {
+                LicenseListItem(
+                    title = stringResource(R.string.base64),
+                    licenseLink = stringResource(R.string.base64_license_link),
+                )
+            }
+
+            item {
+                LicenseListItem(
+                    title = stringResource(R.string.getrandom),
+                    licenseLink = stringResource(R.string.getrandom_license_link),
+                )
+            }
+
             items(artifacts) {
                 CreditListItem(it)
             }

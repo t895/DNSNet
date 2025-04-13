@@ -29,7 +29,7 @@ import uniffi.net.runVpnNative
 class AdVpnThread(
     private val adVpnService: AdVpnService,
     private val notify: (VpnStatus) -> Unit,
-    private val blockLoggerCallback: BlockLoggerCallback,
+    private val blockLoggerCallback: BlockLoggerCallback?,
     private val ruleDatabaseManager: RuleDatabaseManager,
 ) : Runnable {
     companion object {
@@ -87,7 +87,7 @@ class AdVpnThread(
         while (true) {
             val connectTimeMillis: Long = System.currentTimeMillis()
 
-            var reloadOnInterrupt: Boolean
+            var reloadOnInterrupt = false
             try {
                 // If the function returns, that means it was interrupted
                 val result = runVpn()
@@ -111,6 +111,11 @@ class AdVpnThread(
                         loge("No active network found. Waiting.", e)
                         notify(VpnStatus.WAITING_FOR_NETWORK)
                         reloadOnInterrupt = true
+                    }
+
+                    is VpnException.NoUpstreamDnsServers -> {
+                        loge("No upstream DNS servers found.")
+                        reloadOnInterrupt = false
                     }
 
                     else -> {

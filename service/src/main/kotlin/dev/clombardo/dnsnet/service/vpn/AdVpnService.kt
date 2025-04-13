@@ -56,10 +56,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import uniffi.net.AdVpnCallback
 import uniffi.net.VpnConfigurationResult
+import uniffi.net.validateDnsServers
 import java.net.Inet4Address
 import java.net.Inet6Address
 import java.net.InetAddress
-import java.net.UnknownHostException
 
 enum class VpnStatus(val value: Int) {
     /**
@@ -573,8 +573,12 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         updateVpnStatus(VpnStatus.STARTING)
         vpnThread = AdVpnThread(
             adVpnService = this,
-            notify = { status -> notify(status.ordinal) },
-            blockLoggerCallback = NativeBlockLoggerWrapper(blockLogger),
+            notify = { status -> updateStatus(status.ordinal) },
+            blockLoggerCallback = if (configuration.read { blockLogging }) {
+                NativeBlockLoggerWrapper(blockLogger)
+            } else {
+                null
+            },
             ruleDatabaseManager = ruleDatabaseManager,
         )
     }
@@ -648,34 +652,6 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         ruleDatabaseManager.destroy()
     }
 
-    @Throws(UnknownHostException::class)
-    fun newDNSServer(
-        builder: VpnService.Builder,
-        upstreamDnsServers: ArrayList<String>,
-        format: String?,
-        ipv6Template: ByteArray?,
-        addr: InetAddress
-    ) {
-        // Optimally we'd allow either one, but the forwarder checks if upstream size is empty, so
-        // we really need to acquire both an ipv6 and an ipv4 subnet.
-        if (addr is Inet6Address && ipv6Template == null) {
-            logi("newDNSServer: Ignoring DNS server $addr")
-        } else if (addr is Inet4Address && format == null) {
-            logi("newDNSServer: Ignoring DNS server $addr")
-        } else if (addr is Inet4Address) {
-            upstreamDnsServers.add(addr.hostAddress!!)
-            val alias = String.format(format!!, upstreamDnsServers.size + 1)
-            logi("configure: Adding DNS Server $addr as $alias")
-            builder.addDnsServer(alias).addRoute(alias, 32)
-        } else if (addr is Inet6Address) {
-            upstreamDnsServers.add(addr.hostAddress!!)
-            ipv6Template!![ipv6Template.size - 1] = (upstreamDnsServers.size + 1).toByte()
-            val i6addr = Inet6Address.getByAddress(ipv6Template)
-            logi("configure: Adding DNS Server $addr as $i6addr")
-            builder.addDnsServer(i6addr)
-        }
-    }
-
     fun configurePackages(builder: VpnService.Builder) {
         val allowOnVpn: MutableSet<String> = HashSet()
         val doNotAllowOnVpn: MutableSet<String> = HashSet()
@@ -713,15 +689,46 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
     @Throws(NoNetworkException::class)
     override fun configure(): VpnConfigurationResult {
         logd("Configuring")
-
+        val unvalidatedDnsServers = mutableListOf<String>()
         // Get the current DNS servers before starting the VPN
-        val dnsServers = try {
-            getDnsServers(this)
+        val localDnsServers = try {
+            getDnsServers()
         } catch (e: NoNetworkException) {
             logd("configure: No network found", e)
             return VpnConfigurationResult.NoNetwork
         }
-        logi("Got DNS servers = $dnsServers")
+        logi("configure: Got local DNS servers = $localDnsServers")
+
+        // Add all known DNS servers from local network
+        val addLocalDnsServers = configuration.read {
+            val noConfigServersEnabled = this.dnsServers.items.none { it.enabled } || !this.dnsServers.enabled
+            if (this.dnsServers.type == DnsServerType.DoH3) {
+                noConfigServersEnabled
+            } else {
+                noConfigServersEnabled || useNetworkDnsServers
+            }
+        }
+        if (addLocalDnsServers) {
+            localDnsServers.forEach { unvalidatedDnsServers.add(it.hostAddress!!) }
+        }
+
+        configuration.read {
+            if (this.dnsServers.enabled) {
+                this.dnsServers.items.forEach {
+                    if (it.enabled && it.type == this.dnsServers.type) {
+                        unvalidatedDnsServers.addAll(it.getAddresses())
+                    }
+                }
+            }
+        }
+
+        logi("configure: Unvalidated DNS servers = $unvalidatedDnsServers")
+        val validatedDnsServers = validateDnsServers(unvalidatedDnsServers)
+        logi("configure: Validated DNS servers = ${validatedDnsServers.map { it.getAddress().contentToString() }}")
+
+        if (validatedDnsServers.isEmpty()) {
+            return VpnConfigurationResult.NoValidDnsServers
+        }
 
         // Configure a builder while parsing the parameters.
         val builder = Builder()
@@ -749,10 +756,15 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
 
         // Check if the local network has IPv6 DNS servers. If so, this implies that the network
         // supports IPv6 and we can add an IPv6 address to the builder.
-        if (hasIpV6Servers(dnsServers)) {
+        val ipv6Support = if (configuration.read { ipV6Support }) {
+            hasIpV6Servers(localDnsServers)
+        } else {
+            false
+        }
+        if (ipv6Support) {
             try {
                 val addr = Inet6Address.getByAddress(ipv6Template)
-                logd("configure: Adding IPv6 address$addr")
+                logd("configure: Adding IPv6 address $addr")
                 builder.addAddress(addr, 120)
             } catch (e: Exception) {
                 logd("configure: Failed to add ipv6 template", e)
@@ -768,53 +780,38 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         }
 
         /* Upstream DNS servers, indexed by our IP */
-        val upstreamDnsServers = ArrayList<String>()
-        if (configuration.read { this.dnsServers.enabled }) {
-            val configServers = configuration.read {
-                val type = if (this.dnsServers.doh3) DnsServerType.DoH3 else DnsServerType.Standard
-                this.dnsServers.items.filter { it.type == type }
-            }
-            for (item in configServers) {
-                if (item.enabled) {
-                    for (address in item.getAddresses()) {
-                        try {
-                            newDNSServer(
-                                builder,
-                                upstreamDnsServers,
-                                format,
-                                ipv6Template,
-                                InetAddress.getByName(address)
-                            )
-                        } catch (e: Exception) {
-                            loge("configure: Cannot add custom DNS server", e)
+        validatedDnsServers.forEachIndexed { index, server ->
+            try {
+                // Optimally we'd allow either one, but the forwarder checks if upstream size is empty, so
+                // we really need to acquire both an ipv6 and an ipv4 subnet.
+                val address = InetAddress.getByAddress(server.getAddress())
+                when (address) {
+                    is Inet4Address -> {
+                        if (format == null) {
+                            logi("configure: Ignoring DNS server $address")
+                        } else {
+                            val alias = String.format(format, index + 2)
+                            logi("configure: Adding DNS Server $address as $alias")
+                            builder.addDnsServer(alias).addRoute(alias, 32)
+                        }
+                    }
+
+                    is Inet6Address -> {
+                        if (ipv6Support) {
+                            if (ipv6Template == null) {
+                                logi("configure: Ignoring DNS server $address")
+                            } else {
+                                ipv6Template[ipv6Template.size - 1] = (index + 2).toByte()
+                                val i6addr = Inet6Address.getByAddress(ipv6Template)
+                                logi("configure: Adding DNS Server $server. as $i6addr")
+                                builder.addDnsServer(i6addr)
+                            }
                         }
                     }
                 }
+            } catch (e: Exception) {
+                loge("configure: Cannot add custom DNS server", e)
             }
-        }
-
-        // Add all known DNS servers from local network
-        val addLocalDnsServers = configuration.read {
-            val noConfigServersEnabled = this.dnsServers.items.none { it.enabled }
-            if (this.dnsServers.doh3) {
-                noConfigServersEnabled
-            } else {
-                !this.dnsServers.enabled || noConfigServersEnabled || useNetworkDnsServers
-            }
-        }
-        if (addLocalDnsServers) {
-            for (addr in dnsServers) {
-                try {
-                    newDNSServer(builder, upstreamDnsServers, format, ipv6Template, addr)
-                } catch (e: Exception) {
-                    loge("configure: Cannot add server:", e)
-                }
-            }
-        }
-
-        // This should never happen
-        if (upstreamDnsServers.isEmpty()) {
-            throw NoNetworkException("No DNS servers were added")
         }
 
         builder.setBlocking(true)
@@ -827,7 +824,6 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         builder.allowFamily(OsConstants.AF_INET)
             .allowFamily(OsConstants.AF_INET6)
 
-        // Set the VPN to unmetered
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             builder.setMetered(false)
         }
@@ -846,7 +842,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
             loge("configure: Got null descriptor from VpnService.Builder")
             VpnConfigurationResult.BuilderFailure
         } else {
-            VpnConfigurationResult.Success(pfd.detachFd(), upstreamDnsServers)
+            VpnConfigurationResult.Success(pfd.detachFd(), validatedDnsServers)
         }
     }
 
@@ -857,11 +853,11 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
      */
     @Suppress("DEPRECATION")
     @Throws(NoNetworkException::class)
-    private fun getDnsServers(context: Context): List<InetAddress> {
+    private fun getDnsServers(): List<InetAddress> {
         val known = HashSet<InetAddress>()
         val out = ArrayList<InetAddress>()
 
-        with(context.getSystemService(VpnService.CONNECTIVITY_SERVICE) as ConnectivityManager) {
+        with(getSystemService(ConnectivityManager::class.java)) {
             // Seriously, Android? Seriously?
             val activeInfo: NetworkInfo =
                 activeNetworkInfo ?: throw NoNetworkException("No active network")
@@ -887,11 +883,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         return out
     }
 
-    fun hasIpV6Servers(dnsServers: List<InetAddress>): Boolean {
-        if (!configuration.read { ipV6Support }) {
-            return false
-        }
-
+    fun hasIpV6Servers(localDnsServers: List<InetAddress>): Boolean {
         if (configuration.read { this.dnsServers.enabled }) {
             for (item in configuration.read { this.dnsServers.items }) {
                 if (item.enabled && item.addresses.contains(":")) {
@@ -900,7 +892,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
             }
         }
 
-        for (inetAddress in dnsServers) {
+        for (inetAddress in localDnsServers) {
             if (inetAddress is Inet6Address) {
                 return true
             }
@@ -921,21 +913,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         return protect(socketFd)
     }
 
-    override fun notify(nativeStatus: Int) {
+    override fun updateStatus(nativeStatus: Int) {
         handler.sendMessage(handler.obtainMessage(VPN_MSG_STATUS_UPDATE, nativeStatus, 0))
-    }
-
-    override fun sendDoh3ConfigurationErrorNotification() {
-        with(getSystemService(NotificationManager::class.java)) {
-            notify(
-                SERVICE_DOH_ERROR_NOTIFICATION_ID,
-                NotificationCompat.Builder(this@AdVpnService, NotificationChannels.ALERTS)
-                    .setContentTitle(getString(R.string.doh3_error_notification))
-                    .setContentText(getString(R.string.doh3_error_notification_description))
-                    .setSmallIcon(R.drawable.icon_full)
-                    .setContentIntent(getOpenMainActivityPendingIntent(this@AdVpnService))
-                    .build()
-            )
-        }
     }
 }

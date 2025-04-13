@@ -26,7 +26,6 @@ object NotificationChannels {
     const val SERVICE_PAUSED = "dev.clombardo.dnsnet.notifications.service.paused"
     const val GROUP_UPDATE = "dev.clombardo.dnsnet.notifications.update"
     const val UPDATE_STATUS = "dev.clombardo.dnsnet.notifications.update.status"
-    const val ALERTS = "dev.clombardo.dnsnet.notifications.alerts"
 
     fun onCreate(context: Context) {
         val notificationManager =
@@ -80,12 +79,5 @@ object NotificationChannels {
             setShowBadge(false)
         }
         notificationManager.createNotificationChannel(updateChannel)
-
-        val alertsChannel = NotificationChannel(
-            ALERTS,
-            context.getString(R.string.alerts),
-            NotificationManager.IMPORTANCE_HIGH
-        )
-        notificationManager.createNotificationChannel(alertsChannel)
     }
 }
