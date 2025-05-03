@@ -15,8 +15,7 @@ plugins {
 
     alias(libs.plugins.accrescent.bundletool) apply false
 
-    alias(libs.plugins.cash.licensee) apply false
-    alias(libs.plugins.usefulness.licensee) apply false
+    alias(libs.plugins.aboutLibraries) apply false
 
     alias(libs.plugins.arturbosch.detekt) apply false
 

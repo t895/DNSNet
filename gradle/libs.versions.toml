@@ -21,8 +21,6 @@ agp = "8.9.2"
 kotlin = "2.1.20"
 baselineprofile = "1.3.4"
 bundletool = "0.2.4"
-licensee = "1.12.0"
-licenseeForAndroid = "0.2.2"
 java = "17"
 minSdk = "24"
 minSdkBaselineProfile = "28"
@@ -44,6 +42,7 @@ ksp = "2.1.20-1.0.31"
 hiltWork = "1.2.0"
 hiltNavigationCompose = "1.2.0"
 playPublisher = "3.12.1"
+aboutLibraries = "12.1.0"
 
 [libraries]
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistPermissions" }
@@ -86,6 +85,8 @@ hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", v
 hilt-extensions-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.ref = "hiltExtensions" }
 androidx-hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "hiltWork" }
 androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
+aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref = "aboutLibraries" }
+aboutlibraries-compose-core = { module = "com.mikepenz:aboutlibraries-compose-core", version.ref = "aboutLibraries" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -98,8 +99,7 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 kotlinx-atomicfu = { id = "org.jetbrains.kotlinx.atomicfu", version.ref = "atomicfu" }
 androidx-baselineprofile = { id = "androidx.baselineprofile", version.ref = "baselineprofile" }
 accrescent-bundletool = { id = "app.accrescent.tools.bundletool", version.ref = "bundletool" }
-cash-licensee = { id = "app.cash.licensee", version.ref = "licensee" }
-usefulness-licensee = { id = "io.github.usefulness.licensee-for-android", version.ref = "licenseeForAndroid" }
+aboutLibraries = { id = "com.mikepenz.aboutlibraries.plugin", version.ref = "aboutLibraries" }
 arturbosch-detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 rust-android-gradle = { id = "org.mozilla.rust-android-gradle.rust-android", version.ref = "rustPlugin" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
