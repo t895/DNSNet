@@ -47,6 +47,7 @@ jobs:
         id: setup-ndk
         with:
           ndk-version: r28
+          link-to-sdk: true
 
       - name: Give execution permissions to the gradle wrapper
         run: chmod +x ./gradlew
