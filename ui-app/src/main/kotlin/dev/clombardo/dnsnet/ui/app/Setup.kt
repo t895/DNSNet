@@ -106,7 +106,7 @@ fun GreetingScreen(
                 .systemBarsPadding()
                 .fillMaxSize()
                 .sharedElement(
-                    state = rememberSharedContentState(key = Setup.KEY_BACKGROUND),
+                    sharedContentState = rememberSharedContentState(key = Setup.KEY_BACKGROUND),
                     animatedVisibilityScope = animatedVisibilityScope,
                 ),
             contentAlignment = Alignment.Center,
@@ -120,7 +120,7 @@ fun GreetingScreen(
                     Icon(
                         modifier = Modifier
                             .sharedElement(
-                                state = rememberSharedContentState(key = Setup.KEY_ICON),
+                                sharedContentState = rememberSharedContentState(key = Setup.KEY_ICON),
                                 animatedVisibilityScope = animatedVisibilityScope,
                             ),
                         painter = painterResource(R.drawable.icon_full),
@@ -167,7 +167,7 @@ fun GreetingScreen(
                             modifier = Modifier
                                 .size(160.dp)
                                 .sharedElement(
-                                    state = rememberSharedContentState(key = Setup.KEY_ICON),
+                                    sharedContentState = rememberSharedContentState(key = Setup.KEY_ICON),
                                     animatedVisibilityScope = animatedVisibilityScope,
                                 ),
                             painter = painterResource(R.drawable.icon_full),
@@ -329,7 +329,7 @@ fun NoticeScreen(
                 modifier = Modifier
                     .padding(16.dp)
                     .sharedElement(
-                        state = rememberSharedContentState(key = Setup.KEY_BACKGROUND),
+                        sharedContentState = rememberSharedContentState(key = Setup.KEY_BACKGROUND),
                         animatedVisibilityScope = animatedVisibilityScope,
                     )
             ) {
@@ -347,7 +347,7 @@ fun NoticeScreen(
                         modifier = Modifier
                             .size(48.dp)
                             .sharedElement(
-                                state = rememberSharedContentState(key = Setup.KEY_ICON),
+                                sharedContentState = rememberSharedContentState(key = Setup.KEY_ICON),
                                 animatedVisibilityScope = animatedVisibilityScope,
                             ),
                         painter = painterResource(R.drawable.icon_full),

@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,6 +31,8 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.core.net.toUri
+import com.mikepenz.aboutlibraries.entity.Library
+import com.mikepenz.aboutlibraries.ui.compose.rememberLibraries
 import dev.clombardo.dnsnet.ui.common.BasicTooltipButton
 import dev.clombardo.dnsnet.ui.common.ContentSetting
 import dev.clombardo.dnsnet.ui.common.ExpandableOptionsItem
@@ -41,8 +44,6 @@ import dev.clombardo.dnsnet.ui.common.rememberAtTop
 import dev.clombardo.dnsnet.ui.common.clickable
 import dev.clombardo.dnsnet.ui.common.theme.ListPadding
 import dev.clombardo.dnsnet.ui.common.tryOpenUri
-import io.github.usefulness.licensee.Artifact
-import io.github.usefulness.licensee.LicenseeForAndroid
 
 @Composable
 fun LicenseListItem(
@@ -76,7 +77,7 @@ fun LicenseListItem(
 
 @Composable
 fun CreditListItem(
-    credit: Artifact,
+    library: Library,
     modifier: Modifier = Modifier,
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
@@ -85,19 +86,12 @@ fun CreditListItem(
         expanded = expanded,
         clip = true,
         onExpandClick = { expanded = !expanded },
-        title = credit.name ?: "",
-        details = credit.groupId,
+        title = library.name,
+        details = library.artifactId,
     ) {
-        credit.spdxLicenses.forEach {
+        library.licenses.forEach {
             LicenseListItem(
                 title = it.name,
-                details = it.identifier,
-                licenseLink = it.url,
-            )
-        }
-        credit.unknownLicenses.forEach {
-            LicenseListItem(
-                title = it.name ?: "",
                 licenseLink = it.url ?: "",
             )
         }
@@ -110,6 +104,22 @@ fun CreditsScreen(
     modifier: Modifier = Modifier,
     onNavigateUp: () -> Unit,
 ) {
+    val resources = LocalContext.current.resources
+    val libs by rememberLibraries {
+        resources.openRawResource(R.raw.aboutlibraries).use {
+            it.bufferedReader().readText()
+        }
+    }
+    val librariesList by remember {
+        derivedStateOf {
+            if (libs == null) {
+                emptyList()
+            } else {
+                libs!!.libraries.distinctBy { it.artifactId }.distinctBy { it.name }
+            }
+        }
+    }
+
     val state = rememberLazyListState()
     InsetScaffold(
         modifier = modifier,
@@ -127,11 +137,6 @@ fun CreditsScreen(
             )
         }
     ) { contentPadding ->
-        val artifacts = remember {
-            LicenseeForAndroid.artifacts
-                .distinctBy { it.groupId }
-                .sortedBy { it.name }
-        }
         LazyColumn(
             state = state,
             contentPadding = contentPadding + PaddingValues(horizontal = ListPadding),
@@ -230,8 +235,10 @@ fun CreditsScreen(
                 )
             }
 
-            items(artifacts) {
-                CreditListItem(it)
+            if (libs != null) {
+                items(librariesList) {
+                    CreditListItem(it)
+                }
             }
         }
     }

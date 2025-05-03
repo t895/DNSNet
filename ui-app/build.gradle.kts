@@ -13,8 +13,7 @@ plugins {
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlinx.atomicfu)
-    alias(libs.plugins.cash.licensee)
-    alias(libs.plugins.usefulness.licensee)
+    alias(libs.plugins.aboutLibraries)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
 }
@@ -78,19 +77,17 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
     ksp(libs.hilt.compiler)
 
+    implementation(libs.aboutlibraries.core)
+    implementation(libs.aboutlibraries.compose.core)
+
     implementation(project(":ui-common"))
     implementation(project(":settings"))
     implementation(project(":log"))
     implementation(project(":blocklogger"))
 }
 
-licensee {
-    allow("Apache-2.0")
-    allowUrl("https://opensource.org/licenses/mit")
-    allowUrl("https://github.com/usefulness/licensee-for-android/blob/master/LICENSE") // MIT
-    allowUrl("https://github.com/aallam/string-similarity-kotlin/blob/main/LICENSE") // MIT
-}
-
-licenseeForAndroid {
-    enableKotlinCodeGeneration = true
+aboutLibraries {
+    export {
+        outputFile = File("src/main/res/raw/aboutlibraries.json")
+    }
 }
