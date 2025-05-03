@@ -78,6 +78,9 @@ You'll need a few things installed to get up and running
 - Java 17+
 - [Android Studio](https://developer.android.com/studio) (Optionally)
 
+Building on Windows is currently broken due to issues with compiling quiche, the crate I use for making HTTP/3 requests.
+Here's the related issue - https://github.com/cloudflare/quiche/issues/2020
+
 Add all of the Rust build targets
 ```bash
 rustup target add x86_64-linux-android i686-linux-android aarch64-linux-android armv7-linux-androideabi
