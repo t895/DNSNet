@@ -76,14 +76,16 @@ jobs:
             -e "s/\(val versionName by extra { \"\)[^\"]\+\(\"\s*}\)/\1${{inputs.tag_name}}\2/" \
             build.gradle.kts
 
-      - name: Commit baseline profile update
+      - name: Commit version update
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: Bump version to ${{inputs.tag_name}}
           push_options: --force-with-lease
           file_pattern: 'build.gradle.kts'
 
-      - uses: actions-ecosystem/action-push-tag@v1
+      - name: Push new tag
+        uses: rickstaa/action-create-tag@v1
+        id: "tag_create"
         with:
           tag: ${{ inputs.tag_name }}
 
