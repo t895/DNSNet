@@ -199,6 +199,6 @@
     <string name="oisd_small_description">Меньшая версия списка которая легче для системной памяти.</string>
     <string name="oisd_big_description">Полный список, который займет значительный объем системной памяти. Если вы не знаете что это значит, выберите маленький список вместо этого.</string>
     <string name="doh3">DNS через HTTP/3</string>
-    <string name="doh3_description">Безопасно отправлять ваши DNS-запросы. использует URL-адреса «https://example.com/dns-query».</string>
+    <string name="doh3_description">Безопасная отправка DNS-запросов. Использует URL-адреса как \"https://example.com/dns-query\".</string>
     <string name="doh3_warning">По крайней мере один сервер должен быть выбран</string>
 </resources>
