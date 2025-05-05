@@ -198,4 +198,5 @@
     <string name="oisd_big">oisd - большой</string>
     <string name="oisd_small_description">Меньшая версия списка которая легче для системной памяти.</string>
     <string name="oisd_big_description">Полный список, который займет значительный объем системной памяти. Если вы не знаете что это значит, выберите маленький список вместо этого.</string>
+    <string name="doh3">DNS через HTTP/3</string>
 </resources>
