@@ -59,7 +59,7 @@
     <string name="update_incomplete_description">Beberapa berkas host tidak dapat diunduh. Jika file sebelumnya telah diunduh, versi lama akan terus digunakan.</string>
     <string name="updating_hostfiles">Memperbarui berkas host</string>
     <string name="action_use_file">Gunakan berkas</string>
-    <string name="persistable_uri_permission_failed">Tidak dapat menggunakan berkas yang diminta: Tidak diizinkan untuk terus menggunakan berkas yang diminta</string>
+    <string name="persistable_uri_permission_failed">Tidak dapat menggunakan berkas yang diminta: Tidak diizinkan untuk tetap menggunakan berkas yang diminta</string>
     <string name="updating_n_host_files">Memperbarui %1$d berkas host</string>
     <string name="could_not_update_all_hosts">Tidak dapat memperbarui semua berkas host</string>
     <string name="permission_denied">Izin ditolak</string>
@@ -203,4 +203,7 @@
     <string name="button_continue">Lanjutkan</string>
     <string name="use_dns_servers_from_active_network">Gunakan server dari jaringan yang aktif</string>
     <string name="use_dns_servers_from_active_network_description">Menerapkan server dari jaringan yang Anda sambungkan selain server Anda sendiri</string>
+    <string name="doh3_description">Mengirimkan permintaan DNS Anda dengan aman. Menggunakan URL \"https://example.com/dns-query\" .</string>
+    <string name="doh3">DNS melalui HTTP/3</string>
+    <string name="doh3_warning">Setidaknya satu server harus dipilih</string>
 </resources>
