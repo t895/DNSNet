@@ -1258,22 +1258,6 @@ impl DnsBackend for DoH3Backend {
                 continue 'main;
             }
 
-            if let Some(session) = &connection.active_session {
-                if session.client_connection.is_closed() {
-                    info!(
-                        "process_events: Client connection closed. Ending session for server - {}",
-                        connection.server.domain_name
-                    );
-                    connection.end_session(&mut sources_to_remove);
-                    continue 'main;
-                }
-            } else {
-                warn!(
-                    "process_events: No active session found for {server_name} when attempting to check if the client connection was closed"
-                );
-                continue 'main;
-            }
-
             // Create a new HTTP/3 connection once the QUIC connection is established.
             if let Some(session) = &mut connection.active_session {
                 if session.client_connection.is_established() && session.http3_connection.is_none()
