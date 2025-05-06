@@ -30,7 +30,7 @@ cargo {
     module = libnet
     libname = "net"
 
-    targets = listOf("arm64", "arm", "x86", "x86_64")
+    targets = listOf("arm64", "arm", "x86_64")
 
     pythonCommand = "python3"
 
@@ -96,7 +96,7 @@ android {
         consumerProguardFiles("consumer-rules.pro")
 
         ndk {
-            abiFilters += listOf("x86_64", "x86", "arm64-v8a", "armeabi-v7a")
+            abiFilters += listOf("x86_64", "arm64-v8a", "armeabi-v7a")
         }
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
