@@ -7,7 +7,7 @@ use std::{
     str,
     sync::{Arc, RwLock, atomic::AtomicBool},
     thread,
-    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
+    time::{Duration, SystemTime, UNIX_EPOCH},
     usize,
 };
 
@@ -1186,10 +1186,6 @@ impl DnsBackend for DoH3Backend {
 
             // Read incoming packets until there is nothing more to read
             if let Some(session) = &mut connection.active_session {
-                debug!(
-                    "process_events: Beginning read/write loop for session - {}",
-                    connection.server.domain_name
-                );
                 'read: loop {
                     // If the event loop reported no events, it means that the timeout
                     // has expired, so handle it without attempting to read packets. We
@@ -1223,27 +1219,19 @@ impl DnsBackend for DoH3Backend {
                         continue 'main;
                     };
 
-                    debug!("process_events: Got {} bytes", len);
-
                     let recv_info = quiche::RecvInfo {
                         to: session.local_address,
                         from: connection.server.resolved_address,
                     };
 
                     // Process potentially coalesced packets.
-                    let read = match session
+                    if let Err(error) = session
                         .client_connection
                         .recv(&mut self.input_buffer[..len], recv_info)
                     {
-                        Ok(value) => value,
-
-                        Err(error) => {
-                            error!("process_events: recv failed: {:?}", error);
-                            continue 'read;
-                        }
-                    };
-
-                    debug!("process_events: Processed {} bytes", read);
+                        error!("process_events: recv failed: {:?}", error);
+                        continue 'read;
+                    }
                 }
             } else {
                 warn!(
@@ -1251,8 +1239,6 @@ impl DnsBackend for DoH3Backend {
                 );
                 continue 'main;
             }
-
-            debug!("process_events: Done reading");
 
             if let Some(session) = &connection.active_session {
                 if session.client_connection.is_closed() {
@@ -1409,11 +1395,6 @@ impl DnsBackend for DoH3Backend {
 
             if let Some(session) = &mut connection.active_session {
                 if let Some(http3_connection) = &mut session.http3_connection {
-                    debug!(
-                        "process_events: Starting process loop for server - {}",
-                        connection.server.domain_name
-                    );
-
                     // Process HTTP/3 events.
                     'process: loop {
                         match http3_connection.poll(&mut session.client_connection) {
@@ -1515,7 +1496,7 @@ impl DnsBackend for DoH3Backend {
                             Ok(v) => v,
 
                             Err(quiche::Error::Done) => {
-                                debug!("process_events: Done writing");
+                                trace!("process_events: Done writing");
                                 break 'write;
                             }
 
@@ -1526,7 +1507,8 @@ impl DnsBackend for DoH3Backend {
                             }
                         };
 
-                    debug!("process_events: {} bytes to write", write);
+                    debug!("process_events: Sending packet - {:?}", send_info);
+
                     if let Some(socket) = &session.socket {
                         if let Err(error) =
                             socket.send_to(&self.output_buffer[..write], send_info.to)
@@ -1541,8 +1523,6 @@ impl DnsBackend for DoH3Backend {
                             continue 'main;
                         }
                     }
-
-                    debug!("process_events: written {}", write);
                 }
             } else {
                 warn!(
