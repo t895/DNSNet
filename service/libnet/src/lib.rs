@@ -952,6 +952,7 @@ impl DoH3ServerConnectionContainer {
             }
         }
         self.sent_request_streams.clear();
+        self.request_queue.clear();
     }
 }
 
