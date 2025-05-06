@@ -1,14 +1,5 @@
 use std::{
-    collections::{HashMap, VecDeque},
-    fs::File,
-    io::{self, BufRead, Read, Write},
-    net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6},
-    os::fd::{AsRawFd, FromRawFd},
-    str,
-    sync::{Arc, RwLock, atomic::AtomicBool},
-    thread,
-    time::{Duration, SystemTime, UNIX_EPOCH},
-    usize,
+    collections::{HashMap, VecDeque}, fs::File, io::{self, BufRead, Read, Write}, net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6}, os::fd::{AsRawFd, FromRawFd}, str, sync::{atomic::AtomicBool, Arc, RwLock}, thread, time::{Duration, Instant, SystemTime, UNIX_EPOCH}, u64, usize
 };
 
 use android_logger::Config;
@@ -20,7 +11,7 @@ use etherparse::{
 use log::LevelFilter;
 use mio::{Events, Interest, Poll, Token, net::UdpSocket};
 use mio::{event::Source, unix::SourceFd};
-use quiche::h3::{Header, NameValue};
+use quiche::{h3::{Header, NameValue}, SendInfo};
 use simple_dns::{Name, PacketFlag, ResourceRecord, rdata::RData};
 
 #[macro_use]
@@ -789,12 +780,18 @@ struct DoH3ServerSession {
     http3_connection: Option<quiche::h3::Connection>,
 }
 
+struct QueuedDoH3Packet {
+    send_info: SendInfo,
+    buffer: Vec<u8>,
+}
+
 struct DoH3ServerConnectionContainer {
     server: DoH3Server,
     config: quiche::Config,
     h3_config: quiche::h3::Config,
     active_session: Option<DoH3ServerSession>,
     request_queue: VecDeque<DoH3Request>,
+    queued_packets: Vec<QueuedDoH3Packet>,
     sent_request_streams: HashMap<u64, DoH3Request>,
     token: Token,
 }
@@ -840,6 +837,7 @@ impl DoH3ServerConnectionContainer {
             active_session: None,
             h3_config,
             request_queue: VecDeque::new(),
+            queued_packets: Vec::new(),
             sent_request_streams: HashMap::new(),
             token,
         });
@@ -958,8 +956,9 @@ impl DoH3ServerConnectionContainer {
                 );
             }
         }
-        self.sent_request_streams.clear();
         self.request_queue.clear();
+        self.queued_packets.clear();
+        self.sent_request_streams.clear();
     }
 }
 
@@ -1072,16 +1071,33 @@ impl DnsBackend for DoH3Backend {
     fn get_poll_timeout(&self) -> Option<Duration> {
         let mut timeout: Option<Duration> = None;
         for (_, connection) in &self.connections {
-            // if let chains save meeeeeee
             if let Some(session) = &connection.active_session {
-                if let Some(client_timeout) = session.client_connection.timeout() {
-                    if !client_timeout.is_zero() {
-                        if let Some(existing_timeout) = timeout {
-                            if client_timeout < existing_timeout {
-                                timeout = Some(client_timeout);
+                for request in connection.queued_packets.iter() {
+                    match Instant::now().checked_duration_since(request.send_info.at) {
+                        Some(duration) => {
+                            if let Some(existing_timeout) = timeout {
+                                timeout = Some(duration.min(existing_timeout));
+                            } else {
+                                timeout = Some(duration);
+                            }
+                        }
+
+                        None => return None,
+                    }
+                }
+
+                match session.client_connection.timeout() {
+                    Some(duration) => {
+                        if !duration.is_zero() {
+                            if let Some(existing_timeout) = timeout {
+                                timeout = Some(duration.min(existing_timeout));
+                            } else {
+                                timeout = Some(duration);
                             }
                         }
                     }
+
+                    None => return None,
                 }
             }
         }
@@ -1185,9 +1201,10 @@ impl DnsBackend for DoH3Backend {
                     }
                 });
             trace!(
-                "{} has {} requests in queue and {} active requests",
+                "{} has {} requests in queue, {} packets in queue, and {} active requests",
                 connection.server.domain_name,
                 connection.request_queue.len(),
+                connection.queued_packets.len(),
                 connection.sent_request_streams.len()
             );
 
@@ -1300,7 +1317,7 @@ impl DnsBackend for DoH3Backend {
                             true,
                         ) {
                             Ok(stream_id) => {
-                                info!("process_events: Sent request on stream id {}", stream_id);
+                                debug!("process_events: Sent request on stream id {}", stream_id);
                                 connection.sent_request_streams.insert(stream_id, request);
                             }
 
@@ -1497,6 +1514,34 @@ impl DnsBackend for DoH3Backend {
             // Generate outgoing QUIC packets and send them on the UDP socket, until
             // quiche reports that there are no more packets to be sent.
             if let Some(session) = &mut connection.active_session {
+                connection.queued_packets.retain(|packet| {
+                    if let Some(duration) = packet.send_info.at.checked_duration_since(Instant::now()) {
+                        trace!("process_events: Must wait an additional {}ms before sending", duration.as_millis());
+                        return true;
+                    }
+
+                    if packet.send_info.at.elapsed().as_secs() > Self::STREAM_TIMEOUT_SECONDS {
+                        trace!("process_events: Dropping queued packet due to timeout");
+                        return false;
+                    }
+
+                    if let Some(socket) = &session.socket {
+                        if let Err(error) =
+                            socket.send_to(&packet.buffer, packet.send_info.to)
+                        {
+                            if error.kind() == std::io::ErrorKind::WouldBlock {
+                                debug!("process_events: send() would block");
+                                return true;
+                            }
+
+                            error!("process_events: send() on waiting packet failed: {:?}", error);
+                        }
+                    }
+
+                    trace!("process_events: Dropping queued packet due to send failure");
+                    return false;
+                });
+
                 'write: loop {
                     let (write, send_info) =
                         match session.client_connection.send(&mut self.output_buffer) {
@@ -1514,6 +1559,11 @@ impl DnsBackend for DoH3Backend {
                             }
                         };
 
+                    if let Some(duration) = send_info.at.checked_duration_since(Instant::now()) {
+                        trace!("process_events: Waiting for {}ms before sending packet", duration.as_millis());
+                        connection.queued_packets.push(QueuedDoH3Packet { send_info, buffer: self.output_buffer[..write].to_vec() });
+                        continue 'write;
+                    }
                     debug!("process_events: Sending packet - {:?}", send_info);
 
                     if let Some(socket) = &session.socket {
@@ -1721,10 +1771,8 @@ impl AdVpn {
         }
 
         let backend_sources = backend.register_sources(poll);
-        debug!("do_one: Polling {} sources(s)", backend_sources + 2);
-        if let Some(timeout) = backend.get_poll_timeout() {
-            info!("do_one: Waiting for timeout of - {:?}", timeout);
-        }
+        let timeout = backend.get_poll_timeout();
+        debug!("do_one: Polling {} sources(s) with timeout {:?}", backend_sources + 2, timeout);
         if let Err(error) = poll.poll(events, backend.get_poll_timeout()) {
             if error.kind() != io::ErrorKind::Interrupted {
                 error!("do_one: Got error when polling sockets! - {:?}", error);
