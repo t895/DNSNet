@@ -1448,7 +1448,7 @@ impl DnsBackend for DoH3Backend {
                                         continue 'process;
                                     }
                                 };
-                                info!(
+                                debug!(
                                     "process_events: Response received for stream {stream_id} in {:?}",
                                     request.creation_time.elapsed()
                                 );
