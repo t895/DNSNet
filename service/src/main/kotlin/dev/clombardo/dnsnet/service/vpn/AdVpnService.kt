@@ -724,10 +724,10 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
 
         logi("configure: Unvalidated DNS servers = $unvalidatedDnsServers")
         val validatedDnsServers = validateDnsServers(unvalidatedDnsServers)
-        logi("configure: Validated DNS servers = ${validatedDnsServers.map { it.getAddress().contentToString() }}")
+        logi("configure: Valid DNS servers = ${validatedDnsServers.map { it.getAddress().contentToString() }}")
 
-        if (validatedDnsServers.isEmpty()) {
-            return VpnConfigurationResult.NoValidDnsServers
+        if (validatedDnsServers.size != unvalidatedDnsServers.size) {
+            return VpnConfigurationResult.InvalidDnsServer
         }
 
         // Configure a builder while parsing the parameters.

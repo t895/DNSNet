@@ -489,8 +489,8 @@ pub enum VpnError {
     #[error("Failed to create the tunnel file descriptor")]
     ConfigurationFailure,
 
-    #[error("No valid DNS servers provided")]
-    NoUpstreamDnsServers,
+    #[error("At least one invalid DNS server provided")]
+    InvalidDnsServer,
 }
 
 #[derive(uniffi::Enum)]
@@ -501,8 +501,8 @@ pub enum VpnConfigurationResult {
     // The Android VpnService builder returned a null file descriptor and we should restart
     BuilderFailure,
 
-    // None of the user's DNS servers were valid
-    NoValidDnsServers,
+    // At least one of the user's DNS servers were invalid
+    InvalidDnsServer,
 
     // The VpnService was established correctly with a valid file descriptor
     Success(i32, Vec<Arc<NativeDnsServer>>),
@@ -1557,9 +1557,9 @@ impl AdVpn {
                 error!("run: Failed to configure VPN");
                 return Result::Err(VpnError::ConfigurationFailure);
             }
-            VpnConfigurationResult::NoValidDnsServers => {
+            VpnConfigurationResult::InvalidDnsServer => {
                 error!("run: No valid DNS servers found");
-                return Result::Err(VpnError::NoUpstreamDnsServers);
+                return Result::Err(VpnError::InvalidDnsServer);
             },
             VpnConfigurationResult::Success(fd, servers) => (fd, servers),
         };

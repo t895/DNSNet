@@ -106,22 +106,21 @@ class AdVpnThread(
                     }
                 }
             } catch (e: VpnException) {
+                reloadOnInterrupt = true
                 when (e) {
                     is VpnException.NoNetwork -> {
                         loge("No active network found. Waiting.", e)
                         notify(VpnStatus.WAITING_FOR_NETWORK)
-                        reloadOnInterrupt = true
                     }
 
-                    is VpnException.NoUpstreamDnsServers -> {
-                        loge("No upstream DNS servers found.")
-                        reloadOnInterrupt = false
+                    is VpnException.InvalidDnsServer -> {
+                        loge("At least one upstream DNS servers was invalid.", e)
+                        notify(VpnStatus.RECONNECTING)
                     }
 
                     else -> {
                         loge("Got internal VPN exception", e)
                         notify(VpnStatus.RECONNECTING)
-                        reloadOnInterrupt = true
                     }
                 }
             }
