@@ -975,7 +975,7 @@ struct DoH3Backend {
 }
 
 impl DoH3Backend {
-    const STREAM_TIMEOUT_SECONDS: u64 = 5;
+    const STREAM_TIMEOUT_SECONDS: u64 = 10;
 
     const INPUT_BUFFER_SIZE: usize = u16::MAX as usize;
     const OUTPUT_BUFFER_SIZE: usize = 1350;
