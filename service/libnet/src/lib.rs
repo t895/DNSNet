@@ -588,17 +588,24 @@ impl DnsBackend for StandardDnsBackend {
     fn register_sources(&mut self, poll: &mut Poll) -> usize {
         let mut waiting_sockets = 0;
         self.wosp_list.list.retain_mut(|wosp| {
+            if wosp.socket_registered {
+                waiting_sockets += 1;
+                return true;
+            }
+
             match poll.registry().register(
                 &mut wosp.socket,
                 Token(wosp.creation_time as usize),
                 Interest::READABLE,
             ) {
                 Ok(_) => {
+                    wosp.socket_registered = true;
                     waiting_sockets += 1;
                     true
                 }
                 Err(error) => {
                     if error.kind() == std::io::ErrorKind::AlreadyExists {
+                        wosp.socket_registered = true;
                         waiting_sockets += 1;
                         true
                     } else {
@@ -1840,6 +1847,7 @@ impl AdVpn {
 #[derive(Debug)]
 struct WaitingOnSocketPacket {
     socket: UdpSocket,
+    socket_registered: bool,
     packet: Vec<u8>,
     creation_time: u128,
 }
@@ -1848,6 +1856,7 @@ impl WaitingOnSocketPacket {
     fn new(socket: UdpSocket, packet: Vec<u8>) -> Self {
         Self {
             socket,
+            socket_registered: false,
             packet,
             creation_time: get_epoch_millis(),
         }
