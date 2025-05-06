@@ -842,99 +842,93 @@ impl DoH3ServerConnectionContainer {
         android_vpn_service: &Box<dyn AdVpnCallback>,
         output_buffer: &mut [u8],
     ) -> Result<(), DnsBackendError> {
-        match self.active_session {
-            Some(_) => warn!(
-                "start_session: Session already started for {}",
+        if let None = self.active_session {
+            info!(
+                "forward_packet: Starting new session for {}",
                 self.server.domain_name
-            ),
-            None => {
-                info!(
-                    "forward_packet: Starting new session for {}",
-                    self.server.domain_name
-                );
-                let socket = match UdpSocket::bind(bind_address) {
-                    Ok(value) => value,
-                    Err(error) => {
-                        error!("forward_packet: Failed to create socket! - {:?}", error);
-                        return Err(DnsBackendError::SocketFailure);
-                    }
-                };
-
-                if !android_vpn_service.protect_raw_socket_fd(socket.as_raw_fd()) {
-                    error!("forward_packet: Failed to protect socket fd!");
+            );
+            let socket = match UdpSocket::bind(bind_address) {
+                Ok(value) => value,
+                Err(error) => {
+                    error!("forward_packet: Failed to create socket! - {:?}", error);
                     return Err(DnsBackendError::SocketFailure);
                 }
+            };
 
-                let server_name = Some(self.server.domain_name.as_str());
+            if !android_vpn_service.protect_raw_socket_fd(socket.as_raw_fd()) {
+                error!("forward_packet: Failed to protect socket fd!");
+                return Err(DnsBackendError::SocketFailure);
+            }
 
-                // Generate a random source connection ID for the connection.
-                let mut scid = [0; quiche::MAX_CONN_ID_LEN];
-                if let Err(error) = getrandom::fill(&mut scid) {
+            let server_name = Some(self.server.domain_name.as_str());
+
+            // Generate a random source connection ID for the connection.
+            let mut scid = [0; quiche::MAX_CONN_ID_LEN];
+            if let Err(error) = getrandom::fill(&mut scid) {
+                error!(
+                    "forward_packet: Failed to generate random connection ID! - {:?}",
+                    error
+                );
+                return Err(DnsBackendError::RandomGenerationFailure);
+            }
+            let scid = quiche::ConnectionId::from_ref(&scid);
+
+            let local_address = match socket.local_addr() {
+                Ok(value) => value,
+                Err(error) => {
+                    error!("forward_packet: Failed to get local address! - {:?}", error);
+                    return Err(DnsBackendError::InvalidAddress);
+                }
+            };
+
+            let mut client_connection = match quiche::connect(
+                server_name,
+                &scid,
+                local_address,
+                self.server.resolved_address,
+                &mut self.config,
+            ) {
+                Ok(value) => value,
+                Err(error) => {
                     error!(
-                        "forward_packet: Failed to generate random connection ID! - {:?}",
+                        "forward_packet: Failed to create quiche connection! - {:?}",
                         error
                     );
-                    return Err(DnsBackendError::RandomGenerationFailure);
-                }
-                let scid = quiche::ConnectionId::from_ref(&scid);
-
-                let local_address = match socket.local_addr() {
-                    Ok(value) => value,
-                    Err(error) => {
-                        error!("forward_packet: Failed to get local address! - {:?}", error);
-                        return Err(DnsBackendError::InvalidAddress);
-                    }
-                };
-
-                let mut client_connection = match quiche::connect(
-                    server_name,
-                    &scid,
-                    local_address,
-                    self.server.resolved_address,
-                    &mut self.config,
-                ) {
-                    Ok(value) => value,
-                    Err(error) => {
-                        error!(
-                            "forward_packet: Failed to create quiche connection! - {:?}",
-                            error
-                        );
-                        return Err(DnsBackendError::SocketFailure);
-                    }
-                };
-
-                debug!(
-                    "forward_packet: Connecting to {:?} from {:} with scid {}",
-                    self.server.resolved_address,
-                    local_address,
-                    hex_dump(&scid),
-                );
-
-                let (write, send_info) = match client_connection.send(output_buffer) {
-                    Ok(value) => value,
-                    Err(error) => {
-                        error!("forward_packet: Failed to write handshake! - {:?}", error);
-                        return Err(DnsBackendError::SocketFailure);
-                    }
-                };
-
-                while let Err(error) = socket.send_to(&output_buffer[..write], send_info.to) {
-                    if error.kind() == std::io::ErrorKind::WouldBlock {
-                        debug!("forward_packet: send() would block");
-                        continue;
-                    }
-
-                    error!("forward_packet: Failed to send handshake! - {:?}", error);
                     return Err(DnsBackendError::SocketFailure);
                 }
+            };
 
-                self.active_session = Some(DoH3ServerSession {
-                    socket: Some(socket),
-                    client_connection,
-                    local_address,
-                    http3_connection: None,
-                });
+            debug!(
+                "forward_packet: Connecting to {:?} from {:} with scid {}",
+                self.server.resolved_address,
+                local_address,
+                hex_dump(&scid),
+            );
+
+            let (write, send_info) = match client_connection.send(output_buffer) {
+                Ok(value) => value,
+                Err(error) => {
+                    error!("forward_packet: Failed to write handshake! - {:?}", error);
+                    return Err(DnsBackendError::SocketFailure);
+                }
+            };
+
+            while let Err(error) = socket.send_to(&output_buffer[..write], send_info.to) {
+                if error.kind() == std::io::ErrorKind::WouldBlock {
+                    debug!("forward_packet: send() would block");
+                    continue;
+                }
+
+                error!("forward_packet: Failed to send handshake! - {:?}", error);
+                return Err(DnsBackendError::SocketFailure);
             }
+
+            self.active_session = Some(DoH3ServerSession {
+                socket: Some(socket),
+                client_connection,
+                local_address,
+                http3_connection: None,
+            });
         }
         return Ok(());
     }
