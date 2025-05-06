@@ -812,7 +812,7 @@ impl DoH3ServerConnectionContainer {
             return Err(DoH3BackendError::ConfigurationFailure);
         }
 
-        config.set_max_idle_timeout(5000);
+        config.set_max_idle_timeout(DoH3Backend::CONNECTION_TIMEOUT_SECONDS * 1000);
         config.set_max_send_udp_payload_size(DoH3Backend::OUTPUT_BUFFER_SIZE);
         config.set_max_recv_udp_payload_size(DoH3Backend::OUTPUT_BUFFER_SIZE);
         config.set_initial_max_streams_bidi(100);
@@ -982,7 +982,9 @@ struct DoH3Backend {
 }
 
 impl DoH3Backend {
-    const STREAM_TIMEOUT_SECONDS: u64 = 10;
+    const CONNECTION_TIMEOUT_SECONDS: u64 = 10;
+    const ACTIVE_REQUEST_TIMEOUT_SECONDS: u64 = 10;
+    const PENDING_PACKET_TIMEOUT_SECONDS: u64 = 10;
 
     const INPUT_BUFFER_SIZE: usize = u16::MAX as usize;
     const OUTPUT_BUFFER_SIZE: usize = 1350;
@@ -1183,7 +1185,7 @@ impl DnsBackend for DoH3Backend {
             connection
                 .sent_request_streams
                 .retain(|stream_id, request| {
-                    if request.creation_time.elapsed().as_secs() > Self::STREAM_TIMEOUT_SECONDS {
+                    if request.creation_time.elapsed().as_secs() > Self::ACTIVE_REQUEST_TIMEOUT_SECONDS {
                         debug!("process_event: Stream id {} timed out", stream_id);
                         false
                     } else {
@@ -1206,7 +1208,7 @@ impl DnsBackend for DoH3Backend {
                     // will then proceed with the send loop.
                     if let Some(timeout) = session.client_connection.timeout() {
                         if timeout.is_zero() {
-                            debug!("process_event: Connection timed out, closing...");
+                            debug!("process_event: Connection to {} timed out, closing...", connection.server.domain_name);
                             session.client_connection.on_timeout();
                             break 'read;
                         }
@@ -1512,7 +1514,7 @@ impl DnsBackend for DoH3Backend {
                         return true;
                     }
 
-                    if packet.send_info.at.elapsed().as_secs() > Self::STREAM_TIMEOUT_SECONDS {
+                    if packet.send_info.at.elapsed().as_secs() > Self::PENDING_PACKET_TIMEOUT_SECONDS {
                         trace!("process_events: Dropping queued packet due to timeout");
                         return false;
                     }
