@@ -1277,7 +1277,7 @@ impl DnsBackend for DoH3Backend {
             // all requests have been sent.
             if let Some(session) = &mut connection.active_session {
                 if let Some(http3_connection) = &mut session.http3_connection {
-                    while let Some(request) = connection.request_queue.pop_front() {
+                    'send: while let Some(request) = connection.request_queue.pop_front() {
                         match http3_connection.send_request(
                             &mut session.client_connection,
                             &request.payload,
@@ -1322,6 +1322,7 @@ impl DnsBackend for DoH3Backend {
                                             quiche::Error::StreamLimit => {
                                                 warn!("process_events: Hit stream limit!");
                                                 connection.request_queue.push_front(request);
+                                                break 'send;
                                             },
                                             quiche::Error::KeyUpdate => {
                                                 error!("process_events: Failed to update cryptographic key!");
@@ -1334,6 +1335,7 @@ impl DnsBackend for DoH3Backend {
                                     quiche::h3::Error::StreamBlocked => {
                                         trace!("process_events: QUIC connection does not have the capacity for this request. Try again later.");
                                         connection.request_queue.push_front(request);
+                                        break 'send;
                                     },
                                     quiche::h3::Error::RequestRejected => warn!("process_events: Server rejected request!"),
                                     _ => error!("process_events: Request send failed: {:?}", error),
