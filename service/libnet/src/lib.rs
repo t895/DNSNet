@@ -7,7 +7,7 @@ use std::{
     str,
     sync::{Arc, RwLock, atomic::AtomicBool},
     thread,
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
     usize,
 };
 
@@ -1107,7 +1107,7 @@ impl DnsBackend for DoH3Backend {
                     session.socket_registered = true;
                 }
             }
-        };
+        }
         return registered_sources;
     }
 
@@ -1141,7 +1141,11 @@ impl DnsBackend for DoH3Backend {
             }
         };
 
-        connection.start_session(self.unspecified_bind_address, android_vpn_service, &mut self.output_buffer)?;
+        connection.start_session(
+            self.unspecified_bind_address,
+            android_vpn_service,
+            &mut self.output_buffer,
+        )?;
 
         connection.request_queue.push_back(DoH3Request::new(
             &connection.server.domain_name,
@@ -1163,19 +1167,26 @@ impl DnsBackend for DoH3Backend {
                 continue;
             }
 
-            connection.sent_request_streams.retain(|stream_id, request| {
-                if request.creation_time.elapsed().as_secs() > Self::STREAM_TIMEOUT_SECONDS {
-                    debug!("process_event: Stream id {} timed out", stream_id);
-                    false
-                } else {
-                    true
-                }
-            });
-            trace!("{} has {} requests in queue and {} active requests", connection.server.domain_name, connection.request_queue.len(), connection.sent_request_streams.len());
+            connection
+                .sent_request_streams
+                .retain(|stream_id, request| {
+                    if request.creation_time.elapsed().as_secs() > Self::STREAM_TIMEOUT_SECONDS {
+                        debug!("process_event: Stream id {} timed out", stream_id);
+                        false
+                    } else {
+                        true
+                    }
+                });
+            trace!(
+                "{} has {} requests in queue and {} active requests",
+                connection.server.domain_name,
+                connection.request_queue.len(),
+                connection.sent_request_streams.len()
+            );
 
             // Read incoming packets until there is nothing more to read
             if let Some(session) = &mut connection.active_session {
-                info!(
+                debug!(
                     "process_events: Beginning read/write loop for session - {}",
                     connection.server.domain_name
                 );
@@ -1297,76 +1308,92 @@ impl DnsBackend for DoH3Backend {
                         ) {
                             Ok(stream_id) => {
                                 info!("process_events: Sent request on stream id {}", stream_id);
-                                connection
-                                    .sent_request_streams
-                                    .insert(stream_id, request);
+                                connection.sent_request_streams.insert(stream_id, request);
                             }
 
                             Err(error) => {
                                 match error {
-                                    quiche::h3::Error::Done => trace!("process_events: HTTP/3 connection (send) reported \"Done\""),
+                                    quiche::h3::Error::Done => trace!(
+                                        "process_events: HTTP/3 connection (send) reported \"Done\""
+                                    ),
                                     quiche::h3::Error::InternalError => {
-                                        error!("process_events: Detected internal error in HTTP/3 stack!");
+                                        error!(
+                                            "process_events: Detected internal error in HTTP/3 stack!"
+                                        );
                                         connection.end_session(&mut sources_to_remove);
                                         continue 'main;
-                                    },
+                                    }
                                     quiche::h3::Error::ExcessiveLoad => {
                                         warn!("process_events: Detected excessive load from peer!");
                                         connection.request_queue.push_front(request);
                                         break 'send;
-                                    },
+                                    }
                                     quiche::h3::Error::IdError => {
                                         error!("process_events: Used bad ID!");
                                         connection.request_queue.push_front(request);
                                         break 'send;
-                                    },
+                                    }
                                     quiche::h3::Error::StreamCreationError => {
                                         warn!("process_events: Failed to create stream");
                                         connection.request_queue.push_front(request);
                                         break 'send;
-                                    },
+                                    }
                                     quiche::h3::Error::ClosedCriticalStream => {
-                                        error!("process_events: Closed a stream that was critical for the connection!");
+                                        error!(
+                                            "process_events: Closed a stream that was critical for the connection!"
+                                        );
                                         connection.end_session(&mut sources_to_remove);
                                         continue 'main;
-                                    },
+                                    }
                                     quiche::h3::Error::FrameUnexpected => {
                                         error!("process_events: Told to GOAWAY 😔");
                                         connection.end_session(&mut sources_to_remove);
                                         continue 'main;
-                                    },
+                                    }
                                     quiche::h3::Error::TransportError(error) => {
                                         match error {
                                             quiche::Error::Done => continue 'send,
                                             quiche::Error::CryptoFail => {
-                                                error!("process_events: Cryptographic operation failed!");
+                                                error!(
+                                                    "process_events: Cryptographic operation failed!"
+                                                );
                                                 connection.end_session(&mut sources_to_remove);
                                                 continue 'main;
-                                            },
+                                            }
                                             quiche::Error::TlsFail => {
                                                 error!("process_events: Failed TLS setup!");
                                                 connection.end_session(&mut sources_to_remove);
                                                 continue 'main;
-                                            },
+                                            }
                                             quiche::Error::StreamLimit => {
                                                 warn!("process_events: Hit stream limit!");
-                                                connection.request_queue.push_front(request);
-                                                continue 'main;
-                                            },
-                                            quiche::Error::KeyUpdate => {
-                                                error!("process_events: Failed to update cryptographic key!");
                                                 connection.end_session(&mut sources_to_remove);
                                                 continue 'main;
-                                            },
-                                            _ => error!("process_events: Got transport error - {:?}", error),
+                                            }
+                                            quiche::Error::KeyUpdate => {
+                                                error!(
+                                                    "process_events: Failed to update cryptographic key!"
+                                                );
+                                                connection.end_session(&mut sources_to_remove);
+                                                continue 'main;
+                                            }
+                                            _ => error!(
+                                                "process_events: Got transport error - {:?}",
+                                                error
+                                            ),
                                         };
-                                    },
+                                    }
                                     quiche::h3::Error::StreamBlocked => {
-                                        trace!("process_events: QUIC connection does not have the capacity for this request. Try again later.");
+                                        trace!(
+                                            "process_events: QUIC connection does not have the capacity for this request. Try again later."
+                                        );
                                         connection.request_queue.push_front(request);
                                         break 'send;
-                                    },
-                                    quiche::h3::Error::RequestRejected => warn!("process_events: Server rejected request! - {:?}", request),
+                                    }
+                                    quiche::h3::Error::RequestRejected => warn!(
+                                        "process_events: Server rejected request! - {:?}",
+                                        request
+                                    ),
                                     _ => error!("process_events: Request send failed: {:?}", error),
                                 };
                             }
@@ -1426,13 +1453,16 @@ impl DnsBackend for DoH3Backend {
                             }
 
                             Ok((stream_id, quiche::h3::Event::Finished)) => {
-                                let request = match connection.sent_request_streams.remove(&stream_id) {
+                                let request = match connection
+                                    .sent_request_streams
+                                    .remove(&stream_id)
+                                {
                                     Some(v) => v,
                                     None => {
                                         error!(
                                             "process_events: Stream id not found in active streams"
                                         );
-                                        continue 'process
+                                        continue 'process;
                                     }
                                 };
                                 info!(
@@ -1441,16 +1471,15 @@ impl DnsBackend for DoH3Backend {
                                 );
                             }
 
-                            Ok((_, quiche::h3::Event::Reset(error))) => {
-                                error!(
-                                    "process_events: Request was reset by peer with {}, closing...",
-                                    error
-                                );
-
-                                session
-                                    .client_connection
-                                    .close(false, 0x100, b"kthxbye")
-                                    .ok();
+                            Ok((stream_id, quiche::h3::Event::Reset(error))) => {
+                                if let Some(request) =
+                                    connection.sent_request_streams.remove(&stream_id)
+                                {
+                                    error!(
+                                        "process_events: Request {:?} was reset by peer with {}, closing...",
+                                        request, error,
+                                    );
+                                }
                             }
 
                             Ok((_, quiche::h3::Event::PriorityUpdate)) => unreachable!(),
@@ -1486,12 +1515,12 @@ impl DnsBackend for DoH3Backend {
                             Ok(v) => v,
 
                             Err(quiche::Error::Done) => {
-                                debug!("Done writing");
+                                debug!("process_events: Done writing");
                                 break 'write;
                             }
 
                             Err(error) => {
-                                error!("Send failed: {:?}", error);
+                                error!("process_events: Send failed: {:?}", error);
                                 session.client_connection.close(false, 0x1, b"fail").ok();
                                 break 'write;
                             }
@@ -1516,7 +1545,9 @@ impl DnsBackend for DoH3Backend {
                     debug!("process_events: written {}", write);
                 }
             } else {
-                warn!("process_events: No active session found for {server_name} when attempting to write packets");
+                warn!(
+                    "process_events: No active session found for {server_name} when attempting to write packets"
+                );
                 continue 'main;
             }
 
@@ -1589,7 +1620,7 @@ impl AdVpn {
             VpnConfigurationResult::InvalidDnsServer => {
                 error!("run: No valid DNS servers found");
                 return Result::Err(VpnError::InvalidDnsServer);
-            },
+            }
             VpnConfigurationResult::Success(fd, servers) => (fd, servers),
         };
 
@@ -2440,7 +2471,7 @@ impl<'a> DnsPacketProxy<'a> {
         let udp_packet = match packet.get_udp_packet() {
             Some(value) => value,
             None => {
-                warn!("handle_dns_request: IP packet did not contain UDP payload");
+                debug!("handle_dns_request: IP packet did not contain UDP payload");
                 return;
             }
         };
