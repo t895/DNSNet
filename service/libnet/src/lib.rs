@@ -1073,31 +1073,21 @@ impl DnsBackend for DoH3Backend {
         for (_, connection) in &self.connections {
             if let Some(session) = &connection.active_session {
                 for request in connection.queued_packets.iter() {
-                    match Instant::now().checked_duration_since(request.send_info.at) {
-                        Some(duration) => {
-                            if let Some(existing_timeout) = timeout {
-                                timeout = Some(duration.min(existing_timeout));
-                            } else {
-                                timeout = Some(duration);
-                            }
+                    if let Some(duration) = Instant::now().checked_duration_since(request.send_info.at) {
+                        if let Some(existing_timeout) = timeout {
+                            timeout = Some(duration.min(existing_timeout));
+                        } else {
+                            timeout = Some(duration);
                         }
-
-                        None => return None,
                     }
                 }
 
-                match session.client_connection.timeout() {
-                    Some(duration) => {
-                        if !duration.is_zero() {
-                            if let Some(existing_timeout) = timeout {
-                                timeout = Some(duration.min(existing_timeout));
-                            } else {
-                                timeout = Some(duration);
-                            }
-                        }
+                if let Some(duration) = session.client_connection.timeout() {
+                    if let Some(existing_timeout) = timeout {
+                        timeout = Some(duration.min(existing_timeout));
+                    } else {
+                        timeout = Some(duration);
                     }
-
-                    None => return None,
                 }
             }
         }
@@ -1187,7 +1177,7 @@ impl DnsBackend for DoH3Backend {
         let mut sources_to_remove = Vec::<Box<dyn Source>>::new();
         'main: for (server_name, connection) in self.connections.iter_mut() {
             if connection.active_session.is_none() {
-                continue;
+                continue 'main;
             }
 
             connection
@@ -1214,10 +1204,12 @@ impl DnsBackend for DoH3Backend {
                     // If the event loop reported no events, it means that the timeout
                     // has expired, so handle it without attempting to read packets. We
                     // will then proceed with the send loop.
-                    if session.client_connection.is_timed_out() {
-                        debug!("process_event: Connection timed out, closing...");
-                        session.client_connection.on_timeout();
-                        break 'read;
+                    if let Some(timeout) = session.client_connection.timeout() {
+                        if timeout.is_zero() {
+                            debug!("process_event: Connection timed out, closing...");
+                            session.client_connection.on_timeout();
+                            break 'read;
+                        }
                     }
 
                     let (len, _) = if let Some(socket) = &session.socket {
