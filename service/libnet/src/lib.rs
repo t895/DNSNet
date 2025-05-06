@@ -775,6 +775,7 @@ impl DoH3Request {
 
 struct DoH3ServerSession {
     socket: Option<UdpSocket>,
+    socket_registered: bool,
     client_connection: quiche::Connection,
     local_address: SocketAddr,
     http3_connection: Option<quiche::h3::Connection>,
@@ -925,6 +926,7 @@ impl DoH3ServerConnectionContainer {
 
             self.active_session = Some(DoH3ServerSession {
                 socket: Some(socket),
+                socket_registered: false,
                 client_connection,
                 local_address,
                 http3_connection: None,
@@ -1079,8 +1081,13 @@ impl DnsBackend for DoH3Backend {
 
     fn register_sources(&mut self, poll: &mut Poll) -> usize {
         let mut registered_sources = 0;
-        self.connections.iter_mut().for_each(|(_, connection)| {
+        for (_, connection) in self.connections.iter_mut() {
             if let Some(session) = &mut connection.active_session {
+                if session.socket_registered {
+                    registered_sources += 1;
+                    continue;
+                }
+
                 if let Some(socket) = &mut session.socket {
                     if let Err(error) =
                         poll.registry()
@@ -1088,15 +1095,17 @@ impl DnsBackend for DoH3Backend {
                     {
                         if error.kind() == std::io::ErrorKind::AlreadyExists {
                             trace!("register_sources: Socket already registered! - {:?}", error);
+                            registered_sources += 1;
                         } else {
                             error!("register_sources: Failed to register socket! - {:?}", error);
                         }
                     } else {
                         registered_sources += 1;
                     }
+                    session.socket_registered = true;
                 }
             }
-        });
+        };
         return registered_sources;
     }
 
