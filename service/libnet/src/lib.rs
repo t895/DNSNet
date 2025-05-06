@@ -743,6 +743,7 @@ struct DoH3Server {
     resolved_address: SocketAddr,
 }
 
+#[derive(Debug)]
 struct DoH3Request {
     creation_time: std::time::Instant,
     request_packet: Vec<u8>,
@@ -1169,6 +1170,7 @@ impl DnsBackend for DoH3Backend {
                     true
                 }
             });
+            trace!("{} has {} requests in queue and {} active requests", connection.server.domain_name, connection.request_queue.len(), connection.sent_request_streams.len());
 
             // Read incoming packets until there is nothing more to read
             if let Some(session) = &mut connection.active_session {
@@ -1302,14 +1304,31 @@ impl DnsBackend for DoH3Backend {
                             Err(error) => {
                                 match error {
                                     quiche::h3::Error::Done => trace!("process_events: HTTP/3 connection (send) reported \"Done\""),
-                                    quiche::h3::Error::InternalError => error!("process_events: Detected internal error in HTTP/3 stack!"),
-                                    quiche::h3::Error::ExcessiveLoad => warn!("process_events: Detected excessive load from peer!"),
-                                    quiche::h3::Error::IdError => error!("process_events: Used bad ID!"),
+                                    quiche::h3::Error::InternalError => {
+                                        error!("process_events: Detected internal error in HTTP/3 stack!");
+                                        connection.end_session(&mut sources_to_remove);
+                                        continue 'main;
+                                    },
+                                    quiche::h3::Error::ExcessiveLoad => {
+                                        warn!("process_events: Detected excessive load from peer!");
+                                        connection.request_queue.push_front(request);
+                                        break 'send;
+                                    },
+                                    quiche::h3::Error::IdError => {
+                                        error!("process_events: Used bad ID!");
+                                        connection.request_queue.push_front(request);
+                                        break 'send;
+                                    },
                                     quiche::h3::Error::StreamCreationError => {
                                         warn!("process_events: Failed to create stream");
                                         connection.request_queue.push_front(request);
+                                        break 'send;
                                     },
-                                    quiche::h3::Error::ClosedCriticalStream => error!("process_events: Closed a stream that was critical for the connection!"),
+                                    quiche::h3::Error::ClosedCriticalStream => {
+                                        error!("process_events: Closed a stream that was critical for the connection!");
+                                        connection.end_session(&mut sources_to_remove);
+                                        continue 'main;
+                                    },
                                     quiche::h3::Error::FrameUnexpected => {
                                         error!("process_events: Told to GOAWAY 😔");
                                         connection.end_session(&mut sources_to_remove);
@@ -1317,7 +1336,7 @@ impl DnsBackend for DoH3Backend {
                                     },
                                     quiche::h3::Error::TransportError(error) => {
                                         match error {
-                                            quiche::Error::Done => todo!(),
+                                            quiche::Error::Done => continue 'send,
                                             quiche::Error::CryptoFail => {
                                                 error!("process_events: Cryptographic operation failed!");
                                                 connection.end_session(&mut sources_to_remove);
@@ -1331,7 +1350,7 @@ impl DnsBackend for DoH3Backend {
                                             quiche::Error::StreamLimit => {
                                                 warn!("process_events: Hit stream limit!");
                                                 connection.request_queue.push_front(request);
-                                                break 'send;
+                                                continue 'main;
                                             },
                                             quiche::Error::KeyUpdate => {
                                                 error!("process_events: Failed to update cryptographic key!");
@@ -1346,7 +1365,7 @@ impl DnsBackend for DoH3Backend {
                                         connection.request_queue.push_front(request);
                                         break 'send;
                                     },
-                                    quiche::h3::Error::RequestRejected => warn!("process_events: Server rejected request!"),
+                                    quiche::h3::Error::RequestRejected => warn!("process_events: Server rejected request! - {:?}", request),
                                     _ => error!("process_events: Request send failed: {:?}", error),
                                 };
                             }
@@ -1361,7 +1380,7 @@ impl DnsBackend for DoH3Backend {
             }
 
             if let Some(session) = &mut connection.active_session {
-                if let Some(http3_conn) = &mut session.http3_connection {
+                if let Some(http3_connection) = &mut session.http3_connection {
                     debug!(
                         "process_events: Starting process loop for server - {}",
                         connection.server.domain_name
@@ -1369,7 +1388,7 @@ impl DnsBackend for DoH3Backend {
 
                     // Process HTTP/3 events.
                     'process: loop {
-                        match http3_conn.poll(&mut session.client_connection) {
+                        match http3_connection.poll(&mut session.client_connection) {
                             Ok((stream_id, quiche::h3::Event::Headers { list, .. })) => {
                                 trace!(
                                     "process_events: Got response headers {:?} on stream id {}",
@@ -1379,7 +1398,7 @@ impl DnsBackend for DoH3Backend {
                             }
 
                             Ok((stream_id, quiche::h3::Event::Data)) => {
-                                while let Ok(read) = http3_conn.recv_body(
+                                while let Ok(read) = http3_connection.recv_body(
                                     &mut session.client_connection,
                                     stream_id,
                                     &mut self.input_buffer,
