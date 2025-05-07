@@ -116,8 +116,14 @@ pub fn validate_dns_servers(
     user_servers: Vec<String>,
     local_servers: Vec<String>,
 ) -> Result<Vec<Arc<NativeDnsServer>>, ValidateDnsError> {
+    struct WaitingSocket {
+        server_name: String,
+        socket: UdpSocket,
+        received_packets_count: u8,
+    }
+
     let mut validated_servers = Vec::<Arc<NativeDnsServer>>::new();
-    let mut waiting_sockets = Vec::<(String, UdpSocket)>::new();
+    let mut waiting_sockets = Vec::<WaitingSocket>::new();
     for unvalidated_server in user_servers.iter() {
         match IpAddr::from_str(&unvalidated_server) {
             Ok(value) => {
@@ -194,16 +200,32 @@ pub fn validate_dns_servers(
             }
         };
 
-        let mut packet = Packet::new_query(getrandom::u32().unwrap() as u16);
-        let question = Question::new(
+        let mut query_ipv4 = Packet::new_query(getrandom::u32().unwrap() as u16);
+        let mut query_ipv6 = Packet::new_query(getrandom::u32().unwrap() as u16);
+        let question_ipv4 = Question::new(
             Name::new_unchecked(stripped_server),
             TYPE::A.into(),
             CLASS::IN.into(),
             false,
         );
-        packet.questions.push(question);
-        let mut buffer = Vec::new();
-        if let Err(error) = packet.write_to(&mut buffer) {
+        let question_ipv6 = Question::new(
+            Name::new_unchecked(stripped_server),
+            TYPE::AAAA.into(),
+            CLASS::IN.into(),
+            false,
+        );
+        query_ipv4.questions.push(question_ipv4);
+        query_ipv6.questions.push(question_ipv6);
+        let mut buffer_ipv4 = Vec::new();
+        let mut buffer_ipv6 = Vec::new();
+        if let Err(error) = query_ipv4.write_to(&mut buffer_ipv4) {
+            error!(
+                "validate_dns_servers: Failed to write message to buffer! - {:?}",
+                error
+            );
+            return Err(ValidateDnsError::ResolveFailure);
+        };
+        if let Err(error) = query_ipv6.write_to(&mut buffer_ipv6) {
             error!(
                 "validate_dns_servers: Failed to write message to buffer! - {:?}",
                 error
@@ -211,7 +233,14 @@ pub fn validate_dns_servers(
             return Err(ValidateDnsError::ResolveFailure);
         };
 
-        if let Err(error) = socket.send_to(&mut buffer, target) {
+        if let Err(error) = socket.send_to(&mut buffer_ipv4, target) {
+            error!(
+                "validate_dns_servers: Failed to send DNS query! - {:?}",
+                error
+            );
+            return Err(ValidateDnsError::ResolveFailure);
+        }
+        if let Err(error) = socket.send_to(&mut buffer_ipv6, target) {
             error!(
                 "validate_dns_servers: Failed to send DNS query! - {:?}",
                 error
@@ -219,7 +248,11 @@ pub fn validate_dns_servers(
             return Err(ValidateDnsError::ResolveFailure);
         }
 
-        waiting_sockets.push((stripped_server.to_string(), socket));
+        waiting_sockets.push(WaitingSocket {
+            server_name: stripped_server.to_string(),
+            socket,
+            received_packets_count: 0,
+        });
     }
 
     if waiting_sockets.is_empty() {
@@ -242,10 +275,10 @@ pub fn validate_dns_servers(
     };
     let mut events = Events::with_capacity(waiting_sockets.len());
 
-    for (index, (_, socket)) in waiting_sockets.iter_mut().enumerate() {
+    for (index, waiting_socket) in waiting_sockets.iter_mut().enumerate() {
         if let Err(error) = poll
             .registry()
-            .register(socket, Token(index), Interest::READABLE)
+            .register(&mut waiting_socket.socket, Token(index), Interest::READABLE)
         {
             error!(
                 "validate_dns_servers: Failed to register socket to poller! - {:?}",
@@ -281,16 +314,18 @@ pub fn validate_dns_servers(
                 return Err(ValidateDnsError::Interrupted);
             }
 
-            let (server_name, socket) = waiting_sockets.get_mut(token_value).unwrap();
-            if let Err(error) = poll.registry().deregister(socket) {
-                error!(
-                    "validate_dns_servers: Failed to deregister socket from poller! - {:?}",
-                    error
-                );
-                return Err(ValidateDnsError::ResolveFailure);
-            };
+            let waiting_socket = waiting_sockets.get_mut(token_value).unwrap();
+            if waiting_socket.received_packets_count == 1 {
+                if let Err(error) = poll.registry().deregister(&mut waiting_socket.socket) {
+                    error!(
+                        "validate_dns_servers: Failed to deregister socket from poller! - {:?}",
+                        error
+                    );
+                    return Err(ValidateDnsError::ResolveFailure);
+                };
+            }
 
-            let read = match socket.recv(&mut input_buffer) {
+            let read = match waiting_socket.socket.recv(&mut input_buffer) {
                 Ok(value) => value,
                 Err(error) => {
                     error!(
@@ -300,6 +335,7 @@ pub fn validate_dns_servers(
                     return Err(ValidateDnsError::ResolveFailure);
                 }
             };
+            waiting_socket.received_packets_count += 1;
 
             let packet = match Packet::parse(&input_buffer[..read]) {
                 Ok(value) => value,
@@ -313,12 +349,16 @@ pub fn validate_dns_servers(
             };
 
             if packet.answers.is_empty() {
-                error!("validate_dns_servers: Got no answers from DNS request!");
-                return Err(ValidateDnsError::ResolveFailure);
+                warn!("validate_dns_servers: Got no answers from DNS request to server - {}", waiting_socket.server_name);
+                if waiting_socket.received_packets_count == 2 {
+                    return Err(ValidateDnsError::ResolveFailure);
+                }
+                continue;
             }
 
             let address = match &packet.answers.first().unwrap().rdata {
                 RData::A(value) => value.address.to_be_bytes().to_vec(),
+                RData::AAAA(value) => value.address.to_be_bytes().to_vec(),
                 _ => {
                     error!("validate_dns_servers: Got incorrect answer type!");
                     return Err(ValidateDnsError::ResolveFailure);
@@ -327,7 +367,7 @@ pub fn validate_dns_servers(
 
             validated_servers.push(Arc::new(NativeDnsServer::new(
                 address,
-                NativeDnsServerType::DoH3(server_name.clone()),
+                NativeDnsServerType::DoH3(waiting_socket.server_name.clone()),
             )));
 
             complete_requests += 1;
