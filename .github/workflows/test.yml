@@ -53,6 +53,13 @@ jobs:
           ndk-version: r28
           link-to-sdk: true
 
+      - name: Set NDK environment variables
+        run: |
+          export ANDROID_NDK=${{ steps.setup-ndk.outputs.ndk-path }}
+          export ANDROID_NDK_HOME=${{ steps.setup-ndk.outputs.ndk-path }}
+          export ANDROID_NDK_ROOT=${{ steps.setup-ndk.outputs.ndk-path }}
+          export ANDROID_NDK_LATEST_HOME=${{ steps.setup-ndk.outputs.ndk-path }}
+
       - name: AVD cache
         uses: actions/cache@v4
         id: avd-cache
