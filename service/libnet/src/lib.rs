@@ -189,16 +189,14 @@ pub fn validate_dns_servers(
         }
 
         let server_string = local_servers.first().unwrap();
-        let target = match SocketAddr::from_str(&(server_string.to_owned() + ":53")) {
+        let target_ip_address = match IpAddr::from_str(server_string) {
             Ok(value) => value,
             Err(error) => {
-                error!(
-                    "validate_dns_servers: Failed to parse target local DNS server {} - {:?}",
-                    server_string, error
-                );
+                error!("validate_dns_servers: Failed to parse local DNS server {server_string}! - {:?}", error);
                 return Err(ValidateDnsError::ResolveFailure);
             }
         };
+        let target_socket_address = SocketAddr::new(target_ip_address, 53);
 
         let mut query_ipv4 = Packet::new_query(getrandom::u32().unwrap() as u16);
         let mut query_ipv6 = Packet::new_query(getrandom::u32().unwrap() as u16);
@@ -233,14 +231,14 @@ pub fn validate_dns_servers(
             return Err(ValidateDnsError::ResolveFailure);
         };
 
-        if let Err(error) = socket.send_to(&mut buffer_ipv4, target) {
+        if let Err(error) = socket.send_to(&mut buffer_ipv4, target_socket_address) {
             error!(
                 "validate_dns_servers: Failed to send DNS query! - {:?}",
                 error
             );
             return Err(ValidateDnsError::ResolveFailure);
         }
-        if let Err(error) = socket.send_to(&mut buffer_ipv6, target) {
+        if let Err(error) = socket.send_to(&mut buffer_ipv6, target_socket_address) {
             error!(
                 "validate_dns_servers: Failed to send DNS query! - {:?}",
                 error
