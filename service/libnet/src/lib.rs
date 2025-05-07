@@ -2106,7 +2106,7 @@ impl AdVpn {
             return Result::Ok(());
         }
 
-        dns_packet_proxy.handle_dns_request(self, backend, &packet[..length]);
+        dns_packet_proxy.handle_dns_request(self, backend, &packet[..length])?;
 
         return Result::Ok(());
     }
@@ -2723,7 +2723,7 @@ impl<'a> DnsPacketProxy<'a> {
         ad_vpn: &mut AdVpn,
         backend: &mut Box<dyn DnsBackend>,
         packet_data: &[u8],
-    ) {
+    ) -> Result<(), VpnError> {
         let packet = match GenericIpPacket::from_ip_packet(packet_data) {
             Some(value) => value,
             None => {
@@ -2731,7 +2731,7 @@ impl<'a> DnsPacketProxy<'a> {
                     "handle_dns_request: Failed to parse packet data - {:?}",
                     packet_data
                 );
-                return;
+                return Ok(());
             }
         };
 
@@ -2739,7 +2739,7 @@ impl<'a> DnsPacketProxy<'a> {
             Some(value) => value,
             None => {
                 debug!("handle_dns_request: IP packet did not contain UDP payload");
-                return;
+                return Ok(());
             }
         };
 
@@ -2750,7 +2750,7 @@ impl<'a> DnsPacketProxy<'a> {
                     "handle_dns_request: Failed to get destination address for packet - {:?}",
                     packet
                 );
-                return;
+                return Ok(());
             }
         };
         let translated_destination_address =
@@ -2761,7 +2761,7 @@ impl<'a> DnsPacketProxy<'a> {
                         "handle_dns_request: Failed to translate destination address - {:?}",
                         destination_address
                     );
-                    return;
+                    return Ok(());
                 }
             };
 
@@ -2773,7 +2773,7 @@ impl<'a> DnsPacketProxy<'a> {
                     "handle_dns_request: Discarding non-DNS or invalid packet - {:?}",
                     error
                 );
-                return;
+                return Ok(());
             }
         };
 
@@ -2782,7 +2782,7 @@ impl<'a> DnsPacketProxy<'a> {
                 "handle_dns_request: Discarding DNS packet with no questions - {:?}",
                 dns_packet
             );
-            return;
+            return Ok(());
         }
 
         let dns_query_name = dns_packet
@@ -2810,6 +2810,10 @@ impl<'a> DnsPacketProxy<'a> {
                 destination_port,
             ) {
                 error!("handle_dns_request: Failed to forward packet - {:?}", error);
+                match error {
+                    DnsBackendError::SocketFailure => return Err(VpnError::NoNetwork),
+                    _ => return Ok(()),
+                }
             }
         } else {
             info!("handle_dns_request: DNS Name {} blocked!", dns_query_name);
@@ -2827,11 +2831,12 @@ impl<'a> DnsPacketProxy<'a> {
             let mut wire = Vec::<u8>::new();
             if let Err(error) = dns_packet.write_to(&mut wire) {
                 error!("Failed to write DNS packet to wire! - {:?}", error);
-                return;
+                return Ok(());
             }
 
             ad_vpn.handle_dns_response(packet_data, &wire);
         }
+        return Ok(());
     }
 
     /// Translates the destination address using our upstream servers as configured by the AdVpnThread
