@@ -55,7 +55,9 @@ import dev.clombardo.dnsnet.ui.common.FabState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import uniffi.net.AdVpnCallback
+import uniffi.net.ValidateDnsException
 import uniffi.net.VpnConfigurationResult
+import uniffi.net.VpnController
 import uniffi.net.validateDnsServers
 import java.net.Inet4Address
 import java.net.Inet6Address
@@ -687,7 +689,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
     }
 
     @Throws(NoNetworkException::class)
-    override fun configure(): VpnConfigurationResult {
+    override fun configure(vpnController: VpnController): VpnConfigurationResult {
         logd("Configuring")
         val unvalidatedDnsServers = mutableListOf<String>()
         // Get the current DNS servers before starting the VPN
@@ -723,7 +725,20 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         }
 
         logi("configure: Unvalidated DNS servers = $unvalidatedDnsServers")
-        val validatedDnsServers = validateDnsServers(unvalidatedDnsServers)
+        val validatedDnsServers = try {
+            validateDnsServers(
+                vpnController = vpnController,
+                userServers = unvalidatedDnsServers,
+                localServers = localDnsServers.map { it.hostAddress!! },
+            )
+        } catch (e: ValidateDnsException) {
+            return when (e) {
+                is ValidateDnsException.ParseFailure,
+                is ValidateDnsException.ResolveFailure -> VpnConfigurationResult.InvalidDnsServer
+
+                is ValidateDnsException.Interrupted -> VpnConfigurationResult.Interrupted
+            }
+        }
         logi("configure: Valid DNS servers = ${validatedDnsServers.map { it.getAddress().contentToString() }}")
 
         if (validatedDnsServers.size != unvalidatedDnsServers.size) {
