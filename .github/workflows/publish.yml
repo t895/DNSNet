@@ -90,11 +90,16 @@ jobs:
           push_options: --force-with-lease
           file_pattern: 'build.gradle.kts'
 
+      - name: Get latest commit sha
+        id: sha
+        run: echo "LATEST_SHA=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
       - name: Push new tag
         uses: rickstaa/action-create-tag@v1
         id: "tag_create"
         with:
           tag: ${{ inputs.tag_name }}
+          commit_sha: ${{ steps.sha.outputs.LATEST_SHA }}
 
       - name: Build
         env:
