@@ -59,6 +59,7 @@ import uniffi.net.ValidateDnsException
 import uniffi.net.ValidateDnsResult
 import uniffi.net.VpnConfigurationResult
 import uniffi.net.VpnController
+import uniffi.net.networkHasIpv6Support
 import uniffi.net.validateDnsServers
 import java.net.Inet4Address
 import java.net.Inet6Address
@@ -725,10 +726,20 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
             }
         }
 
+        // Check if the local network has IPv6 DNS servers. If so, this implies that the network
+        // supports IPv6 and we can add an IPv6 address to the builder.
+        val ipv6Support = if (configuration.read { ipV6Support }) {
+            networkHasIpv6Support()
+        } else {
+            false
+        }
+        logd("configure: IPv6 support = $ipv6Support")
+
         logi("configure: Unvalidated DNS servers = $unvalidatedDnsServers")
         val validatedDnsServers = try {
             val result = validateDnsServers(
                 vpnController = vpnController,
+                ipv6Support = ipv6Support,
                 userServers = unvalidatedDnsServers,
                 localServers = localDnsServers.map { it.hostAddress!! },
             )
@@ -769,14 +780,6 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         // for us to use?
         var ipv6Template: ByteArray? =
             byteArrayOf(32, 1, 13, (184 and 0xFF).toByte(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-
-        // Check if the local network has IPv6 DNS servers. If so, this implies that the network
-        // supports IPv6 and we can add an IPv6 address to the builder.
-        val ipv6Support = if (configuration.read { ipV6Support }) {
-            hasIpV6Servers(localDnsServers)
-        } else {
-            false
-        }
         if (ipv6Support) {
             try {
                 val addr = Inet6Address.getByAddress(ipv6Template)
@@ -897,24 +900,6 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         }
 
         return out
-    }
-
-    fun hasIpV6Servers(localDnsServers: List<InetAddress>): Boolean {
-        if (configuration.read { this.dnsServers.enabled }) {
-            for (item in configuration.read { this.dnsServers.items }) {
-                if (item.enabled && item.addresses.contains(":")) {
-                    return true
-                }
-            }
-        }
-
-        for (inetAddress in localDnsServers) {
-            if (inetAddress is Inet6Address) {
-                return true
-            }
-        }
-
-        return false
     }
 
     override fun handleMessage(msg: Message): Boolean {

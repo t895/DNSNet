@@ -110,16 +110,6 @@ fun DnsScreen(
                 }
 
                 item {
-                    SwitchListItem(
-                        enabled = !doh3Support,
-                        title = stringResource(id = R.string.ipv6_support),
-                        details = stringResource(id = R.string.ipv6_support_description),
-                        checked = ipv6Support || doh3Support,
-                        onCheckedChange = { onIpv6SupportClick() },
-                    )
-                }
-
-                item {
                     val allServersDisabled = serversState.all { !it.enabled }
                     SwitchListItem(
                         enabled = customDnsServers && !allServersDisabled && !doh3Support,

@@ -97,6 +97,31 @@ impl NativeDnsServer {
     }
 }
 
+#[uniffi::export]
+pub fn network_has_ipv6_support() -> bool {
+    let socket = match UdpSocket::bind(SocketAddr::new(
+        std::net::IpAddr::V6(Ipv6Addr::UNSPECIFIED),
+        0,
+    )) {
+        Ok(value) => value,
+        Err(error) => {
+            error!(
+                "has_ipv6_support: Failed to create socket! - {:?}",
+                error
+            );
+            return false;
+        }
+    };
+
+    let target_socket_address = SocketAddr::V6(SocketAddrV6::new(Ipv6Addr::from_str("2001:2::").unwrap(), 53, 0, 0));
+    if let Err(error) = socket.send_to(&mut vec![1; 1], target_socket_address) {
+        debug!("has_ipv6_support: Error during IPv6 test - {:?}", error);
+        return false;
+    }
+
+    return true;
+}
+
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 #[uniffi(flat_error)]
 pub enum ValidateDnsError {
