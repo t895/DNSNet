@@ -36,6 +36,7 @@ class AdVpnThread(
         private const val MIN_RETRY_TIME = 5
         private const val MAX_RETRY_TIME = 2 * 60
         private const val RETRY_MULTIPLIER = 2
+        private const val MAX_IMMEDIATE_RETRIES = 3
 
         /* If we had a successful connection for that long, reset retry timeout */
         private const val RETRY_RESET_SEC: Long = 60
@@ -82,15 +83,16 @@ class AdVpnThread(
         logi("Starting")
         ruleDatabaseManager.waitOnInit()
 
+        var immediateRetryCount = 0
         var retryTimeout = MIN_RETRY_TIME
         // Try connecting the vpn continuously
         while (true) {
             val connectTimeMillis: Long = System.currentTimeMillis()
-
             var reloadOnInterrupt = false
             try {
                 // If the function returns, that means it was interrupted
                 val result = runVpn()
+                immediateRetryCount = 0
                 retryTimeout = MIN_RETRY_TIME
                 when (result) {
                     VpnResult.RECONNECTING,
@@ -113,9 +115,14 @@ class AdVpnThread(
                         notify(VpnStatus.WAITING_FOR_NETWORK)
                     }
 
+                    is VpnException.SocketFailure,
                     is VpnException.InvalidDnsServer -> {
-                        loge("At least one upstream DNS servers was invalid.", e)
                         notify(VpnStatus.RECONNECTING)
+                        if (immediateRetryCount < MAX_IMMEDIATE_RETRIES) {
+                            loge("Minor error occurred. Retrying immediately.", e)
+                            immediateRetryCount++
+                            continue
+                        }
                     }
 
                     else -> {
