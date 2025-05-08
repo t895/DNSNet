@@ -56,6 +56,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import uniffi.net.AdVpnCallback
 import uniffi.net.ValidateDnsException
+import uniffi.net.ValidateDnsResult
 import uniffi.net.VpnConfigurationResult
 import uniffi.net.VpnController
 import uniffi.net.validateDnsServers
@@ -726,18 +727,18 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
 
         logi("configure: Unvalidated DNS servers = $unvalidatedDnsServers")
         val validatedDnsServers = try {
-            validateDnsServers(
+            val result = validateDnsServers(
                 vpnController = vpnController,
                 userServers = unvalidatedDnsServers,
                 localServers = localDnsServers.map { it.hostAddress!! },
             )
-        } catch (e: ValidateDnsException) {
-            return when (e) {
-                is ValidateDnsException.ParseFailure,
-                is ValidateDnsException.ResolveFailure -> VpnConfigurationResult.InvalidDnsServer
 
-                is ValidateDnsException.Interrupted -> VpnConfigurationResult.Interrupted
+            when (result) {
+                is ValidateDnsResult.Interrupted -> return VpnConfigurationResult.Interrupted(result.v1)
+                is ValidateDnsResult.Success -> result.v1
             }
+        } catch (_: ValidateDnsException) {
+            return VpnConfigurationResult.InvalidDnsServer
         }
         logi("configure: Valid DNS servers = ${validatedDnsServers.map { it.getAddress().contentToString() }}")
 

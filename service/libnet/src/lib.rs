@@ -105,9 +105,12 @@ pub enum ValidateDnsError {
 
     #[error("Failed to parse IPv4/IPv6 address")]
     ParseFailure,
+}
 
-    #[error("Interruped by VPN controller")]
-    Interrupted,
+#[derive(uniffi::Enum)]
+pub enum ValidateDnsResult {
+    Success(Vec<Arc<NativeDnsServer>>),
+    Interrupted(VpnResult),
 }
 
 #[uniffi::export]
@@ -115,7 +118,7 @@ pub fn validate_dns_servers(
     vpn_controller: Arc<VpnController>,
     user_servers: Vec<String>,
     local_servers: Vec<String>,
-) -> Result<Vec<Arc<NativeDnsServer>>, ValidateDnsError> {
+) -> Result<ValidateDnsResult, ValidateDnsError> {
     struct WaitingSocket {
         server_name: String,
         socket: UdpSocket,
@@ -255,7 +258,7 @@ pub fn validate_dns_servers(
 
     if waiting_sockets.is_empty() {
         if user_servers.len() == validated_servers.len() {
-            return Ok(validated_servers);
+            return Ok(ValidateDnsResult::Success(validated_servers));
         } else {
             return Err(ValidateDnsError::ParseFailure);
         }
@@ -301,15 +304,26 @@ pub fn validate_dns_servers(
     let mut input_buffer = vec![0u8; 512];
     let mut complete_requests = 0;
     while waiting_sockets.len() != complete_requests {
-        if let Err(error) = poll.poll(&mut events, None) {
+        if let Err(error) = poll.poll(&mut events, Some(Duration::from_secs(5))) {
             error!("validate_dns_servers: Poller failed! - {:?}", error);
+            return Err(ValidateDnsError::ResolveFailure);
+        }
+
+        if events.is_empty() {
+            error!("validate_dns_servers: Timed out while waiting for DNS result!");
             return Err(ValidateDnsError::ResolveFailure);
         }
 
         for event in events.iter() {
             let token_value = event.token().0;
             if token_value == usize::MAX {
-                return Err(ValidateDnsError::Interrupted);
+                info!("validate_dns_servers: VPN controller interrupted the DNS poller");
+                let stop_result = if let Some(result) = vpn_controller.get_stop_result() {
+                    result
+                } else {
+                    VpnResult::Reconnecting
+                };
+                return Ok(ValidateDnsResult::Interrupted(stop_result));
             }
 
             let waiting_socket = waiting_sockets.get_mut(token_value).unwrap();
@@ -371,7 +385,7 @@ pub fn validate_dns_servers(
             complete_requests += 1;
         }
     }
-    return Ok(validated_servers);
+    return Ok(ValidateDnsResult::Success(validated_servers));
 }
 
 /// Holds an event file descriptor and flag to meant to interrupt the VPN loop
@@ -699,6 +713,9 @@ pub enum VpnError {
 
     #[error("At least one invalid DNS server provided")]
     InvalidDnsServer,
+
+    #[error("Failed to send/receive data on a socket")]
+    SocketFailure,
 }
 
 #[derive(uniffi::Enum)]
@@ -713,7 +730,7 @@ pub enum VpnConfigurationResult {
     InvalidDnsServer,
 
     // VPN controller interrupted configuration
-    Interrupted,
+    Interrupted(VpnResult),
 
     // The VpnService was established correctly with a valid file descriptor
     Success(i32, Vec<Arc<NativeDnsServer>>),
@@ -1878,9 +1895,9 @@ impl AdVpn {
                     error!("run: No valid DNS servers found");
                     return Result::Err(VpnError::InvalidDnsServer);
                 }
-                VpnConfigurationResult::Interrupted => {
+                VpnConfigurationResult::Interrupted(result) => {
                     debug!("run: Interrupted");
-                    return Result::Ok(VpnResult::Stopping);
+                    return Result::Ok(result);
                 }
                 VpnConfigurationResult::Success(fd, servers) => (fd, servers),
             };
@@ -2809,7 +2826,7 @@ impl<'a> DnsPacketProxy<'a> {
             ) {
                 error!("handle_dns_request: Failed to forward packet - {:?}", error);
                 match error {
-                    DnsBackendError::SocketFailure => return Err(VpnError::NoNetwork),
+                    DnsBackendError::SocketFailure => return Err(VpnError::SocketFailure),
                     _ => return Ok(()),
                 }
             }
