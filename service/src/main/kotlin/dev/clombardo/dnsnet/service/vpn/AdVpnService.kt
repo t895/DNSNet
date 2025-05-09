@@ -728,11 +728,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
 
         // Check if the local network has IPv6 DNS servers. If so, this implies that the network
         // supports IPv6 and we can add an IPv6 address to the builder.
-        val ipv6Support = if (configuration.read { ipV6Support }) {
-            networkHasIpv6Support()
-        } else {
-            false
-        }
+        val ipv6Support = networkHasIpv6Support()
         logd("configure: IPv6 support = $ipv6Support")
 
         logi("configure: Unvalidated DNS servers = $unvalidatedDnsServers")

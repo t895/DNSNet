@@ -879,9 +879,6 @@ fun HomeScreen(
                 var type by remember {
                     mutableStateOf(vm.configuration.read { dnsServers.type })
                 }
-                var ipV6SupportToggle by remember {
-                    mutableStateOf(vm.configuration.read { ipV6Support })
-                }
                 var useNetworkDnsServers by remember {
                     mutableStateOf(vm.configuration.read { useNetworkDnsServers })
                 }
@@ -895,14 +892,6 @@ fun HomeScreen(
                         vm.configuration.edit {
                             dnsServers.enabled = !dnsServers.enabled
                             customDnsServers = dnsServers.enabled
-                        }
-                        onReloadVpn()
-                    },
-                    ipv6Support = ipV6SupportToggle,
-                    onIpv6SupportClick = {
-                        vm.configuration.edit {
-                            ipV6Support = !ipV6Support
-                            ipV6SupportToggle = ipV6Support
                         }
                         onReloadVpn()
                     },
