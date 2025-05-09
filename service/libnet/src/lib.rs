@@ -6,9 +6,9 @@ use std::{
     os::fd::{AsRawFd, FromRawFd},
     str::{self, FromStr},
     sync::{Arc, RwLock, atomic::AtomicBool},
-    thread,
+    thread::{self},
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
-    u64, usize,
+    usize,
 };
 
 use android_logger::Config;
@@ -24,7 +24,7 @@ use quiche::{
     SendInfo,
     h3::{Header, NameValue},
 };
-use simple_dns::{CLASS, Name, Packet, PacketFlag, Question, ResourceRecord, TYPE, rdata::RData};
+use simple_dns::{Name, PacketFlag, ResourceRecord, rdata::RData};
 
 #[macro_use]
 extern crate log;
@@ -105,15 +105,17 @@ pub fn network_has_ipv6_support() -> bool {
     )) {
         Ok(value) => value,
         Err(error) => {
-            error!(
-                "has_ipv6_support: Failed to create socket! - {:?}",
-                error
-            );
+            error!("has_ipv6_support: Failed to create socket! - {:?}", error);
             return false;
         }
     };
 
-    let target_socket_address = SocketAddr::V6(SocketAddrV6::new(Ipv6Addr::from_str("2001:2::").unwrap(), 53, 0, 0));
+    let target_socket_address = SocketAddr::V6(SocketAddrV6::new(
+        Ipv6Addr::from_str("2001:2::").unwrap(),
+        53,
+        0,
+        0,
+    ));
     if let Err(error) = socket.send_to(&mut vec![1; 1], target_socket_address) {
         debug!("has_ipv6_support: Error during IPv6 test - {:?}", error);
         return false;
@@ -125,7 +127,7 @@ pub fn network_has_ipv6_support() -> bool {
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 #[uniffi(flat_error)]
 pub enum ValidateDnsError {
-    #[error("Failed to resolve hostname")]
+    #[error("Failed to resolve hostnames")]
     ResolveFailure,
 
     #[error("Failed to parse IPv4/IPv6 address")]
@@ -138,21 +140,88 @@ pub enum ValidateDnsResult {
     Interrupted(VpnResult),
 }
 
+struct DnsRequester {
+    server_name: String,
+    resolved_address: Option<Vec<u8>>,
+    result_id: u8,
+}
+
+impl DnsRequester {
+    const UPDATE_PORT: u16 = 1025;
+    const UPDATE_ADDRESS: SocketAddr =
+        SocketAddr::new(std::net::IpAddr::V6(Ipv6Addr::LOCALHOST), Self::UPDATE_PORT);
+
+    fn new(server_name: String, socket: UdpSocket, result_id: u8) -> Self {
+        let requester = DnsRequester {
+            server_name: server_name.to_string(),
+            resolved_address: None,
+            result_id,
+        };
+
+        thread::spawn(move || {
+            let failure_buffer = vec![0; 8];
+            let url = match url::Url::parse(format!("https://{server_name}").as_str()) {
+                Ok(value) => value,
+                Err(error) => {
+                    error!("new: Failed to parse URL! - {:?}", error);
+                    let _ = socket.send_to(&failure_buffer, Self::UPDATE_ADDRESS);
+                    return;
+                }
+            };
+
+            let socket_addresses = match url.socket_addrs(|| Some(53)) {
+                Ok(value) => value,
+                Err(error) => {
+                    error!(
+                        "DnsRequester::new: Failed to resolve socket addresses! - {:?}",
+                        error
+                    );
+                    let _ = socket.send_to(&failure_buffer, Self::UPDATE_ADDRESS);
+                    return;
+                }
+            };
+            if socket_addresses.is_empty() {
+                error!("DnsRequester::new: Received no socket addresses!");
+                let _ = socket.send_to(&failure_buffer, Self::UPDATE_ADDRESS);
+                return;
+            }
+
+            let result_address = socket_addresses.first().unwrap().ip();
+            debug!(
+                "DnsRequester::new: Got result address - {:?}",
+                result_address
+            );
+            let mut output_buffer = match result_address {
+                IpAddr::V4(ipv4_addr) => ipv4_addr.octets().to_vec(),
+                IpAddr::V6(ipv6_addr) => ipv6_addr.octets().to_vec(),
+            };
+            output_buffer.push(result_id);
+            let _ = socket.send_to(&output_buffer, Self::UPDATE_ADDRESS);
+        });
+
+        return requester;
+    }
+}
+
 #[uniffi::export]
 pub fn validate_dns_servers(
     vpn_controller: Arc<VpnController>,
+    ipv6_support: bool,
     user_servers: Vec<String>,
-    local_servers: Vec<String>,
 ) -> Result<ValidateDnsResult, ValidateDnsError> {
-    struct WaitingSocket {
-        server_name: String,
-        socket: UdpSocket,
-        received_packets_count: u8,
-    }
-
     let mut validated_servers = Vec::<Arc<NativeDnsServer>>::new();
-    let mut waiting_sockets = Vec::<WaitingSocket>::new();
-    for unvalidated_server in user_servers.iter() {
+    let mut dns_requesters = Vec::<DnsRequester>::new();
+    let mut socket = match UdpSocket::bind(DnsRequester::UPDATE_ADDRESS) {
+        Ok(value) => value,
+        Err(error) => {
+            error!(
+                "validate_dns_servers: Failed to create resolving socket! - {:?}",
+                error
+            );
+            return Err(ValidateDnsError::ResolveFailure);
+        }
+    };
+    for (index, unvalidated_server) in user_servers.iter().enumerate() {
         match IpAddr::from_str(&unvalidated_server) {
             Ok(value) => {
                 match value {
@@ -163,10 +232,12 @@ pub fn validate_dns_servers(
                         )));
                     }
                     IpAddr::V6(ipv6_addr) => {
-                        validated_servers.push(Arc::new(NativeDnsServer::new(
-                            ipv6_addr.octets().to_vec(),
-                            NativeDnsServerType::Standard,
-                        )));
+                        if ipv6_support {
+                            validated_servers.push(Arc::new(NativeDnsServer::new(
+                                ipv6_addr.octets().to_vec(),
+                                NativeDnsServerType::Standard,
+                            )));
+                        }
                     }
                 }
                 continue;
@@ -193,95 +264,27 @@ pub fn validate_dns_servers(
             return Err(ValidateDnsError::ResolveFailure);
         }
 
-        if let Err(error) = url::Url::parse(format!("https://{stripped_server}").as_str()) {
-            error!("new: Failed to parse URL! - {:?}", error);
-            return Err(ValidateDnsError::ResolveFailure);
-        };
-
-        let socket = match UdpSocket::bind(SocketAddr::new(
-            std::net::IpAddr::V6(Ipv6Addr::UNSPECIFIED),
-            0,
-        )) {
+        let requester_address = SocketAddr::new(
+            std::net::IpAddr::V6(Ipv6Addr::LOCALHOST),
+            DnsRequester::UPDATE_PORT + (index as u16) + 1,
+        );
+        let requester_socket = match UdpSocket::bind(requester_address) {
             Ok(value) => value,
             Err(error) => {
                 error!(
-                    "validate_dns_servers: Failed to create resolving socket! - {:?}",
+                    "validate_dns_servers: Failed to create requester socket! - {:?}",
                     error
                 );
                 return Err(ValidateDnsError::ResolveFailure);
             }
         };
+        let dns_requester =
+            DnsRequester::new(stripped_server.to_owned(), requester_socket, index as u8);
 
-        if local_servers.is_empty() {
-            return Err(ValidateDnsError::ResolveFailure);
-        }
-
-        let server_string = local_servers.first().unwrap();
-        let target_ip_address = match IpAddr::from_str(server_string) {
-            Ok(value) => value,
-            Err(error) => {
-                error!("validate_dns_servers: Failed to parse local DNS server {server_string}! - {:?}", error);
-                return Err(ValidateDnsError::ResolveFailure);
-            }
-        };
-        let target_socket_address = SocketAddr::new(target_ip_address, 53);
-
-        let mut query_ipv4 = Packet::new_query(getrandom::u32().unwrap() as u16);
-        let mut query_ipv6 = Packet::new_query(getrandom::u32().unwrap() as u16);
-        let question_ipv4 = Question::new(
-            Name::new_unchecked(stripped_server),
-            TYPE::A.into(),
-            CLASS::IN.into(),
-            false,
-        );
-        let question_ipv6 = Question::new(
-            Name::new_unchecked(stripped_server),
-            TYPE::AAAA.into(),
-            CLASS::IN.into(),
-            false,
-        );
-        query_ipv4.questions.push(question_ipv4);
-        query_ipv6.questions.push(question_ipv6);
-        let mut buffer_ipv4 = Vec::new();
-        let mut buffer_ipv6 = Vec::new();
-        if let Err(error) = query_ipv4.write_to(&mut buffer_ipv4) {
-            error!(
-                "validate_dns_servers: Failed to write message to buffer! - {:?}",
-                error
-            );
-            return Err(ValidateDnsError::ResolveFailure);
-        };
-        if let Err(error) = query_ipv6.write_to(&mut buffer_ipv6) {
-            error!(
-                "validate_dns_servers: Failed to write message to buffer! - {:?}",
-                error
-            );
-            return Err(ValidateDnsError::ResolveFailure);
-        };
-
-        if let Err(error) = socket.send_to(&mut buffer_ipv4, target_socket_address) {
-            error!(
-                "validate_dns_servers: Failed to send DNS query! - {:?}",
-                error
-            );
-            return Err(ValidateDnsError::ResolveFailure);
-        }
-        if let Err(error) = socket.send_to(&mut buffer_ipv6, target_socket_address) {
-            error!(
-                "validate_dns_servers: Failed to send DNS query! - {:?}",
-                error
-            );
-            return Err(ValidateDnsError::ResolveFailure);
-        }
-
-        waiting_sockets.push(WaitingSocket {
-            server_name: stripped_server.to_string(),
-            socket,
-            received_packets_count: 0,
-        });
+        dns_requesters.push(dns_requester);
     }
 
-    if waiting_sockets.is_empty() {
+    if dns_requesters.is_empty() {
         if user_servers.len() == validated_servers.len() {
             return Ok(ValidateDnsResult::Success(validated_servers));
         } else {
@@ -299,20 +302,18 @@ pub fn validate_dns_servers(
             return Err(ValidateDnsError::ResolveFailure);
         }
     };
-    let mut events = Events::with_capacity(waiting_sockets.len());
+    let mut events = Events::with_capacity(dns_requesters.len());
 
-    for (index, waiting_socket) in waiting_sockets.iter_mut().enumerate() {
-        if let Err(error) = poll
-            .registry()
-            .register(&mut waiting_socket.socket, Token(index), Interest::READABLE)
-        {
-            error!(
-                "validate_dns_servers: Failed to register socket to poller! - {:?}",
-                error
-            );
-            return Err(ValidateDnsError::ResolveFailure);
-        };
-    }
+    if let Err(error) = poll
+        .registry()
+        .register(&mut socket, Token(0), Interest::READABLE)
+    {
+        error!(
+            "validate_dns_servers: Failed to register socket to poller! - {:?}",
+            error
+        );
+        return Err(ValidateDnsError::ResolveFailure);
+    };
 
     if let Err(error) = poll.registry().register(
         &mut SourceFd(&vpn_controller.event_fd),
@@ -326,22 +327,25 @@ pub fn validate_dns_servers(
         return Err(ValidateDnsError::ResolveFailure);
     };
 
+    let mut responses = 0;
     let mut input_buffer = vec![0u8; 512];
-    let mut complete_requests = 0;
-    while waiting_sockets.len() != complete_requests {
+    'requesters: while dns_requesters
+        .iter()
+        .any(|dns_requester| dns_requester.resolved_address.is_none())
+        && responses != dns_requesters.len()
+    {
         if let Err(error) = poll.poll(&mut events, Some(Duration::from_secs(5))) {
             error!("validate_dns_servers: Poller failed! - {:?}", error);
             return Err(ValidateDnsError::ResolveFailure);
         }
 
         if events.is_empty() {
-            error!("validate_dns_servers: Timed out while waiting for DNS result!");
-            return Err(ValidateDnsError::ResolveFailure);
+            warn!("validate_dns_servers: Timed out while waiting for DNS result!");
+            break 'requesters;
         }
 
         for event in events.iter() {
-            let token_value = event.token().0;
-            if token_value == usize::MAX {
+            if event.token().0 == usize::MAX {
                 info!("validate_dns_servers: VPN controller interrupted the DNS poller");
                 let stop_result = if let Some(result) = vpn_controller.get_stop_result() {
                     result
@@ -351,65 +355,66 @@ pub fn validate_dns_servers(
                 return Ok(ValidateDnsResult::Interrupted(stop_result));
             }
 
-            let waiting_socket = waiting_sockets.get_mut(token_value).unwrap();
-            if waiting_socket.received_packets_count == 1 {
-                if let Err(error) = poll.registry().deregister(&mut waiting_socket.socket) {
-                    error!(
-                        "validate_dns_servers: Failed to deregister socket from poller! - {:?}",
-                        error
-                    );
-                    return Err(ValidateDnsError::ResolveFailure);
+            'read: loop {
+                let read: usize = match socket.recv(&mut input_buffer) {
+                    Ok(value) => value,
+                    Err(error) => {
+                        if error.kind() == std::io::ErrorKind::WouldBlock {
+                            trace!("validate_dns_servers: recv() would block");
+                            break 'read;
+                        }
+                        error!(
+                            "validate_dns_servers: Failed to read from socket! - {:?}",
+                            error
+                        );
+                        break 'read;
+                    }
                 };
+                responses += 1;
+
+                if read == 8 && input_buffer[..read].into_iter().all(|&byte| byte == 0) {
+                    error!("validate_dns_servers: Got invalid result from socket");
+                    continue 'read;
+                }
+
+                if read == 0 {
+                    error!("validate_dns_servers: Got invalid result from socket");
+                    continue 'read;
+                }
+
+                let result_id = input_buffer[..read].last().unwrap();
+                let dns_requester = match dns_requesters
+                    .iter_mut()
+                    .find(|dns_requester| dns_requester.result_id == *result_id)
+                {
+                    Some(value) => value,
+                    None => {
+                        error!(
+                            "validate_dns_servers: Could not find requester for result id {result_id}"
+                        );
+                        continue 'read;
+                    }
+                };
+
+                dns_requester.resolved_address = Some(input_buffer[..read - 1].to_vec());
             }
-
-            let read = match waiting_socket.socket.recv(&mut input_buffer) {
-                Ok(value) => value,
-                Err(error) => {
-                    error!(
-                        "validate_dns_servers: Failed to read from socket! - {:?}",
-                        error
-                    );
-                    return Err(ValidateDnsError::ResolveFailure);
-                }
-            };
-            waiting_socket.received_packets_count += 1;
-
-            let packet = match Packet::parse(&input_buffer[..read]) {
-                Ok(value) => value,
-                Err(error) => {
-                    error!(
-                        "validate_dns_servers: Failed to parse DNS message! - {:?}",
-                        error
-                    );
-                    return Err(ValidateDnsError::ResolveFailure);
-                }
-            };
-
-            if packet.answers.is_empty() {
-                warn!("validate_dns_servers: Got no answers from DNS request to server - {}", waiting_socket.server_name);
-                if waiting_socket.received_packets_count == 2 {
-                    return Err(ValidateDnsError::ResolveFailure);
-                }
-                continue;
-            }
-
-            let address = match &packet.answers.first().unwrap().rdata {
-                RData::A(value) => value.address.to_be_bytes().to_vec(),
-                RData::AAAA(value) => value.address.to_be_bytes().to_vec(),
-                _ => {
-                    error!("validate_dns_servers: Got incorrect answer type!");
-                    return Err(ValidateDnsError::ResolveFailure);
-                }
-            };
-
-            validated_servers.push(Arc::new(NativeDnsServer::new(
-                address,
-                NativeDnsServerType::DoH3(waiting_socket.server_name.clone()),
-            )));
-
-            complete_requests += 1;
         }
     }
+
+    for dns_requester in dns_requesters.iter_mut() {
+        if let Some(address) = dns_requester.resolved_address.take() {
+            validated_servers.push(Arc::new(NativeDnsServer::new(
+                address,
+                NativeDnsServerType::DoH3(dns_requester.server_name.clone()),
+            )));
+        } else {
+            trace!(
+                "validate_dns_servers: No resolved address for {}",
+                dns_requester.server_name
+            );
+        }
+    }
+
     return Ok(ValidateDnsResult::Success(validated_servers));
 }
 
@@ -736,8 +741,8 @@ pub enum VpnError {
     #[error("Failed to create the tunnel file descriptor")]
     ConfigurationFailure,
 
-    #[error("At least one invalid DNS server provided")]
-    InvalidDnsServer,
+    #[error("All DNS servers provided were invalid")]
+    InvalidDnsServers,
 
     #[error("Failed to send/receive data on a socket")]
     SocketFailure,
@@ -752,7 +757,7 @@ pub enum VpnConfigurationResult {
     BuilderFailure,
 
     // At least one of the user's DNS servers were invalid
-    InvalidDnsServer,
+    InvalidDnsServers,
 
     // VPN controller interrupted configuration
     Interrupted(VpnResult),
@@ -773,9 +778,8 @@ pub trait AdVpnCallback: Send + Sync {
 
 #[derive(Debug)]
 enum DnsBackendError {
-    ForwardFailure,
-    InvalidAddress,
     SocketFailure,
+    InvalidAddress,
     RandomGenerationFailure,
 }
 
@@ -948,7 +952,7 @@ impl DnsBackend for StandardDnsBackend {
             }
             Err(error) => {
                 error!("forward_packet: Failed to send packet! - {:?}", error);
-                Err(DnsBackendError::ForwardFailure)
+                Err(DnsBackendError::SocketFailure)
             }
         };
     }
@@ -1916,9 +1920,9 @@ impl AdVpn {
                     error!("run: Failed to configure VPN");
                     return Result::Err(VpnError::ConfigurationFailure);
                 }
-                VpnConfigurationResult::InvalidDnsServer => {
+                VpnConfigurationResult::InvalidDnsServers => {
                     error!("run: No valid DNS servers found");
-                    return Result::Err(VpnError::InvalidDnsServer);
+                    return Result::Err(VpnError::InvalidDnsServers);
                 }
                 VpnConfigurationResult::Interrupted(result) => {
                     debug!("run: Interrupted");

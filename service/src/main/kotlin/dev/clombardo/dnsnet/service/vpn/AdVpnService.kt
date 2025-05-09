@@ -741,7 +741,6 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
                 vpnController = vpnController,
                 ipv6Support = ipv6Support,
                 userServers = unvalidatedDnsServers,
-                localServers = localDnsServers.map { it.hostAddress!! },
             )
 
             when (result) {
@@ -749,12 +748,12 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
                 is ValidateDnsResult.Success -> result.v1
             }
         } catch (_: ValidateDnsException) {
-            return VpnConfigurationResult.InvalidDnsServer
+            return VpnConfigurationResult.InvalidDnsServers
         }
         logi("configure: Valid DNS servers = ${validatedDnsServers.map { it.getAddress().contentToString() }}")
 
-        if (validatedDnsServers.size != unvalidatedDnsServers.size) {
-            return VpnConfigurationResult.InvalidDnsServer
+        if (validatedDnsServers.isEmpty()) {
+            return VpnConfigurationResult.InvalidDnsServers
         }
 
         // Configure a builder while parsing the parameters.
@@ -822,7 +821,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
                             } else {
                                 ipv6Template[ipv6Template.size - 1] = (index + 2).toByte()
                                 val i6addr = Inet6Address.getByAddress(ipv6Template)
-                                logi("configure: Adding DNS Server $server. as $i6addr")
+                                logi("configure: Adding DNS Server $address. as $i6addr")
                                 builder.addDnsServer(i6addr)
                             }
                         }

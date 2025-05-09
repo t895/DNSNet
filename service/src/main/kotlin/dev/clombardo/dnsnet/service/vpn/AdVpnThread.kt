@@ -116,7 +116,7 @@ class AdVpnThread(
                     }
 
                     is VpnException.SocketFailure,
-                    is VpnException.InvalidDnsServer -> {
+                    is VpnException.InvalidDnsServers -> {
                         notify(VpnStatus.RECONNECTING)
                         if (immediateRetryCount < MAX_IMMEDIATE_RETRIES) {
                             loge("Minor error occurred. Retrying immediately.", e)
