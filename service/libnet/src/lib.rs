@@ -18,7 +18,7 @@ use etherparse::{
     PacketBuilderStep, SlicedPacket, TransportSlice, UdpSlice, ip_number,
 };
 use log::LevelFilter;
-use mio::{Events, Interest, Poll, Token, net::UdpSocket};
+use mio::{net::UdpSocket, unix::pipe, Events, Interest, Poll, Token};
 use mio::{event::Source, unix::SourceFd};
 use quiche::{
     SendInfo,
@@ -147,11 +147,7 @@ struct DnsRequester {
 }
 
 impl DnsRequester {
-    const UPDATE_PORT: u16 = 1025;
-    const UPDATE_ADDRESS: SocketAddr =
-        SocketAddr::new(std::net::IpAddr::V6(Ipv6Addr::LOCALHOST), Self::UPDATE_PORT);
-
-    fn new(server_name: String, socket: UdpSocket, result_id: u8) -> Self {
+    fn new(server_name: String, pipe: Arc<RwLock<pipe::Sender>>, result_id: u8) -> Self {
         let requester = DnsRequester {
             server_name: server_name.to_string(),
             resolved_address: None,
@@ -164,7 +160,9 @@ impl DnsRequester {
                 Ok(value) => value,
                 Err(error) => {
                     error!("new: Failed to parse URL! - {:?}", error);
-                    let _ = socket.send_to(&failure_buffer, Self::UPDATE_ADDRESS);
+                    if let Ok(mut sender) = pipe.write() {
+                        let _ = sender.write(&failure_buffer);
+                    }
                     return;
                 }
             };
@@ -176,13 +174,17 @@ impl DnsRequester {
                         "DnsRequester::new: Failed to resolve socket addresses! - {:?}",
                         error
                     );
-                    let _ = socket.send_to(&failure_buffer, Self::UPDATE_ADDRESS);
+                    if let Ok(mut sender) = pipe.write() {
+                        let _ = sender.write(&failure_buffer);
+                    }
                     return;
                 }
             };
             if socket_addresses.is_empty() {
                 error!("DnsRequester::new: Received no socket addresses!");
-                let _ = socket.send_to(&failure_buffer, Self::UPDATE_ADDRESS);
+                if let Ok(mut sender) = pipe.write() {
+                    let _ = sender.write(&failure_buffer);
+                }
                 return;
             }
 
@@ -196,7 +198,11 @@ impl DnsRequester {
                 IpAddr::V6(ipv6_addr) => ipv6_addr.octets().to_vec(),
             };
             output_buffer.push(result_id);
-            let _ = socket.send_to(&output_buffer, Self::UPDATE_ADDRESS);
+            if let Ok(mut sender) = pipe.write() {
+                if let Err(error) = sender.write(&output_buffer) {
+                    error!("DnsRequester::new: Failed to write result to buffer! - {:?}", error);
+                }
+            }
         });
 
         return requester;
@@ -211,16 +217,17 @@ pub fn validate_dns_servers(
 ) -> Result<ValidateDnsResult, ValidateDnsError> {
     let mut validated_servers = Vec::<Arc<NativeDnsServer>>::new();
     let mut dns_requesters = Vec::<DnsRequester>::new();
-    let mut socket = match UdpSocket::bind(DnsRequester::UPDATE_ADDRESS) {
+    let (sender_pipe, mut receiver_pipe) = match pipe::new() {
         Ok(value) => value,
         Err(error) => {
             error!(
-                "validate_dns_servers: Failed to create resolving socket! - {:?}",
+                "validate_dns_servers: Failed to create pipe! - {:?}",
                 error
             );
             return Err(ValidateDnsError::ResolveFailure);
         }
     };
+    let sender_holder = Arc::new(RwLock::new(sender_pipe));
     for (index, unvalidated_server) in user_servers.iter().enumerate() {
         match IpAddr::from_str(&unvalidated_server) {
             Ok(value) => {
@@ -264,22 +271,8 @@ pub fn validate_dns_servers(
             return Err(ValidateDnsError::ResolveFailure);
         }
 
-        let requester_address = SocketAddr::new(
-            std::net::IpAddr::V6(Ipv6Addr::LOCALHOST),
-            DnsRequester::UPDATE_PORT + (index as u16) + 1,
-        );
-        let requester_socket = match UdpSocket::bind(requester_address) {
-            Ok(value) => value,
-            Err(error) => {
-                error!(
-                    "validate_dns_servers: Failed to create requester socket! - {:?}",
-                    error
-                );
-                return Err(ValidateDnsError::ResolveFailure);
-            }
-        };
         let dns_requester =
-            DnsRequester::new(stripped_server.to_owned(), requester_socket, index as u8);
+            DnsRequester::new(stripped_server.to_owned(), sender_holder.clone(), index as u8);
 
         dns_requesters.push(dns_requester);
     }
@@ -306,7 +299,7 @@ pub fn validate_dns_servers(
 
     if let Err(error) = poll
         .registry()
-        .register(&mut socket, Token(0), Interest::READABLE)
+        .register(&mut receiver_pipe, Token(0), Interest::READABLE)
     {
         error!(
             "validate_dns_servers: Failed to register socket to poller! - {:?}",
@@ -356,15 +349,15 @@ pub fn validate_dns_servers(
             }
 
             'read: loop {
-                let read: usize = match socket.recv(&mut input_buffer) {
+                let read: usize = match receiver_pipe.read(&mut input_buffer) {
                     Ok(value) => value,
                     Err(error) => {
                         if error.kind() == std::io::ErrorKind::WouldBlock {
-                            trace!("validate_dns_servers: recv() would block");
+                            trace!("validate_dns_servers: read() would block");
                             break 'read;
                         }
                         error!(
-                            "validate_dns_servers: Failed to read from socket! - {:?}",
+                            "validate_dns_servers: Failed to read from pipe! - {:?}",
                             error
                         );
                         break 'read;
@@ -373,12 +366,12 @@ pub fn validate_dns_servers(
                 responses += 1;
 
                 if read == 8 && input_buffer[..read].into_iter().all(|&byte| byte == 0) {
-                    error!("validate_dns_servers: Got invalid result from socket");
+                    error!("validate_dns_servers: Got invalid result from pipe");
                     continue 'read;
                 }
 
                 if read == 0 {
-                    error!("validate_dns_servers: Got invalid result from socket");
+                    error!("validate_dns_servers: Got invalid result from pipe");
                     continue 'read;
                 }
 
