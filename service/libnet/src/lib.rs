@@ -1936,7 +1936,7 @@ impl AdVpn {
                 }
                 Err(error) => match error {
                     DoH3BackendError::ConfigurationFailure => {
-                        panic!("run: Failed to build quiche config! This should never happen!")
+                        return Result::Err(VpnError::ConfigurationFailure);
                     }
                 },
             }
