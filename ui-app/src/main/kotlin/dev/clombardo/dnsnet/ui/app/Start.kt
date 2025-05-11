@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -199,7 +200,7 @@ fun StartScreen(
                                 .padding(bottom = NavigationBar.height)
                                 .systemBarsPadding()
                         } else {
-                            Modifier.displayCutoutPadding()
+                            Modifier.padding(TriStateFab.safeInsets.asPaddingValues())
                         }
                     )
                     .padding(FabPadding),

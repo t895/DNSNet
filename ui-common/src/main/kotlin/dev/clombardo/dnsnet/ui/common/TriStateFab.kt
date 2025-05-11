@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
@@ -52,14 +54,10 @@ enum class FabState {
     Active,
 }
 
-object TriStateFabDefaults {
-    val contentSize = 52.dp
-    val insets: WindowInsets
-        @Composable get() = WindowInsets.displayCutout
-}
-
 object TriStateFab {
     val size = 96.dp
+    val safeInsets: WindowInsets
+        @Composable get() = WindowInsets.displayCutout.union(WindowInsets.systemBars)
 }
 
 @Composable
