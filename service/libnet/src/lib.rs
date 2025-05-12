@@ -1731,7 +1731,7 @@ impl DnsBackend for DoH3Backend {
                                 }
                             }
 
-                            Ok((_, quiche::h3::Event::PriorityUpdate)) => unreachable!(),
+                            Ok((_prioritized_element_id, quiche::h3::Event::PriorityUpdate)) => {},
 
                             Ok((_, quiche::h3::Event::GoAway)) => {
                                 info!("process_events: Told to GOAWAY 😔");
