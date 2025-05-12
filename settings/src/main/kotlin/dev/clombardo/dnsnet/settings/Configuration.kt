@@ -63,14 +63,14 @@ class ConfigurationManager(
     private val preferences: Preferences,
 ) {
     private val configLock = Object()
-    private var configuration = Configuration.load(context, preferences)
+    private var configuration = Configuration.load(context, preferences, replaced = false)
 
     private val pendingSave = atomic(false)
     private var saving by atomic(false)
 
     fun replaceInstance(newConfigStream: InputStream) {
         synchronized(configLock) {
-            val newConfig = Configuration.load(newConfigStream, preferences)
+            val newConfig = Configuration.load(newConfigStream, preferences, replaced = true)
             configuration = newConfig
         }
         saveAsync()
@@ -150,7 +150,7 @@ data class Configuration(
         }
 
         @OptIn(ExperimentalSerializationApi::class)
-        internal fun load(inputStream: InputStream, preferences: Preferences): Configuration {
+        internal fun load(inputStream: InputStream, preferences: Preferences, replaced: Boolean): Configuration {
             val config = try {
                 json.decodeFromStream<Configuration>(inputStream)
             } catch (e: Exception) {
@@ -163,24 +163,24 @@ data class Configuration(
             }
 
             for (i in config.minorVersion + 1..MINOR_VERSION) {
-                config.runMinorUpdate(i, preferences)
+                config.runMinorUpdate(i, preferences, replaced)
             }
 
             return config
         }
 
-        internal fun load(context: Context, preferences: Preferences): Configuration {
+        internal fun load(context: Context, preferences: Preferences, replaced: Boolean): Configuration {
             val inputStream = FileHelper.openRead(context, DEFAULT_CONFIG_FILENAME)
             if (inputStream == null) {
                 logd("Config file not found, creating new file")
                 return Configuration()
             }
 
-            return load(inputStream, preferences)
+            return load(inputStream, preferences, replaced)
         }
     }
 
-    fun runMinorUpdate(level: Int, preferences: Preferences) {
+    fun runMinorUpdate(level: Int, preferences: Preferences, replaced: Boolean) {
         when (level) {
             1 -> {
                 // This is always enabled after v0.2.3
@@ -189,7 +189,9 @@ data class Configuration(
             }
 
             2 -> {
-                preferences.ShouldShowPresetsWhenNoBlockLists = true
+                if (!replaced) {
+                    preferences.ShouldShowPresetsWhenNoBlockLists = true
+                }
                 logi("Updated to config v1.2 successfully")
             }
         }
