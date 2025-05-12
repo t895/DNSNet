@@ -1241,7 +1241,7 @@ struct DoH3Backend {
 }
 
 impl DoH3Backend {
-    const CONNECTION_TIMEOUT_SECONDS: u64 = 10;
+    const CONNECTION_TIMEOUT_SECONDS: u64 = 30;
     const ACTIVE_REQUEST_TIMEOUT_SECONDS: u64 = 10;
     const PENDING_PACKET_TIMEOUT_SECONDS: u64 = 10;
 
