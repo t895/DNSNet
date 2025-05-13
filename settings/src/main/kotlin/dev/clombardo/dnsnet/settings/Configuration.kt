@@ -79,6 +79,7 @@ class ConfigurationManager(
     fun resetInstance() {
         synchronized(configLock) {
             configuration = Configuration()
+            configuration.runUpdates(preferences, replaced = true)
         }
         saveAsync()
     }
@@ -162,9 +163,7 @@ data class Configuration(
                 return Configuration()
             }
 
-            for (i in config.minorVersion + 1..MINOR_VERSION) {
-                config.runMinorUpdate(i, preferences, replaced)
-            }
+            config.runUpdates(preferences, replaced)
 
             return config
         }
@@ -180,7 +179,13 @@ data class Configuration(
         }
     }
 
-    fun runMinorUpdate(level: Int, preferences: Preferences, replaced: Boolean) {
+    internal fun runUpdates(preferences: Preferences, replaced: Boolean) {
+        for (i in minorVersion + 1..MINOR_VERSION) {
+            runMinorUpdate(i, preferences, replaced)
+        }
+    }
+
+    internal fun runMinorUpdate(level: Int, preferences: Preferences, replaced: Boolean) {
         when (level) {
             1 -> {
                 // This is always enabled after v0.2.3
