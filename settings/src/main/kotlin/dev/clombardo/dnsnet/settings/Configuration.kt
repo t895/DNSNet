@@ -189,7 +189,7 @@ data class Configuration(
             }
 
             2 -> {
-                if (!replaced) {
+                if (!replaced && hosts.items.isEmpty()) {
                     preferences.ShouldShowPresetsWhenNoBlockLists = true
                 }
                 logi("Updated to config v1.2 successfully")
