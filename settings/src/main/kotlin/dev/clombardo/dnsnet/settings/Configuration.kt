@@ -140,7 +140,7 @@ data class Configuration(
         private const val VERSION = 1
 
         /* Default tweak level */
-        private const val MINOR_VERSION = 2
+        private const val MINOR_VERSION = 3
 
         private val json by lazy {
             Json {
@@ -193,6 +193,37 @@ data class Configuration(
                     preferences.ShouldShowPresetsWhenNoBlockLists = true
                 }
                 logi("Updated to config v1.2 successfully")
+            }
+
+            3 -> {
+                if (dnsServers.items.none { it.type == DnsServerType.DoH3 }) {
+                    dnsServers.items.apply {
+                        add(
+                            DnsServer(
+                                title = "Cloudflare DoH3",
+                                addresses = "cloudflare-dns.com",
+                                enabled = true,
+                                type = DnsServerType.DoH3,
+                            )
+                        )
+                        add(
+                            DnsServer(
+                                title = "Google DoH3",
+                                addresses = "dns.google",
+                                enabled = false,
+                                type = DnsServerType.DoH3,
+                            )
+                        )
+                        add(
+                            DnsServer(
+                                title = "Google DoH3 IPv6-only",
+                                addresses = "dns64.dns.google",
+                                enabled = false,
+                                type = DnsServerType.DoH3,
+                            )
+                        )
+                    }
+                }
             }
         }
         minorVersion = level
