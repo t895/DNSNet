@@ -67,4 +67,7 @@
     <string name="allowlist_description">برکناری DNSNet برای برنامه های علامت گذاری شده</string>
     <string name="update_incomplete">به روز رسانی ناقص</string>
     <string name="update_incomplete_description">برخی فایل های میزبان را نمی توان دانلود کرد. اگر فایل ها قبلا دانلود شده بودند، نسخه های قدیمی همچنان مورد استفاده قرار خواهند گرفت.</string>
+    <string name="updating_hostfiles">به روز رسانی فایل های host</string>
+    <string name="action_use_file">استفاده از فایل</string>
+    <string name="updating_n_host_files">به روز رسانی فایل host %1$d</string>
 </resources>
