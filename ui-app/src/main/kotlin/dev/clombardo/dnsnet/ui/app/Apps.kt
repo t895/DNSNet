@@ -9,7 +9,6 @@
 package dev.clombardo.dnsnet.ui.app
 
 import android.content.pm.ApplicationInfo
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -52,7 +51,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.window.core.layout.WindowWidthSizeClass
-import coil3.compose.rememberAsyncImagePainter
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import dev.clombardo.dnsnet.settings.AllowListMode
 import dev.clombardo.dnsnet.settings.AllowListMode.Companion.toAllowListMode
 import dev.clombardo.dnsnet.ui.app.model.AppData
@@ -199,9 +200,12 @@ fun AppsScreen(
                     },
                     clip = true,
                     startContent = {
-                        Image(
+                        AsyncImage(
                             modifier = Modifier.fillMaxSize(),
-                            painter = rememberAsyncImagePainter(it),
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(it)
+                                .crossfade(true)
+                                .build(),
                             contentDescription = it.label,
                         )
                     }
