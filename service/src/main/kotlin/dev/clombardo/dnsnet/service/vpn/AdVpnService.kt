@@ -743,7 +743,8 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
                 is ValidateDnsResult.Interrupted -> return VpnConfigurationResult.Interrupted(result.v1)
                 is ValidateDnsResult.Success -> result.v1
             }
-        } catch (_: ValidateDnsException) {
+        } catch (e: ValidateDnsException) {
+            loge("Failed to validate DNS servers", e)
             return VpnConfigurationResult.InvalidDnsServers
         }
         logi("configure: Valid DNS servers = ${validatedDnsServers.map { it.getAddress().contentToString() }}")

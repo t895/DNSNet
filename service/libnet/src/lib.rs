@@ -233,6 +233,7 @@ pub fn validate_dns_servers(
             Ok(value) => {
                 match value {
                     IpAddr::V4(ipv4_addr) => {
+                        debug!("validate_dns_server: Validated {}", ipv4_addr);
                         validated_servers.push(Arc::new(NativeDnsServer::new(
                             ipv4_addr.octets().to_vec(),
                             NativeDnsServerType::Standard,
@@ -240,6 +241,7 @@ pub fn validate_dns_servers(
                     }
                     IpAddr::V6(ipv6_addr) => {
                         if ipv6_support {
+                            debug!("validate_dns_server: Validated {}", ipv6_addr);
                             validated_servers.push(Arc::new(NativeDnsServer::new(
                                 ipv6_addr.octets().to_vec(),
                                 NativeDnsServerType::Standard,
@@ -268,7 +270,7 @@ pub fn validate_dns_servers(
             error!(
                 "validate_dns_servers: Rejecting invalid DoH3 server name - {unvalidated_server}"
             );
-            return Err(ValidateDnsError::ResolveFailure);
+            continue;
         }
 
         let dns_requester =
@@ -278,7 +280,7 @@ pub fn validate_dns_servers(
     }
 
     if dns_requesters.is_empty() {
-        if user_servers.len() == validated_servers.len() {
+        if validated_servers.len() > 0 {
             return Ok(ValidateDnsResult::Success(validated_servers));
         } else {
             return Err(ValidateDnsError::ParseFailure);
