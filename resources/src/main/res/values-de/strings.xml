@@ -197,4 +197,7 @@
     <string name="block_log">Blockier-Protokoll</string>
     <string name="last_connected">Zuletzt verbunden</string>
     <string name="hosts_title">Hosts mit Dateien und Ausnahmen filtern</string>
+    <string name="doh3">DNS über HTTP/3</string>
+    <string name="doh3_description">Senden Sie Ihre DNS-Anfragen sicher. Verwenden Sie die URLs \"https://example.com/dns-query\".</string>
+    <string name="doh3_warning">Mindestens ein Server muss ausgewählt werden</string>
 </resources>
