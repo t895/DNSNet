@@ -23,7 +23,7 @@ val libnet = "libnet"
 // Required for reproducible builds on F-Droid
 val remapCargo = listOf(
     "--config",
-    "build.rustflags = [ '--remap-path-prefix=${System.getenv("HOME")}/.cargo=/rust/cargo' ]",
+    "build.rustflags = [ '--remap-path-prefix=${System.getenv("CARGO_HOME")}=/rust/cargo' ]",
 )
 
 cargo {
