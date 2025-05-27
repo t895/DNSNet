@@ -28,11 +28,10 @@ import dev.clombardo.dnsnet.file.FileHelper
 import dev.clombardo.dnsnet.log.logd
 import dev.clombardo.dnsnet.log.loge
 import dev.clombardo.dnsnet.log.logi
-import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
@@ -65,8 +64,9 @@ class ConfigurationManager(
     private val configLock = Object()
     private var configuration = Configuration.load(context, preferences, replaced = false)
 
-    private val pendingSave = atomic(false)
-    private var saving by atomic(false)
+    private val savers = 1
+    private val pendingSaveLock = Semaphore(savers)
+    private var savingLock = Semaphore(savers)
 
     fun replaceInstance(newConfigStream: InputStream) {
         synchronized(configLock) {
@@ -102,20 +102,16 @@ class ConfigurationManager(
     private fun saveAsync() {
         // File must be created here because we rely on it to know if we should show the Presets screen
         File(context.filesDir, Configuration.DEFAULT_CONFIG_FILENAME).createNewFile()
-        if (pendingSave.getAndSet(true)) {
+        if (!pendingSaveLock.tryAcquire()) {
             return
         }
 
         CoroutineScope(Dispatchers.IO).launch {
-            while (saving) {
-                delay(100)
-            }
-
-            saving = true
-            pendingSave.getAndSet(false)
+            savingLock.acquire()
+            pendingSaveLock.release()
             configuration.save(context)
             logd("Saved configuration")
-            saving = false
+            savingLock.release()
         }
     }
 }
