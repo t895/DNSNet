@@ -29,6 +29,7 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,8 +42,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
@@ -55,7 +54,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import dagger.hilt.android.AndroidEntryPoint
 import dev.chrisbanes.haze.HazeDefaults
-import dev.chrisbanes.haze.HazeEffectScope
+import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
@@ -169,6 +168,7 @@ class MainActivity : AppCompatActivity() {
                     val localDensity = LocalDensity.current
                     val systemBarShadeHeight =
                         WindowInsets.systemBars.getTop(localDensity) / localDensity.density
+                    val surfaceColor = MaterialTheme.colorScheme.surface
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -176,13 +176,15 @@ class MainActivity : AppCompatActivity() {
                             .hazeEffect(
                                 state = hazeState,
                                 style = HazeDefaults.style(
-                                    backgroundColor = MaterialTheme.colorScheme.surface,
-                                    blurRadius = 1.dp,
+                                    backgroundColor = surfaceColor,
+                                    blurRadius = 4.dp,
                                 ),
-                                block = fun HazeEffectScope.() {
-                                    mask = Brush.verticalGradient(
-                                        0f to Color.White,
-                                        1f to Color.Transparent,
+                                block = {
+                                    progressive = HazeProgressive.verticalGradient(
+                                        startY = Float.POSITIVE_INFINITY,
+                                        endY = 0f,
+                                        easing = FastOutSlowInEasing,
+                                        preferPerformance = true,
                                     )
                                 }),
                     )
