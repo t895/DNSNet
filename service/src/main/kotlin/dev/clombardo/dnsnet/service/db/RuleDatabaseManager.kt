@@ -10,6 +10,7 @@ package dev.clombardo.dnsnet.service.db
 
 import android.content.Context
 import dev.clombardo.dnsnet.log.logi
+import dev.clombardo.dnsnet.log.logw
 import dev.clombardo.dnsnet.service.NativeFileHelperWrapper
 import dev.clombardo.dnsnet.service.toNative
 import dev.clombardo.dnsnet.settings.ConfigurationManager
@@ -17,6 +18,7 @@ import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.withContext
 import uniffi.net.RuleDatabase
 import uniffi.net.RuleDatabaseController
@@ -26,11 +28,19 @@ class RuleDatabaseManager(
     private val context: Context,
     private val configuration: ConfigurationManager,
 ) {
-    private val reloadPending = atomic(false)
+    private val reloadLock = Semaphore(1)
+    private val pendingReloadLock = Semaphore(1)
+    private var destroyed by atomic(false)
+
     private val ruleDatabaseController = RuleDatabaseController()
     val ruleDatabase = RuleDatabase(ruleDatabaseController)
 
     private suspend fun initialize() = withContext(Dispatchers.IO) {
+        if (destroyed) {
+            logw("Tried to initialize destroyed database")
+            return@withContext
+        }
+
         try {
             ruleDatabase.initialize(
                 androidFileHelper = NativeFileHelperWrapper(context),
@@ -47,18 +57,26 @@ class RuleDatabaseManager(
 
     fun reload() {
         logi("Reloading")
-        if (reloadPending.getAndSet(true)) {
+        if (!pendingReloadLock.tryAcquire()) {
             logi("Reload already pending")
             return
         }
 
         CoroutineScope(Dispatchers.IO).launch {
+            reloadLock.acquire()
+            pendingReloadLock.release()
             if (ruleDatabaseController.isInitialized()) {
                 ruleDatabase.waitOnInit()
             }
-            reloadPending.getAndSet(false)
+
             logi("Initializing after wait")
-            initialize()
+            try {
+                initialize()
+            } catch (e: Exception) {
+                throw e
+            } finally {
+                reloadLock.release()
+            }
         }
     }
 
@@ -67,6 +85,7 @@ class RuleDatabaseManager(
     fun setShouldStop(shouldStop: Boolean) = ruleDatabaseController.setShouldStop(shouldStop)
 
     fun destroy() {
+        destroyed = true
         waitOnInit()
         ruleDatabase.destroy()
         ruleDatabaseController.destroy()
