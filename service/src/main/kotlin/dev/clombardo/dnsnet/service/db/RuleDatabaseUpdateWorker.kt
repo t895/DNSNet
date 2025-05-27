@@ -25,9 +25,9 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import dev.clombardo.dnsnet.log.logd
-import dev.clombardo.dnsnet.log.logi
-import dev.clombardo.dnsnet.log.logv
+import dev.clombardo.dnsnet.log.logDebug
+import dev.clombardo.dnsnet.log.logInfo
+import dev.clombardo.dnsnet.log.logVerbose
 import dev.clombardo.dnsnet.notification.NotificationChannels
 import dev.clombardo.dnsnet.resources.R
 import dev.clombardo.dnsnet.service.vpn.AdVpnService
@@ -77,13 +77,13 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
     private lateinit var notificationBuilder: NotificationCompat.Builder
 
     init {
-        logd("Begin")
+        logDebug("Begin")
         setupNotificationBuilder()
-        logd("Setup")
+        logDebug("Setup")
     }
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        logd("doWork: Begin")
+        logDebug("doWork: Begin")
         _isRefreshing.value = true
         val start = System.currentTimeMillis()
         val jobs = mutableListOf<Deferred<Unit>>()
@@ -107,7 +107,7 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
         } catch (_: TimeoutCancellationException) {
         }
         val end = System.currentTimeMillis()
-        logd("doWork: end after ${end - start} milliseconds")
+        logDebug("doWork: end after ${end - start} milliseconds")
 
         AdVpnService.reloadDatabase(context)
 
@@ -133,13 +133,13 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
         val contentResolver = context.contentResolver
         for (permission in contentResolver.persistedUriPermissions) {
             if (isGarbage(permission.uri)) {
-                logi("releaseGarbagePermissions: Releasing permission for ${permission.uri}")
+                logInfo("releaseGarbagePermissions: Releasing permission for ${permission.uri}")
                 contentResolver.releasePersistableUriPermission(
                     permission.uri,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION
                 )
             } else {
-                logv("releaseGarbagePermissions: Keeping permission for ${permission.uri}")
+                logVerbose("releaseGarbagePermissions: Keeping permission for ${permission.uri}")
             }
         }
     }
@@ -182,7 +182,7 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
      */
     @Synchronized
     private fun postExecute() {
-        logd("postExecute: Sending notification")
+        logDebug("postExecute: Sending notification")
         if (errors.isEmpty()) {
             notificationManager.cancel(UPDATE_NOTIFICATION_ID)
         } else {
@@ -218,13 +218,13 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
      */
     @Synchronized
     fun addError(item: Host, message: String) {
-        logd("error: ${item.title}:$message")
+        logDebug("error: ${item.title}:$message")
         errors.add("${item.title}\n$message")
     }
 
     @Synchronized
     fun addDone(item: Host) {
-        logd("done: ${item.title}")
+        logDebug("done: ${item.title}")
         pending.remove(item.title)
         done.add(item.title)
         updateProgressNotification()

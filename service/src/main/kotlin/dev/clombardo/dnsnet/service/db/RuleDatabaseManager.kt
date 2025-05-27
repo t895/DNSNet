@@ -9,8 +9,8 @@
 package dev.clombardo.dnsnet.service.db
 
 import android.content.Context
-import dev.clombardo.dnsnet.log.logi
-import dev.clombardo.dnsnet.log.logw
+import dev.clombardo.dnsnet.log.logInfo
+import dev.clombardo.dnsnet.log.logWarning
 import dev.clombardo.dnsnet.service.NativeFileHelperWrapper
 import dev.clombardo.dnsnet.service.toNative
 import dev.clombardo.dnsnet.settings.ConfigurationManager
@@ -37,7 +37,7 @@ class RuleDatabaseManager(
 
     private suspend fun initialize() = withContext(Dispatchers.IO) {
         if (destroyed) {
-            logw("Tried to initialize destroyed database")
+            logWarning("Tried to initialize destroyed database")
             return@withContext
         }
 
@@ -49,16 +49,16 @@ class RuleDatabaseManager(
             )
         } catch (e: RuleDatabaseException) {
             when (e) {
-                is RuleDatabaseException.Interrupted -> logi("Interrupted", e)
+                is RuleDatabaseException.Interrupted -> logInfo("Interrupted", e)
                 else -> throw IllegalStateException("Failed to initialize rule database", e)
             }
         }
     }
 
     fun reload() {
-        logi("Reloading")
+        logInfo("Reloading")
         if (!pendingReloadLock.tryAcquire()) {
-            logi("Reload already pending")
+            logInfo("Reload already pending")
             return
         }
 
@@ -69,7 +69,7 @@ class RuleDatabaseManager(
                 ruleDatabase.waitOnInit()
             }
 
-            logi("Initializing after wait")
+            logInfo("Initializing after wait")
             try {
                 initialize()
             } catch (e: Exception) {

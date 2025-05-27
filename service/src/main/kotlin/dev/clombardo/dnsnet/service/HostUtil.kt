@@ -10,7 +10,7 @@ package dev.clombardo.dnsnet.service
 
 import android.content.Context
 import dev.clombardo.dnsnet.file.FileHelper
-import dev.clombardo.dnsnet.log.logi
+import dev.clombardo.dnsnet.log.logInfo
 import dev.clombardo.dnsnet.settings.ConfigurationManager
 import dev.clombardo.dnsnet.settings.Host
 import dev.clombardo.dnsnet.settings.HostState
@@ -33,7 +33,7 @@ object HostUtil {
                             FileHelper.openPath(context, item.data) ?: return@read false
                         reader.close()
                     } catch (e: IOException) {
-                        logi("areHostFilesExistent: Failed to open file {$item}", e)
+                        logInfo("areHostFilesExistent: Failed to open file {$item}", e)
                         return@read false
                     }
                 }

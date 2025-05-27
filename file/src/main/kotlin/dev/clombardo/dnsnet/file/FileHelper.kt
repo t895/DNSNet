@@ -15,8 +15,8 @@ import android.content.Context
 import android.os.ParcelFileDescriptor
 import android.system.ErrnoException
 import android.system.Os
-import dev.clombardo.dnsnet.log.logd
-import dev.clombardo.dnsnet.log.loge
+import dev.clombardo.dnsnet.log.logDebug
+import dev.clombardo.dnsnet.log.logError
 import java.io.Closeable
 import java.io.File
 import java.io.FileDescriptor
@@ -41,7 +41,7 @@ object FileHelper {
         try {
             context.openFileInput(filename)
         } catch (e: FileNotFoundException) {
-            loge("Failed to open file", e)
+            logError("Failed to open file", e)
             null
         }
 
@@ -75,7 +75,7 @@ object FileHelper {
                     URLEncoder.encode(url, "UTF-8"),
                 )
             } catch (e: UnsupportedEncodingException) {
-                logd("getItemFile: File failed to decode", e)
+                logDebug("getItemFile: File failed to decode", e)
                 null
             }
         } else {
@@ -107,7 +107,7 @@ object FileHelper {
                 Os.close(fd)
             }
         } catch (e: ErrnoException) {
-            loge("closeOrWarn: $message", e)
+            logError("closeOrWarn: $message", e)
         }
 
         // Always return null
@@ -118,7 +118,7 @@ object FileHelper {
         try {
             fd?.close()
         } catch (e: java.lang.Exception) {
-            loge("closeOrWarn: $message", e)
+            logError("closeOrWarn: $message", e)
         }
 
         // Always return null
@@ -144,7 +144,7 @@ object FileHelper {
                 ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).detachFd()
             }
         } catch (e: Exception) {
-            loge("getDetachedReadOnlyFd: $path", e)
+            logError("getDetachedReadOnlyFd: $path", e)
         }
         return descriptor
     }

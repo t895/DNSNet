@@ -13,7 +13,7 @@ package dev.clombardo.dnsnet.service.vpn
 import android.net.ConnectivityManager.NetworkCallback
 import android.net.Network
 import android.net.NetworkCapabilities
-import dev.clombardo.dnsnet.log.logd
+import dev.clombardo.dnsnet.log.logDebug
 import dev.clombardo.dnsnet.service.NetworkState
 
 class VpnNetworkCallback(
@@ -25,7 +25,7 @@ class VpnNetworkCallback(
         networkCapabilities: NetworkCapabilities
     ) {
         super.onCapabilitiesChanged(network, networkCapabilities)
-        logd("onCapabilitiesChanged")
+        logDebug("onCapabilitiesChanged")
         val networkId = network.toString()
         val networkDetails = networkState.getConnectedNetwork(networkId)
         if (networkDetails == null) {
@@ -46,7 +46,7 @@ class VpnNetworkCallback(
 
     override fun onLost(network: Network) {
         super.onLost(network)
-        logd("onLost")
+        logDebug("onLost")
         val networkString = network.toString()
         val lostNetwork = networkState.getConnectedNetwork(networkString)
         if (lostNetwork != null) {
@@ -56,6 +56,6 @@ class VpnNetworkCallback(
             }
             networkState.removeNetwork(lostNetwork)
         }
-        logd(networkState.toString())
+        logDebug(networkState.toString())
     }
 }

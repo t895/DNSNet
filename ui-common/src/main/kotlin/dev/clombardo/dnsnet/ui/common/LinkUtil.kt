@@ -12,7 +12,7 @@ import android.content.Context
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.ui.platform.UriHandler
-import dev.clombardo.dnsnet.log.logw
+import dev.clombardo.dnsnet.log.logWarning
 
 /**
  * This prevents a rare crash where a user does not have a web browser installed to open a link.
@@ -23,7 +23,7 @@ fun UriHandler.tryOpenUri(context: Context, uri: Uri) {
     try {
         openUri(uri.toString())
     } catch (e: Exception) {
-        logw("Failed to open link: $uri", e)
+        logWarning("Failed to open link: $uri", e)
         Toast.makeText(context, R.string.failed_to_open_link, Toast.LENGTH_SHORT).show()
     }
 }

@@ -17,7 +17,7 @@ import androidx.core.net.toUri
 import dev.clombardo.dnsnet.resources.R
 import dev.clombardo.dnsnet.file.FileHelper
 import dev.clombardo.dnsnet.file.SingleWriterMultipleReaderFile
-import dev.clombardo.dnsnet.log.logd
+import dev.clombardo.dnsnet.log.logDebug
 import dev.clombardo.dnsnet.settings.HostFile
 import java.io.File
 import java.io.FileNotFoundException
@@ -82,12 +82,12 @@ class RuleDatabaseItemUpdate(
                 )
 
                 context.contentResolver.openInputStream(uri)?.close()
-                logd("run: Permission requested for ${item.data}")
+                logDebug("run: Permission requested for ${item.data}")
             } catch (e: SecurityException) {
-                logd("run: Error taking permission", e)
+                logDebug("run: Error taking permission", e)
                 worker.addError(item, context.getString(R.string.permission_denied))
             } catch (e: FileNotFoundException) {
-                logd("run: File not found", e)
+                logDebug("run: File not found", e)
                 worker.addError(item, context.getString(R.string.file_not_found))
             } catch (e: IOException) {
                 worker.addError(
@@ -166,7 +166,7 @@ class RuleDatabaseItemUpdate(
      */
     @Throws(IOException::class)
     fun validateResponse(connection: HttpURLConnection): Boolean {
-        logd(
+        logDebug(
             """
                 validateResponse: ${item.title}
                 local = ${Date(connection.ifModifiedSince)}
@@ -174,7 +174,7 @@ class RuleDatabaseItemUpdate(
             """.trimIndent()
         )
         if (connection.responseCode != 200) {
-            logd(
+            logDebug(
                 """
                     validateResponse: ${item.title}: Skipping
                     Server responded with ${connection.responseCode} for ${item.data}"
@@ -223,7 +223,7 @@ class RuleDatabaseItemUpdate(
 
             // Write has started, set modification time
             if (connection.lastModified == 0L || !file.setLastModified(connection.lastModified)) {
-                logd("downloadFile: Could not set last modified")
+                logDebug("downloadFile: Could not set last modified")
             }
         } finally {
             if (outStream != null) {

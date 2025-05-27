@@ -59,8 +59,8 @@ import dev.chrisbanes.haze.HazeEffectScope
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
-import dev.clombardo.dnsnet.log.logd
-import dev.clombardo.dnsnet.log.logi
+import dev.clombardo.dnsnet.log.logDebug
+import dev.clombardo.dnsnet.log.logInfo
 import dev.clombardo.dnsnet.service.HostUtil
 import dev.clombardo.dnsnet.service.db.RuleDatabaseUpdateWorker
 import dev.clombardo.dnsnet.service.vpn.AdVpnService
@@ -91,7 +91,7 @@ class MainActivity : AppCompatActivity() {
                         try {
                             vm.configuration.replaceInstance(contentResolver.openInputStream(it)!!)
                         } catch (e: Exception) {
-                            logd("Cannot read file", e)
+                            logDebug("Cannot read file", e)
                             Toast.makeText(
                                 this,
                                 "Cannot read file: ${e.message}",
@@ -124,7 +124,7 @@ class MainActivity : AppCompatActivity() {
                         if (it.resultCode == Activity.RESULT_CANCELED) {
                             vm.onVpnConfigurationFailure()
                         } else if (it.resultCode == Activity.RESULT_OK) {
-                            logd("onActivityResult: Starting service")
+                            logDebug("onActivityResult: Starting service")
                             AdVpnService.start(this)
                         }
                     }
@@ -209,7 +209,7 @@ class MainActivity : AppCompatActivity() {
         launcher: ManagedActivityResultLauncher<Intent, ActivityResult>,
     ) {
         if (AdVpnService.isActive()) {
-            logi("Attempting to disconnect")
+            logInfo("Attempting to disconnect")
             AdVpnService.stop(this)
         } else {
             if (isPrivateDnsEnabled()) {
@@ -254,7 +254,7 @@ class MainActivity : AppCompatActivity() {
      * or [Activity.RESULT_OK] for deny/allow respectively.
      */
     private fun tryStartService(launcher: ManagedActivityResultLauncher<Intent, ActivityResult>) {
-        logi("Attempting to connect")
+        logInfo("Attempting to connect")
         val intent = prepare(this)
         if (intent != null) {
             launcher.launch(intent)

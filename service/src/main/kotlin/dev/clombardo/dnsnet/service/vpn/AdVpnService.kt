@@ -37,10 +37,10 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import dev.clombardo.dnsnet.blocklogger.BlockLogger
-import dev.clombardo.dnsnet.log.logd
-import dev.clombardo.dnsnet.log.loge
-import dev.clombardo.dnsnet.log.logi
-import dev.clombardo.dnsnet.log.logw
+import dev.clombardo.dnsnet.log.logDebug
+import dev.clombardo.dnsnet.log.logError
+import dev.clombardo.dnsnet.log.logInfo
+import dev.clombardo.dnsnet.log.logWarning
 import dev.clombardo.dnsnet.notification.NotificationChannels
 import dev.clombardo.dnsnet.resources.R
 import dev.clombardo.dnsnet.service.NativeBlockLoggerWrapper
@@ -274,7 +274,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
             }
 
             if (prepare(context) != null) {
-                logi("VPN preparation not confirmed by user, changing enabled to false")
+                logInfo("VPN preparation not confirmed by user, changing enabled to false")
                 configuration.edit { autoStart = false }
                 return
             }
@@ -287,7 +287,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
          */
         fun start(context: Context) {
             if (isActive()) {
-                logw("VPN is already active")
+                logWarning("VPN is already active")
                 return
             }
 
@@ -299,7 +299,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
          */
         fun stop(context: Context) {
             if (!isActive()) {
-                logw("VPN is already stopped")
+                logWarning("VPN is already stopped")
                 return
             }
 
@@ -322,7 +322,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
          */
         fun reconnect(context: Context) {
             if (!isRunning()) {
-                logw("VPN is stopped, cannot restart")
+                logWarning("VPN is stopped, cannot restart")
                 return
             }
 
@@ -334,7 +334,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
          */
         fun reloadDatabase(context: Context) {
             if (!isActive()) {
-                logw("VPN is stopped, cannot reload database")
+                logWarning("VPN is stopped, cannot reload database")
                 return
             }
 
@@ -410,11 +410,11 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
 
     @Synchronized
     private fun onDefaultNetworkChanged(newNetwork: NetworkDetails?) {
-        logd("onDefaultNetworkChanged")
+        logDebug("onDefaultNetworkChanged")
         if (newNetwork == null) {
-            logd("New network is null")
+            logDebug("New network is null")
             networkState.dropDefaultNetwork()
-            logd(networkState.toString())
+            logDebug(networkState.toString())
 
             // The thread will pause at the start and loop while waiting for a network
             reconnectVpn()
@@ -422,14 +422,14 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         }
 
         if (networkState.shouldReconnect(newNetwork, status.value)) {
-            logi("Default network changed, reconnecting")
+            logInfo("Default network changed, reconnecting")
             reconnectVpn()
         }
 
-        logd("Setting new default network")
+        logDebug("Setting new default network")
         networkState.setDefaultNetwork(newNetwork)
 
-        logd(networkState.toString())
+        logDebug(networkState.toString())
     }
 
     private var connectivityLock = Object()
@@ -440,7 +440,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
     private fun registerConnectivityChangedCallback() {
         synchronized(connectivityLock) {
             if (connectivityChangedCallbackRegistered) {
-                logw("Connectivity changed callback already registered")
+                logWarning("Connectivity changed callback already registered")
                 return
             }
 
@@ -448,7 +448,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
                 getSystemService(ConnectivityManager::class.java)
                     .registerDefaultNetworkCallback(connectivityChangedCallback)
             } catch (e: Exception) {
-                logw("Failed to register connectivity changed callback", e)
+                logWarning("Failed to register connectivity changed callback", e)
             }
             connectivityChangedCallbackRegistered = true
         }
@@ -457,7 +457,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
     private fun unregisterConnectivityChangedCallback() {
         synchronized(connectivityLock) {
             if (!connectivityChangedCallbackRegistered) {
-                logw("Connectivity changed callback already unregistered")
+                logWarning("Connectivity changed callback already unregistered")
                 return
             }
 
@@ -465,7 +465,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
                 getSystemService(ConnectivityManager::class.java)
                     .unregisterNetworkCallback(connectivityChangedCallback)
             } catch (e: Exception) {
-                logw("Failed to unregister connectivity changed callback", e)
+                logWarning("Failed to unregister connectivity changed callback", e)
             }
             connectivityChangedCallbackRegistered = false
 
@@ -527,7 +527,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         } else {
             Command.entries[intent.getIntExtra(COMMAND_TAG, Command.START.ordinal)]
         }
-        logi("Received command - $command")
+        logInfo("Received command - $command")
 
         when (command) {
             Command.START -> {
@@ -588,9 +588,9 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
     }
 
     private fun updateVpnStatus(newStatus: VpnStatus) {
-        logi("Updating status ${status.value} -> $newStatus")
+        logInfo("Updating status ${status.value} -> $newStatus")
         if (!status.value.isValidTransition(newStatus)) {
-            logw("Attempted invalid status transition! Ignoring - ${status.value} -> $newStatus")
+            logWarning("Attempted invalid status transition! Ignoring - ${status.value} -> $newStatus")
             return
         }
 
@@ -623,13 +623,13 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
             return
         }
 
-        logd("Reconnecting")
+        logDebug("Reconnecting")
         unregisterConnectivityChangedCallback()
         vpnThread.reconnect()
     }
 
     private fun stopVpn() {
-        logi("Stopping Service")
+        logInfo("Stopping Service")
 
         updateVpnStatus(VpnStatus.STOPPING)
 
@@ -647,7 +647,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
     }
 
     override fun onDestroy() {
-        logi("Destroyed, shutting down")
+        logInfo("Destroyed, shutting down")
         super.onDestroy()
         stopVpn()
 
@@ -672,19 +672,19 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         if (configuration.read { appList.defaultMode } == AllowListMode.NOT_ON_VPN) {
             for (app in allowOnVpn) {
                 try {
-                    logd("configure: Allowing $app to use the DNS VPN")
+                    logDebug("configure: Allowing $app to use the DNS VPN")
                     builder.addAllowedApplication(app)
                 } catch (e: Exception) {
-                    logw("configure: Cannot disallow", e)
+                    logWarning("configure: Cannot disallow", e)
                 }
             }
         } else {
             for (app in doNotAllowOnVpn) {
                 try {
-                    logd("configure: Disallowing $app from using the DNS VPN")
+                    logDebug("configure: Disallowing $app from using the DNS VPN")
                     builder.addDisallowedApplication(app)
                 } catch (e: Exception) {
-                    logw("configure: Cannot disallow", e)
+                    logWarning("configure: Cannot disallow", e)
                 }
             }
         }
@@ -692,16 +692,16 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
 
     @Throws(NoNetworkException::class)
     override fun configure(vpnController: VpnController): VpnConfigurationResult {
-        logd("Configuring")
+        logDebug("Configuring")
         val unvalidatedDnsServers = mutableListOf<String>()
         // Get the current DNS servers before starting the VPN
         val localDnsServers = try {
             getDnsServers()
         } catch (e: NoNetworkException) {
-            logd("configure: No network found", e)
+            logDebug("configure: No network found", e)
             return VpnConfigurationResult.NoNetwork
         }
-        logi("configure: Got local DNS servers = $localDnsServers")
+        logInfo("configure: Got local DNS servers = $localDnsServers")
 
         // Add all known DNS servers from local network
         val addLocalDnsServers = configuration.read {
@@ -729,9 +729,9 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         // Check if the local network has IPv6 DNS servers. If so, this implies that the network
         // supports IPv6 and we can add an IPv6 address to the builder.
         val ipv6Support = networkHasIpv6Support()
-        logd("configure: IPv6 support = $ipv6Support")
+        logDebug("configure: IPv6 support = $ipv6Support")
 
-        logi("configure: Unvalidated DNS servers = $unvalidatedDnsServers")
+        logInfo("configure: Unvalidated DNS servers = $unvalidatedDnsServers")
         val validatedDnsServers = try {
             val result = validateDnsServers(
                 vpnController = vpnController,
@@ -744,10 +744,10 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
                 is ValidateDnsResult.Success -> result.v1
             }
         } catch (e: ValidateDnsException) {
-            loge("Failed to validate DNS servers", e)
+            logError("Failed to validate DNS servers", e)
             return VpnConfigurationResult.InvalidDnsServers
         }
-        logi("configure: Valid DNS servers = ${validatedDnsServers.map { it.getAddress().contentToString() }}")
+        logInfo("configure: Valid DNS servers = ${validatedDnsServers.map { it.getAddress().contentToString() }}")
 
         if (validatedDnsServers.isEmpty()) {
             return VpnConfigurationResult.InvalidDnsServers
@@ -763,7 +763,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
             try {
                 builder.addAddress("$prefix.1", PREFIX_LENGTH)
             } catch (e: IllegalArgumentException) {
-                logd("configure: Unable to use this prefix: $prefix", e)
+                logDebug("configure: Unable to use this prefix: $prefix", e)
                 continue
             }
 
@@ -779,10 +779,10 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         if (ipv6Support) {
             try {
                 val addr = Inet6Address.getByAddress(ipv6Template)
-                logd("configure: Adding IPv6 address $addr")
+                logDebug("configure: Adding IPv6 address $addr")
                 builder.addAddress(addr, 120)
             } catch (e: Exception) {
-                logd("configure: Failed to add ipv6 template", e)
+                logDebug("configure: Failed to add ipv6 template", e)
                 ipv6Template = null
             }
         } else {
@@ -790,7 +790,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         }
 
         if (format == null) {
-            logw("configure: Could not find a prefix to use, directly using DNS servers")
+            logWarning("configure: Could not find a prefix to use, directly using DNS servers")
             builder.addAddress("192.168.50.1", PREFIX_LENGTH)
         }
 
@@ -803,10 +803,10 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
                 when (address) {
                     is Inet4Address -> {
                         if (format == null) {
-                            logi("configure: Ignoring DNS server $address")
+                            logInfo("configure: Ignoring DNS server $address")
                         } else {
                             val alias = String.format(format, index + 2)
-                            logi("configure: Adding DNS Server $address as $alias")
+                            logInfo("configure: Adding DNS Server $address as $alias")
                             builder.addDnsServer(alias).addRoute(alias, 32)
                         }
                     }
@@ -814,18 +814,18 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
                     is Inet6Address -> {
                         if (ipv6Support) {
                             if (ipv6Template == null) {
-                                logi("configure: Ignoring DNS server $address")
+                                logInfo("configure: Ignoring DNS server $address")
                             } else {
                                 ipv6Template[ipv6Template.size - 1] = (index + 2).toByte()
                                 val i6addr = Inet6Address.getByAddress(ipv6Template)
-                                logi("configure: Adding DNS Server $address. as $i6addr")
+                                logInfo("configure: Adding DNS Server $address. as $i6addr")
                                 builder.addDnsServer(i6addr)
                             }
                         }
                     }
                 }
             } catch (e: Exception) {
-                loge("configure: Cannot add custom DNS server", e)
+                logError("configure: Cannot add custom DNS server", e)
             }
         }
 
@@ -851,10 +851,10 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
             .setSession(getString(R.string.app_name))
             .setConfigureIntent(pendingIntent)
             .establish()
-        logi("Configured")
+        logInfo("Configured")
 
         return if (pfd == null) {
-            loge("configure: Got null descriptor from VpnService.Builder")
+            logError("configure: Got null descriptor from VpnService.Builder")
             VpnConfigurationResult.BuilderFailure
         } else {
             VpnConfigurationResult.Success(pfd.detachFd(), validatedDnsServers)

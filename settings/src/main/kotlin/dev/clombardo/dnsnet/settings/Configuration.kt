@@ -25,9 +25,9 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dev.clombardo.dnsnet.file.FileHelper
-import dev.clombardo.dnsnet.log.logd
-import dev.clombardo.dnsnet.log.loge
-import dev.clombardo.dnsnet.log.logi
+import dev.clombardo.dnsnet.log.logDebug
+import dev.clombardo.dnsnet.log.logError
+import dev.clombardo.dnsnet.log.logInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -110,7 +110,7 @@ class ConfigurationManager(
             savingLock.acquire()
             pendingSaveLock.release()
             configuration.save(context)
-            logd("Saved configuration")
+            logDebug("Saved configuration")
             savingLock.release()
         }
     }
@@ -151,11 +151,11 @@ data class Configuration(
             val config = try {
                 json.decodeFromStream<Configuration>(inputStream)
             } catch (e: Exception) {
-                loge("Failed to decode config!", e)
+                logError("Failed to decode config!", e)
                 Configuration()
             }
             if (config.version > VERSION) {
-                loge("Unhandled file format version - ${config.version}")
+                logError("Unhandled file format version - ${config.version}")
                 return Configuration()
             }
 
@@ -167,7 +167,7 @@ data class Configuration(
         internal fun load(context: Context, preferences: Preferences, replaced: Boolean): Configuration {
             val inputStream = FileHelper.openRead(context, DEFAULT_CONFIG_FILENAME)
             if (inputStream == null) {
-                logd("Config file not found, creating new file")
+                logDebug("Config file not found, creating new file")
                 return Configuration()
             }
 
@@ -186,14 +186,14 @@ data class Configuration(
             1 -> {
                 // This is always enabled after v0.2.3
                 hosts.enabled = true
-                logi("Updated to config v1.1 successfully")
+                logInfo("Updated to config v1.1 successfully")
             }
 
             2 -> {
                 if (!replaced && hosts.items.isEmpty()) {
                     preferences.ShouldShowPresetsWhenNoBlockLists = true
                 }
-                logi("Updated to config v1.2 successfully")
+                logInfo("Updated to config v1.2 successfully")
             }
 
             3 -> {

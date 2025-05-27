@@ -16,9 +16,9 @@
 
 package dev.clombardo.dnsnet.service.vpn
 
-import dev.clombardo.dnsnet.log.loge
-import dev.clombardo.dnsnet.log.logi
-import dev.clombardo.dnsnet.log.logw
+import dev.clombardo.dnsnet.log.logError
+import dev.clombardo.dnsnet.log.logInfo
+import dev.clombardo.dnsnet.log.logWarning
 import dev.clombardo.dnsnet.service.db.RuleDatabaseManager
 import uniffi.net.BlockLoggerCallback
 import uniffi.net.VpnController
@@ -49,12 +49,12 @@ class AdVpnThread(
 
     init {
         thread.start()
-        logi("Vpn Thread started")
+        logInfo("Vpn Thread started")
     }
 
     fun stop() {
         synchronized(threadLock) {
-            logi("Stopping")
+            logInfo("Stopping")
 
             // Tell the Rust code to stop
             vpnController.stop(VpnResult.STOPPING)
@@ -64,15 +64,15 @@ class AdVpnThread(
                 thread.join()
                 userStop = false
             } catch (e: InterruptedException) {
-                logw("stopThread: Interrupted while joining thread", e)
+                logWarning("stopThread: Interrupted while joining thread", e)
             }
-            logi("Vpn Thread stopped")
+            logInfo("Vpn Thread stopped")
         }
     }
 
     fun reconnect() {
         synchronized(threadLock) {
-            logi("Reconnecting")
+            logInfo("Reconnecting")
             vpnController.stop(VpnResult.RECONNECTING)
             thread.interrupt()
         }
@@ -80,7 +80,7 @@ class AdVpnThread(
 
     @Synchronized
     override fun run() {
-        logi("Starting")
+        logInfo("Starting")
         ruleDatabaseManager.waitOnInit()
 
         var immediateRetryCount = 0
@@ -97,13 +97,13 @@ class AdVpnThread(
                 when (result) {
                     VpnResult.RECONNECTING,
                     VpnResult.CONTINUING -> {
-                        logi("Reconnecting")
+                        logInfo("Reconnecting")
                         notify(VpnStatus.RECONNECTING)
                         continue
                     }
 
                     VpnResult.STOPPING -> {
-                        logi("Stopping")
+                        logInfo("Stopping")
                         break
                     }
                 }
@@ -111,7 +111,7 @@ class AdVpnThread(
                 reloadOnInterrupt = true
                 when (e) {
                     is VpnException.NoNetwork -> {
-                        loge("No active network found. Waiting.", e)
+                        logError("No active network found. Waiting.", e)
                         notify(VpnStatus.WAITING_FOR_NETWORK)
                     }
 
@@ -119,30 +119,30 @@ class AdVpnThread(
                     is VpnException.InvalidDnsServers -> {
                         notify(VpnStatus.RECONNECTING)
                         if (immediateRetryCount < MAX_IMMEDIATE_RETRIES) {
-                            loge("Minor error occurred. Retrying immediately.", e)
+                            logError("Minor error occurred. Retrying immediately.", e)
                             immediateRetryCount++
                             continue
                         }
                     }
 
                     else -> {
-                        loge("Got internal VPN exception", e)
+                        logError("Got internal VPN exception", e)
                         notify(VpnStatus.RECONNECTING)
                     }
                 }
             }
 
             if (System.currentTimeMillis() - connectTimeMillis >= RETRY_RESET_SEC * 1000) {
-                logi("Resetting timeout")
+                logInfo("Resetting timeout")
                 retryTimeout = MIN_RETRY_TIME
             }
 
             // ...wait and try again
-            logi("Pausing for $retryTimeout seconds for potential reconnection...")
+            logInfo("Pausing for $retryTimeout seconds for potential reconnection...")
             try {
                 Thread.sleep(retryTimeout.toLong() * 1000)
             } catch (_: InterruptedException) {
-                logi("Thread interrupted")
+                logInfo("Thread interrupted")
                 if (reloadOnInterrupt && !userStop) {
                     continue
                 } else {
@@ -155,7 +155,7 @@ class AdVpnThread(
             }
         }
 
-        logi("Exiting")
+        logInfo("Exiting")
     }
 
     @Throws(VpnException::class)

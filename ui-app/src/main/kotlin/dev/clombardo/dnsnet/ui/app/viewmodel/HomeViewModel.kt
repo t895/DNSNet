@@ -22,8 +22,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.clombardo.dnsnet.blocklogger.BlockLogger
 import dev.clombardo.dnsnet.blocklogger.LoggedConnection
-import dev.clombardo.dnsnet.log.logd
-import dev.clombardo.dnsnet.log.logw
+import dev.clombardo.dnsnet.log.logDebug
+import dev.clombardo.dnsnet.log.logWarning
 import dev.clombardo.dnsnet.settings.BlockList
 import dev.clombardo.dnsnet.settings.Configuration
 import dev.clombardo.dnsnet.settings.ConfigurationManager
@@ -204,7 +204,7 @@ class HomeViewModel @Inject constructor(
 
     private fun removeHostFile(host: HostFile) {
         if (configuration.read { !hosts.items.contains(host) }) {
-            logw("Tried to remove host that does not exist in config! - $host")
+            logWarning("Tried to remove host that does not exist in config! - $host")
             return
         }
 
@@ -216,7 +216,7 @@ class HomeViewModel @Inject constructor(
 
     private fun removeHostException(host: HostException) {
         if (configuration.read { !hosts.exceptions.contains(host) }) {
-            logw("Tried to remove host that does not exist in config! - $host")
+            logWarning("Tried to remove host that does not exist in config! - $host")
             return
         }
 
@@ -235,7 +235,7 @@ class HomeViewModel @Inject constructor(
 
     private fun replaceHostFile(oldHost: HostFile, newHost: HostFile) {
         if (configuration.read { !hosts.items.contains(oldHost) }) {
-            logw("Tried to replace host that does not exist in config! - $oldHost")
+            logWarning("Tried to replace host that does not exist in config! - $oldHost")
             return
         }
 
@@ -249,7 +249,7 @@ class HomeViewModel @Inject constructor(
 
     private fun replaceHostException(oldHost: HostException, newHost: HostException) {
         if (configuration.read { !hosts.exceptions.contains(oldHost) }) {
-            logw("Tried to replace host that does not exist in config! - $oldHost")
+            logWarning("Tried to replace host that does not exist in config! - $oldHost")
             return
         }
 
@@ -310,7 +310,7 @@ class HomeViewModel @Inject constructor(
 
     fun removeDnsServer(server: DnsServer) {
         if (configuration.read { !dnsServers.items.contains(server) }) {
-            logw("Tried to remove DnsServer that does not exist in config! - $server")
+            logWarning("Tried to remove DnsServer that does not exist in config! - $server")
             return
         }
 
@@ -325,7 +325,7 @@ class HomeViewModel @Inject constructor(
         newDnsServer: DnsServer
     ) {
         if (configuration.read { !dnsServers.items.contains(oldServer) }) {
-            logw("Tried to replace host that does not exist in config! - $oldServer")
+            logWarning("Tried to replace host that does not exist in config! - $oldServer")
             return
         }
 
@@ -358,7 +358,7 @@ class HomeViewModel @Inject constructor(
 
     fun onToggleApp(app: AppData, enabled: Boolean) {
         if (!appList.contains(app)) {
-            logw("Tried to toggle app that does not exist in list! - $app")
+            logWarning("Tried to toggle app that does not exist in list! - $app")
             return
         }
         app.enabled = enabled
@@ -456,7 +456,7 @@ class HomeViewModel @Inject constructor(
                         }
                     }
             } catch (e: Exception) {
-                logd("sendLogcat: Not supported", e)
+                logDebug("sendLogcat: Not supported", e)
                 Toast.makeText(context, "Not supported: $e", Toast.LENGTH_LONG).show()
                 failed = true
             } finally {

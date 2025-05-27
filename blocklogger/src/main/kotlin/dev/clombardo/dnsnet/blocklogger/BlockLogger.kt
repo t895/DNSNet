@@ -15,7 +15,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dev.clombardo.dnsnet.file.FileHelper
-import dev.clombardo.dnsnet.log.loge
+import dev.clombardo.dnsnet.log.logError
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -65,7 +65,7 @@ data class BlockLogger(val connections: MutableMap<String, LoggedConnection> = H
             val outputStream = FileHelper.openWrite(context, name)
             json.encodeToStream(this, outputStream)
         } catch (e: Exception) {
-            loge("Failed to write connection history", e)
+            logError("Failed to write connection history", e)
         }
     }
 
@@ -90,7 +90,7 @@ data class BlockLogger(val connections: MutableMap<String, LoggedConnection> = H
             return try {
                 json.decodeFromStream<BlockLogger>(inputStream)
             } catch (e: Exception) {
-                loge("Failed to load connection history", e)
+                logError("Failed to load connection history", e)
                 BlockLogger()
             }
         }
