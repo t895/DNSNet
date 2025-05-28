@@ -247,4 +247,6 @@
     <string name="getrandom_license_link" translatable="false">https://github.com/rust-random/getrandom/blob/v0.3.2/LICENSE-MIT</string>
     <string name="base64" translatable="false">base64</string>
     <string name="base64_license_link" translatable="false">https://github.com/marshallpierce/rust-base64/tree/v0.22.1</string>
+    <string name="roboto_flex" translatable="false">Roboto Flex</string>
+    <string name="roboto_flex_link" translatable="false">https://github.com/googlefonts/roboto-flex/blob/3.200/OFL.txt</string>
 </resources>

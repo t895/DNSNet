@@ -57,14 +57,8 @@ fun NavigationItem(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
 
-    val indicatorWidth = when (layoutType) {
-        LayoutType.NavigationBar -> NavigationBarDefaults.itemSelectedIndicatorWidth
-        LayoutType.NavigationRail -> NavigationRailDefaults.itemSelectedIndicatorWidth
-    }
-    val itemHeight = when (layoutType) {
-        LayoutType.NavigationBar -> NavigationBarDefaults.itemHeight
-        LayoutType.NavigationRail -> NavigationRailDefaults.itemHeight
-    }
+    val indicatorWidth = 56.dp
+    val itemHeight = 56.dp
     Column(
         modifier = modifier
             .then(item.modifier)
@@ -77,7 +71,7 @@ fun NavigationItem(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         if (layoutType == LayoutType.NavigationBar) {
-            Spacer(Modifier.padding(top = 12.dp))
+            Spacer(Modifier.padding(top = 6.dp))
         }
         Box(contentAlignment = Alignment.Center) {
             val shape = RoundedCornerShape(16.dp)
@@ -120,19 +114,19 @@ fun NavigationItem(
                 },
             )
         }
-        Spacer(Modifier.padding(vertical = 2.dp))
+        Spacer(Modifier.padding(top = 4.dp))
         Text(
             text = item.text,
             style = MaterialTheme.typography.labelMedium,
             maxLines = 1,
             color = if (item.selected) {
-                MaterialTheme.colorScheme.onSurface
+                MaterialTheme.colorScheme.secondary
             } else {
                 MaterialTheme.colorScheme.onSurfaceVariant
             }
         )
         if (layoutType == LayoutType.NavigationBar) {
-            Spacer(Modifier.padding(bottom = 16.dp))
+            Spacer(Modifier.padding(bottom = 6.dp))
         }
     }
 }

@@ -11,7 +11,6 @@ package dev.clombardo.dnsnet.ui.common
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
@@ -23,6 +22,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -39,21 +39,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
-import dev.clombardo.dnsnet.ui.common.theme.Animation
 import dev.clombardo.dnsnet.ui.common.theme.DnsNetTheme
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 object SearchWidgetDefaults {
-    val searchEnterTransition: EnterTransition by lazy {
-        expandHorizontally(
-            animationSpec = tween(easing = Animation.EmphasizedDecelerateEasing),
-        )
-    }
-    val searchExitTransition: ExitTransition by lazy {
-        shrinkHorizontally(
-            animationSpec = tween(easing = Animation.EmphasizedDecelerateEasing),
-        )
-    }
+    val searchEnterTransition: EnterTransition
+        @Composable get() {
+            return expandHorizontally(
+                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+            )
+        }
+    val searchExitTransition: ExitTransition
+        @Composable get() {
+            return shrinkHorizontally(
+                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+            )
+        }
 }
 
 @Composable
@@ -64,7 +67,10 @@ fun SearchWidget(
     onSearchButtonClick: () -> Unit,
     onSearchValueChange: (String) -> Unit,
     onClearButtonClick: () -> Unit,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardOptions: KeyboardOptions = KeyboardOptions(
+        capitalization = KeyboardCapitalization.None,
+        autoCorrectEnabled = false,
+    ),
     searchEnterTransition: EnterTransition = SearchWidgetDefaults.searchEnterTransition,
     searchExitTransition: ExitTransition = SearchWidgetDefaults.searchExitTransition,
 ) {

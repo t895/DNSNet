@@ -39,12 +39,7 @@ import androidx.compose.ui.unit.dp
 import dev.clombardo.dnsnet.ui.common.theme.DnsNetTheme
 
 object NavigationBar {
-    val height = 80.dp
-}
-
-object NavigationBarDefaults {
-    val itemSelectedIndicatorWidth = 64.dp
-    val itemHeight = 64.dp
+    val height = 64.dp
 }
 
 @Composable

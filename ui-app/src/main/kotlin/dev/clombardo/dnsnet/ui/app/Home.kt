@@ -21,12 +21,10 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideIn
 import androidx.compose.animation.slideOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
@@ -36,10 +34,13 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.VpnKey
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingActionButtonMenu
+import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.Text
+import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -47,10 +48,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -59,7 +63,6 @@ import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
@@ -68,7 +71,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import androidx.window.core.layout.WindowWidthSizeClass
 import dev.clombardo.dnsnet.settings.DnsServer
 import dev.clombardo.dnsnet.settings.DnsServerType
 import dev.clombardo.dnsnet.settings.Host
@@ -78,16 +80,14 @@ import dev.clombardo.dnsnet.settings.HostState
 import dev.clombardo.dnsnet.ui.app.viewmodel.HomeViewModel
 import dev.clombardo.dnsnet.ui.common.BasicDialog
 import dev.clombardo.dnsnet.ui.common.DialogButton
-import dev.clombardo.dnsnet.ui.common.ExpandableFloatingActionButton
 import dev.clombardo.dnsnet.ui.common.FabState
+import dev.clombardo.dnsnet.ui.common.isSmallScreen
 import dev.clombardo.dnsnet.ui.common.navigation.LayoutType
 import dev.clombardo.dnsnet.ui.common.navigation.NavigationScaffold
 import dev.clombardo.dnsnet.ui.common.plus
-import dev.clombardo.dnsnet.ui.common.theme.Animation
 import dev.clombardo.dnsnet.ui.common.theme.DefaultFabSize
 import dev.clombardo.dnsnet.ui.common.theme.FabPadding
 import dev.clombardo.dnsnet.ui.common.theme.ListPadding
-import dev.clombardo.dnsnet.ui.common.theme.VpnFabSize
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 
@@ -158,21 +158,18 @@ sealed class TopLevelDestination : Parcelable {
     data class Presets(val canGoBack: Boolean) : TopLevelDestination()
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 object Home {
-    val NavigationEnterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition by lazy {
-        {
-            scaleIn(
-                initialScale = 0.75f,
-                animationSpec = tween(
-                    durationMillis = 400,
-                    easing = Animation.EmphasizedDecelerateEasing
-                ),
-            ) + fadeIn(animationSpec = tween(400))
+    val NavigationEnterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition
+        @Composable get() {
+            val defaultEffectSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+            return { fadeIn(animationSpec = defaultEffectSpec) }
         }
-    }
-    val NavigationExitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition by lazy {
-        { fadeOut(animationSpec = tween(50)) }
-    }
+    val NavigationExitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition
+        @Composable get() {
+            val fastEffectSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+            return { fadeOut(animationSpec = fastEffectSpec) }
+        }
 
     private const val SIZE_FRACTION = 12
 
@@ -352,7 +349,7 @@ fun App(
     SharedTransitionLayout {
         val navController = rememberNavController()
         NavHost(
-            modifier = modifier.background(MaterialTheme.colorScheme.surface),
+            modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerLowest),
             navController = navController,
             startDestination = TopLevelDestination.Home,
             enterTransition = Home.TopLevelEnter,
@@ -602,6 +599,7 @@ fun AppPreview() {
     )
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
@@ -634,11 +632,10 @@ fun HomeScreen(
         topLevelNavController.popNavigate(TopLevelDestination.Presets(canGoBack = false))
     }
 
-    val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
     val context = LocalContext.current
     NavigationScaffold(
         modifier = modifier,
-        layoutType = if (windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.COMPACT) {
+        layoutType = if (isSmallScreen()) {
             LayoutType.NavigationBar
         } else {
             LayoutType.NavigationRail
@@ -657,73 +654,102 @@ fun HomeScreen(
         },
         floatingActionButton = {
             AnimatedVisibility(
-                modifier = Modifier.padding(16.dp),
                 visible = currentDestination == HomeDestinations.Hosts ||
                         currentDestination == HomeDestinations.DNS,
                 enter = NavigationScaffold.FabEnter,
                 exit = NavigationScaffold.FabExit,
             ) {
-                val add = stringResource(R.string.add)
-                if (currentDestination == HomeDestinations.Hosts) {
-                    var expanded by rememberSaveable { mutableStateOf(false) }
-                    ExpandableFloatingActionButton(
-                        expanded = expanded,
-                        onClick = { expanded = !expanded },
-                        onDismissRequest = { expanded = false },
-                        buttonContent = {
-                            val rotation by animateFloatAsState(
-                                targetValue = if (expanded) 45f else 0f,
+                var expanded by rememberSaveable { mutableStateOf(false) }
+                if (currentDestination == HomeDestinations.DNS) {
+                    expanded = false
+                }
+                FloatingActionButtonMenu(
+                    expanded = expanded,
+                    button = {
+                        ToggleFloatingActionButton(
+                            checked = expanded,
+                            onCheckedChange = {
+                                if (currentDestination == HomeDestinations.Hosts) {
+                                    expanded = it
+                                } else if (currentDestination == HomeDestinations.DNS) {
+                                    when (vm.configuration.read { dnsServers.type }) {
+                                        DnsServerType.Standard -> topLevelNavController.navigate(
+                                            DnsServer()
+                                        )
+
+                                        DnsServerType.DoH3 -> {
+                                            topLevelNavController.navigate(DnsServer(type = DnsServerType.DoH3))
+                                        }
+                                    }
+                                }
+                            },
+                            contentAlignment = Alignment.BottomEnd,
+                        ) {
+                            val onPrimaryContainer = MaterialTheme.colorScheme.onPrimaryContainer
+                            val onPrimary = MaterialTheme.colorScheme.onPrimary
+                            val animatedColor = remember(checkedProgress) {
+                                lerp(onPrimaryContainer, onPrimary, checkedProgress)
+                            }
+                            val animatedRotation by animateFloatAsState(
+                                targetValue = if (currentDestination == HomeDestinations.DNS || !expanded) {
+                                    0f
+                                } else {
+                                    135f
+                                },
+                                animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
                             )
                             Icon(
-                                modifier = Modifier.rotate(rotation),
-                                imageVector = Icons.Default.Add,
-                                contentDescription = add
+                                modifier = Modifier
+                                    .graphicsLayer {
+                                        rotationZ = animatedRotation
+                                    },
+                                painter = rememberVectorPainter(Icons.Default.Add),
+                                contentDescription = stringResource(R.string.add),
+                                tint = animatedColor,
                             )
                         }
-                    ) {
-                        item(
-                            icon = Icons.Default.Bolt,
-                            text = context.getString(R.string.presets),
-                            onClick = {
-                                expanded = false
-                                topLevelNavController.navigate(
-                                    TopLevelDestination.Presets(canGoBack = true)
-                                )
-                            }
-                        )
-                        item(
-                            icon = Icons.AutoMirrored.Filled.DriveFileMove,
-                            text = context.getString(R.string.add_hosts_file),
-                            onClick = {
-                                expanded = false
-                                topLevelNavController.navigate(HostFile())
-                            }
-                        )
-                        item(
-                            icon = Icons.Default.Shield,
-                            text = context.getString(R.string.add_host),
-                            onClick = {
-                                expanded = false
-                                topLevelNavController.navigate(HostException())
-                            }
-                        )
                     }
-                } else {
-                    FloatingActionButton(
-                        onClick = {
-                            when (vm.configuration.read { dnsServers.type }) {
-                                DnsServerType.Standard -> topLevelNavController.navigate(DnsServer())
-                                DnsServerType.DoH3 -> {
-                                    topLevelNavController.navigate(DnsServer(type = DnsServerType.DoH3))
-                                }
-                            }
+                ) {
+                    FloatingActionButtonMenuItem(
+                        text = {
+                            Text(stringResource(R.string.add_host))
                         },
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = add,
-                        )
-                    }
+                        icon = {
+                            Icon(
+                                painter = rememberVectorPainter(Icons.Default.Shield),
+                                contentDescription = null,
+                            )
+                        },
+                        onClick = { topLevelNavController.navigate(HostException()) }
+                    )
+                    FloatingActionButtonMenuItem(
+                        text = {
+                            Text(stringResource(R.string.add_hosts_file))
+                        },
+                        icon = {
+                            Icon(
+                                painter = rememberVectorPainter(Icons.AutoMirrored.Filled.DriveFileMove),
+                                contentDescription = null,
+                            )
+                        },
+                        onClick = { topLevelNavController.navigate(HostFile()) }
+                    )
+                    FloatingActionButtonMenuItem(
+                        text = {
+                            Text(stringResource(R.string.presets))
+                        },
+                        icon = {
+                            Icon(
+                                painter = rememberVectorPainter(Icons.Default.Bolt),
+                                contentDescription = null,
+                            )
+                        },
+                        onClick = {
+                            topLevelNavController.navigate(
+                                TopLevelDestination.Presets(canGoBack = true)
+                            )
+                        }
+                    )
                 }
             }
         },
@@ -776,8 +802,7 @@ fun HomeScreen(
 
                 val isWritingLogcat by vm.isWritingLogcat.collectAsState()
                 StartScreen(
-                    contentPadding = contentPadding + PaddingValues(ListPadding) +
-                            PaddingValues(bottom = VpnFabSize + FabPadding),
+                    contentPadding = contentPadding,
                     listState = startListState,
                     resumeOnStartup = resumeOnStartupToggle,
                     onResumeOnStartupClick = {
@@ -816,8 +841,7 @@ fun HomeScreen(
                     mutableStateOf(vm.configuration.read { hosts.automaticRefresh })
                 }
                 HostsScreen(
-                    contentPadding = contentPadding + PaddingValues(ListPadding) +
-                            PaddingValues(bottom = DefaultFabSize + FabPadding),
+                    contentPadding = contentPadding,
                     listState = hostsListState,
                     refreshDaily = refreshDaily,
                     onRefreshDailyClick = {

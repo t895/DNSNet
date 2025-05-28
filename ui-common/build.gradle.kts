@@ -46,6 +46,8 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     implementation(libs.androidx.material.icons.core)
     implementation(libs.androidx.material.icons.extended)
+    implementation(libs.androidx.graphics.shapes)
+    implementation(libs.androidx.material3.adaptive.navigation.suite)
 
     implementation(libs.materialswitch)
 

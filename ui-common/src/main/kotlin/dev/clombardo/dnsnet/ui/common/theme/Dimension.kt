@@ -10,7 +10,6 @@ package dev.clombardo.dnsnet.ui.common.theme
 
 import androidx.compose.ui.unit.dp
 
-val VpnFabSize = 96.dp
 val DefaultFabSize = 56.dp
 val FabPadding = 16.dp
 

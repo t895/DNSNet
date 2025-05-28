@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.triStateToggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -62,6 +64,7 @@ fun ListOptionItem(
     )
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SortItem(
     modifier: Modifier = Modifier,
@@ -81,6 +84,7 @@ fun SortItem(
         if (selected) {
             val animatedRotation by animateFloatAsState(
                 targetValue = if (ascending) 0f else -180f,
+                animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
                 label = "animatedRotation",
             )
             Icon(

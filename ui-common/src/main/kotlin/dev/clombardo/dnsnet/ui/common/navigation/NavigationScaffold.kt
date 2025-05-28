@@ -8,7 +8,11 @@
 
 package dev.clombardo.dnsnet.ui.common.navigation
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
@@ -26,6 +30,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.VpnKey
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -55,9 +60,20 @@ object NavigationScaffoldDefaults {
         @Composable get() = WindowInsets.systemBars.union(WindowInsets.displayCutout)
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 object NavigationScaffold {
-    val FabEnter by lazy { scaleIn(animationSpec = tween(easing = Animation.EmphasizedDecelerateEasing)) }
-    val FabExit by lazy { scaleOut(animationSpec = tween(easing = Animation.EmphasizedAccelerateEasing)) }
+    val FabEnter: EnterTransition
+        @Composable get() {
+            return scaleIn(animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()) +
+                    fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec())
+        }
+    val FabExit: ExitTransition
+        @Composable get() {
+            return scaleOut(
+                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                targetScale = 0.9f,
+            ) + fadeOut(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec())
+        }
 }
 
 @Composable
@@ -66,7 +82,7 @@ fun NavigationScaffold(
     layoutType: LayoutType,
     windowInsets: WindowInsets = NavigationScaffoldDefaults.windowInsets,
     navigationItems: NavigationScope.() -> Unit,
-    floatingActionButton: @Composable () -> Unit = {},
+    floatingActionButton: (@Composable () -> Unit)? = null,
     content: @Composable (contentPadding: PaddingValues) -> Unit,
 ) {
     val paddingValues = windowInsets.asPaddingValues()
@@ -87,13 +103,16 @@ fun NavigationScaffold(
                             windowInsets = windowInsets,
                             content = navigationItems,
                         )
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(navigationBarPadding),
-                            contentAlignment = Alignment.BottomEnd,
-                        ) {
-                            floatingActionButton()
+
+                        if (floatingActionButton != null) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(navigationBarPadding),
+                                contentAlignment = Alignment.BottomEnd,
+                            ) {
+                                floatingActionButton()
+                            }
                         }
                     }
                 }
@@ -112,13 +131,16 @@ fun NavigationScaffold(
                             windowInsets = windowInsets,
                             content = navigationItems,
                         )
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(navigationBarPadding),
-                            contentAlignment = Alignment.BottomEnd,
-                        ) {
-                            floatingActionButton()
+
+                        if (floatingActionButton != null) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(navigationBarPadding),
+                                contentAlignment = Alignment.BottomEnd,
+                            ) {
+                                floatingActionButton()
+                            }
                         }
                     }
                 }

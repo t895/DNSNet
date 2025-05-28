@@ -10,7 +10,6 @@ package dev.clombardo.dnsnet.ui.app
 
 import android.os.Parcelable
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -27,21 +26,24 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,9 +51,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -76,8 +79,8 @@ import dev.clombardo.dnsnet.ui.common.SortItem
 import dev.clombardo.dnsnet.ui.common.TabLayoutContent
 import dev.clombardo.dnsnet.ui.common.plus
 import dev.clombardo.dnsnet.ui.common.rememberAtTop
-import dev.clombardo.dnsnet.ui.common.theme.Animation
 import dev.clombardo.dnsnet.ui.common.theme.ListPadding
+import kotlinx.coroutines.delay
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
@@ -88,16 +91,7 @@ data class LoggedConnectionState(
     var lastAttemptTime: Long,
 ) : Parcelable
 
-object BlockLog {
-    val BlockedRatioAnimationSpec by lazy {
-        tween<Float>(
-            durationMillis = 500,
-            easing = Animation.EmphasizedDecelerateEasing,
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun BlockLog(
     modifier: Modifier = Modifier,
@@ -137,12 +131,29 @@ fun BlockLog(
                 PaddingValues(bottom = ScrollUpIndicator.padding + ScrollUpIndicator.size),
     ) {
         item {
+            var entered by rememberSaveable { mutableStateOf(false) }
             val blockedConnections = loggedConnections.count { !it.value.allowed }
-            val blockedConnectionsPercent =
-                blockedConnections.toFloat() / loggedConnections.size.toFloat()
+            val blockedConnectionsPercent by remember(entered, loggedConnections.size) {
+                derivedStateOf {
+                    if (entered) {
+                        blockedConnections.toFloat() / loggedConnections.size.toFloat()
+                    } else {
+                        0f
+                    }
+                }
+            }
+            LaunchedEffect(Unit) {
+                delay(100)
+                entered = true
+            }
+            val blockedRatioProgressAnimated by animateFloatAsState(
+                targetValue = blockedConnectionsPercent.takeIf { !it.isNaN() } ?: 0f,
+                animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
+                label = "blockedRatioProgressAnimated",
+            )
             val blockedRatioAnimated by animateFloatAsState(
                 targetValue = blockedConnectionsPercent.takeIf { !it.isNaN() } ?: 0f,
-                animationSpec = BlockLog.BlockedRatioAnimationSpec,
+                animationSpec = MaterialTheme.motionScheme.slowEffectsSpec(),
                 label = "blockedRatioAnimated",
             )
             val size = 256.dp
@@ -152,24 +163,31 @@ fun BlockLog(
                     .height(size),
                 contentAlignment = Alignment.Center,
             ) {
-                CircularProgressIndicator(
+                val density = LocalDensity.current.density
+                val stroke = remember {
+                    Stroke(width = 8.dp.value * density)
+                }
+                CircularWavyProgressIndicator(
                     modifier = Modifier.size(size),
-                    progress = { blockedRatioAnimated },
-                    strokeWidth = 14.dp,
+                    progress = { blockedRatioProgressAnimated },
+                    stroke = stroke,
+                    trackStroke = stroke,
+                    wavelength = 28.dp,
                 )
 
                 val blockedConnectionsString = stringResource(
                     id = R.string.blocked_connections_percent,
-                    formatArgs = arrayOf((blockedConnectionsPercent * 100).toInt()),
+                    formatArgs = arrayOf((blockedRatioAnimated * 100).toInt()),
                 )
                 Text(
                     modifier = Modifier
-                        .width(size * 0.65f)
+                        .width(size * 0.75f)
                         .heightIn(min = 0.dp, max = size * 0.65f),
-                    text = blockedConnectionsString,
-                    fontSize = 20.sp,
+                    text = blockedConnectionsString.uppercase(),
                     textAlign = TextAlign.Center,
-                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.displayLargeEmphasized,
+                    color = MaterialTheme.colorScheme.primary,
+                    autoSize = TextAutoSize.StepBased(stepSize = 3.sp)
                 )
             }
 
@@ -180,12 +198,6 @@ fun BlockLog(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                val keyboardOptions = remember {
-                    KeyboardOptions(
-                        capitalization = KeyboardCapitalization.None,
-                        autoCorrectEnabled = false,
-                    )
-                }
                 SearchWidget(
                     modifier = Modifier.weight(
                         weight = 1f,
@@ -199,7 +211,6 @@ fun BlockLog(
                         searchWidgetExpanded = false
                         listViewModel.searchValue = ""
                     },
-                    keyboardOptions = keyboardOptions,
                 )
                 Spacer(Modifier.padding(horizontal = 2.dp))
                 BasicTooltipIconButton(
