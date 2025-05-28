@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -31,32 +30,35 @@ import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.window.core.layout.WindowWidthSizeClass
 import dev.clombardo.dnsnet.ui.common.FabState
 import dev.clombardo.dnsnet.ui.common.IconSettingButton
 import dev.clombardo.dnsnet.ui.common.ListSettingsContainer
 import dev.clombardo.dnsnet.ui.common.SplitSwitchListItem
 import dev.clombardo.dnsnet.ui.common.SwitchListItem
 import dev.clombardo.dnsnet.ui.common.TriStateFab
+import dev.clombardo.dnsnet.ui.common.isSmallScreen
 import dev.clombardo.dnsnet.ui.common.navigation.NavigationBar
+import dev.clombardo.dnsnet.ui.common.plus
 import dev.clombardo.dnsnet.ui.common.theme.Animation
 import dev.clombardo.dnsnet.ui.common.theme.DnsNetTheme
 import dev.clombardo.dnsnet.ui.common.theme.FabPadding
+import dev.clombardo.dnsnet.ui.common.theme.ListPadding
+import kotlinx.coroutines.delay
 
 object Start {
     const val TEST_TAG_START_BUTTON = "start_button"
@@ -82,10 +84,10 @@ fun StartScreen(
     onChangeVpnStatusClick: () -> Unit,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
-        val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
         LazyColumn(
             state = listState,
-            contentPadding = contentPadding,
+            contentPadding = contentPadding + PaddingValues(ListPadding) +
+                    PaddingValues(bottom = TriStateFab.size + FabPadding),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item {
@@ -104,7 +106,6 @@ fun StartScreen(
                             title = stringResource(id = R.string.block_log),
                             details = stringResource(id = R.string.block_log_description),
                             maxDetailLines = Int.MAX_VALUE,
-                            outlineColor = MaterialTheme.colorScheme.outline,
                             checked = blockLog,
                             bodyEnabled = blockLog,
                             onCheckedChange = { onToggleBlockLog() },
@@ -120,7 +121,7 @@ fun StartScreen(
                     item {
                         IconSettingButton(
                             title = stringResource(R.string.action_import),
-                            description = stringResource(R.string.import_description),
+                            details = stringResource(R.string.import_description),
                             icon = Icons.Default.Download,
                             onClick = onImport,
                         )
@@ -129,7 +130,7 @@ fun StartScreen(
                     item {
                         IconSettingButton(
                             title = stringResource(R.string.action_export),
-                            description = stringResource(R.string.export_description),
+                            details = stringResource(R.string.export_description),
                             icon = Icons.Default.Upload,
                             onClick = onExport,
                         )
@@ -139,24 +140,33 @@ fun StartScreen(
                         IconSettingButton(
                             enabled = !isWritingLogcat,
                             title = stringResource(R.string.action_logcat),
-                            description = stringResource(R.string.logcat_description),
+                            details = stringResource(R.string.logcat_description),
                             icon = Icons.Default.BugReport,
                             onClick = onShareLogcat,
-                            endContent = {
-                                AnimatedVisibility(
-                                    modifier = Modifier.height(IntrinsicSize.Max),
-                                    visible = isWritingLogcat,
-                                    enter = Animation.ShowSpinnerHorizontal,
-                                    exit = Animation.HideSpinnerHorizontal,
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.Start,
+                            endContent = if (isWritingLogcat) {
+                                {
+                                    var entered by remember { mutableStateOf(false) }
+                                    LaunchedEffect(Unit) {
+                                        delay(100)
+                                        entered = true
+                                    }
+                                    AnimatedVisibility(
+                                        modifier = Modifier.height(IntrinsicSize.Max),
+                                        visible = isWritingLogcat && entered,
+                                        enter = Animation.ShowSpinnerHorizontal,
+                                        exit = Animation.HideSpinnerHorizontal,
                                     ) {
-                                        Spacer(Modifier.padding(horizontal = 8.dp))
-                                        CircularProgressIndicator(Modifier.size(24.dp))
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Start,
+                                        ) {
+                                            CircularProgressIndicator(Modifier.size(24.dp))
+                                            Spacer(Modifier.padding(horizontal = 8.dp))
+                                        }
                                     }
                                 }
+                            } else {
+                                null
                             }
                         )
                     }
@@ -164,7 +174,7 @@ fun StartScreen(
                     item {
                         IconSettingButton(
                             title = stringResource(R.string.load_defaults),
-                            description = stringResource(R.string.load_defaults_description),
+                            details = stringResource(R.string.load_defaults_description),
                             icon = Icons.Default.History,
                             onClick = onResetSettings,
                         )
@@ -173,7 +183,7 @@ fun StartScreen(
                     item {
                         IconSettingButton(
                             title = stringResource(R.string.action_about),
-                            description = stringResource(R.string.about_description),
+                            details = stringResource(R.string.about_description),
                             icon = Icons.Default.Info,
                             onClick = onOpenAbout,
                         )
@@ -182,20 +192,20 @@ fun StartScreen(
             }
         }
 
+        val isSmallScreen = isSmallScreen()
         Box(
             modifier = Modifier.fillMaxSize(),
-            contentAlignment = if (windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.COMPACT) {
+            contentAlignment = if (isSmallScreen) {
                 Alignment.BottomCenter
             } else {
                 Alignment.BottomEnd
             },
         ) {
-            val iconSize = 42.dp
             TriStateFab(
                 modifier = Modifier
                     .testTag(Start.TEST_TAG_START_BUTTON)
                     .then(
-                        if (windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.COMPACT) {
+                        if (isSmallScreen) {
                             Modifier
                                 .padding(bottom = NavigationBar.height)
                                 .systemBarsPadding()
@@ -206,23 +216,6 @@ fun StartScreen(
                     .padding(FabPadding),
                 state = state,
                 onClick = onChangeVpnStatusClick,
-                inactiveContent = {
-                    Icon(
-                        modifier = Modifier.size(iconSize),
-                        imageVector = Icons.Default.PlayArrow,
-                        contentDescription = stringResource(R.string.action_start),
-                    )
-                },
-                loadingContent = {
-                    CircularProgressIndicator(color = LocalContentColor.current)
-                },
-                activeContent = {
-                    Icon(
-                        modifier = Modifier.size(iconSize),
-                        imageVector = Icons.Default.Stop,
-                        contentDescription = stringResource(R.string.action_stop),
-                    )
-                },
             )
         }
     }

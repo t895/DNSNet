@@ -41,11 +41,6 @@ object NavigationRail {
     val width = 80.dp
 }
 
-object NavigationRailDefaults {
-    val itemSelectedIndicatorWidth = 56.dp
-    val itemHeight = 56.dp
-}
-
 @Composable
 fun NavigationRail(
     modifier: Modifier = Modifier,
@@ -61,7 +56,7 @@ fun NavigationRail(
     Column(
         modifier = modifier
             .fillMaxHeight()
-            .background(color = MaterialTheme.colorScheme.surface)
+            .background(color = MaterialTheme.colorScheme.surfaceContainerLowest)
             .padding(
                 start = insets.calculateStartPadding(layoutDirection),
                 top = insets.calculateTopPadding(),

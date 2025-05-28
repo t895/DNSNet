@@ -30,6 +30,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -183,7 +184,7 @@ class MainActivity : AppCompatActivity() {
                                     progressive = HazeProgressive.verticalGradient(
                                         startY = Float.POSITIVE_INFINITY,
                                         endY = 0f,
-                                        easing = FastOutSlowInEasing,
+                                        easing = LinearEasing,
                                         preferPerformance = true,
                                     )
                                 }),

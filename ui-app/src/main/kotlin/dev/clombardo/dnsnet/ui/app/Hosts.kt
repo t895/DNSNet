@@ -13,7 +13,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,12 +38,13 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -61,7 +61,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import dev.clombardo.dnsnet.settings.Host
 import dev.clombardo.dnsnet.settings.HostException
@@ -76,15 +75,13 @@ import dev.clombardo.dnsnet.ui.common.ScreenTitle
 import dev.clombardo.dnsnet.ui.common.SplitContentSetting
 import dev.clombardo.dnsnet.ui.common.SwitchListItem
 import dev.clombardo.dnsnet.ui.common.TooltipIconButton
+import dev.clombardo.dnsnet.ui.common.plus
 import dev.clombardo.dnsnet.ui.common.rememberAtTop
 import dev.clombardo.dnsnet.ui.common.theme.Animation
+import dev.clombardo.dnsnet.ui.common.theme.DefaultFabSize
 import dev.clombardo.dnsnet.ui.common.theme.DnsNetTheme
+import dev.clombardo.dnsnet.ui.common.theme.FabPadding
 import dev.clombardo.dnsnet.ui.common.theme.ListPadding
-
-object Hosts {
-    val RefreshHostsButtonContainerAnimationSpec =
-        tween<IntSize>(easing = Animation.EmphasizedDecelerateEasing)
-}
 
 @Composable
 private fun IconText(
@@ -109,6 +106,7 @@ private fun IconText(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun HostsScreen(
     modifier: Modifier = Modifier,
@@ -133,7 +131,8 @@ fun HostsScreen(
     }
     LazyColumn(
         modifier = modifier,
-        contentPadding = contentPadding,
+        contentPadding = contentPadding + PaddingValues(ListPadding) +
+                PaddingValues(bottom = DefaultFabSize + FabPadding),
         state = listState,
     ) {
         item {
@@ -191,7 +190,7 @@ fun HostsScreen(
                 ) {
                     Row(
                         modifier = Modifier.animateContentSize(
-                            animationSpec = Hosts.RefreshHostsButtonContainerAnimationSpec
+                            animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
                         ),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -403,7 +402,7 @@ fun EditHost(
                 // expanding/collapsing the menu on click. A read-only text field has
                 // the anchor type `PrimaryNotEditable`.
                 modifier = Modifier
-                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                     .fillMaxWidth(),
                 value = when (state) {
                     HostState.IGNORE -> itemStates[2]
@@ -517,6 +516,7 @@ fun EditHostScreen(
 
     val state = rememberLazyListState()
     InsetScaffold(
+        modifier = modifier,
         topBar = {
             val isAtTop by rememberAtTop(state)
             FloatingTopActions(

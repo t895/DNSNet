@@ -8,6 +8,39 @@
 
 package dev.clombardo.dnsnet.ui.common.theme
 
+import android.os.Build
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Typography
+import androidx.compose.ui.text.ExperimentalTextApi
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
+import dev.clombardo.dnsnet.resources.R
 
-val AppTypography = Typography()
+@OptIn(ExperimentalTextApi::class)
+val displayEmphasizedFontFamily = FontFamily(
+    Font(
+        resId = R.font.roboto_flex,
+        variationSettings = FontVariation.Settings(
+            FontVariation.weight(1000),
+            FontVariation.grade(150),
+            FontVariation.slant(-10f),
+            FontVariation.width(60f),
+            FontVariation.Setting("XOPQ", 27f),
+            FontVariation.Setting("YOPQ", 90f),
+            FontVariation.Setting("XTRA", 540f),
+        )
+    )
+)
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+val AppTypography = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+    Typography(
+        displayLargeEmphasized = TextStyle(fontFamily = displayEmphasizedFontFamily),
+        displayMediumEmphasized = TextStyle(fontFamily = displayEmphasizedFontFamily),
+        displaySmallEmphasized = TextStyle(fontFamily = displayEmphasizedFontFamily),
+    )
+} else {
+    Typography()
+}

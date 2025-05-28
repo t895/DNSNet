@@ -43,6 +43,8 @@ hiltWork = "1.2.0"
 hiltNavigationCompose = "1.2.0"
 playPublisher = "3.12.1"
 aboutLibraries = "12.1.0"
+graphicsShapes = "1.0.1"
+material3 = "1.4.0-alpha15"
 
 [libraries]
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistPermissions" }
@@ -55,7 +57,7 @@ androidx-lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-view
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
 androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
-androidx-material3 = { module = "androidx.compose.material3:material3" }
+androidx-material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
 androidx-material3-adaptive-navigation-suite = { module = "androidx.compose.material3:material3-adaptive-navigation-suite" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 androidx-preference-ktx = { module = "androidx.preference:preference-ktx", version.ref = "preferenceKtx" }
@@ -78,6 +80,7 @@ androidx-benchmark-macro-junit4 = { module = "androidx.benchmark:benchmark-macro
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "runner" }
 androidx-test-rules = { module = "androidx.test:rules", version.ref = "rules" }
 androidx-test-core = { module = "androidx.test:core-ktx", version.ref = "testCore" }
+androidx-graphics-shapes = { module = "androidx.graphics:graphics-shapes", version.ref = "graphicsShapes" }
 junit = { module = "junit:junit", version.ref = "junit" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 hilt = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }

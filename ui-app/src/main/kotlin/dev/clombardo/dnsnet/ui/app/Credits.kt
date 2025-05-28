@@ -235,6 +235,13 @@ fun CreditsScreen(
                 )
             }
 
+            item {
+                LicenseListItem(
+                    title = stringResource(R.string.roboto_flex),
+                    licenseLink = stringResource(R.string.roboto_flex_link),
+                )
+            }
+
             if (libs != null) {
                 items(librariesList) {
                     CreditListItem(it)

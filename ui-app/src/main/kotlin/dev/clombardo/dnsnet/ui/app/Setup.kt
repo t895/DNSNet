@@ -47,7 +47,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -70,9 +69,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
-import androidx.window.core.layout.WindowWidthSizeClass
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
+import dev.clombardo.dnsnet.ui.common.isSmallScreen
 import dev.clombardo.dnsnet.ui.common.plus
 import dev.clombardo.dnsnet.ui.common.theme.DnsNetTheme
 import dev.clombardo.dnsnet.ui.common.tryOpenUri
@@ -111,8 +110,7 @@ fun GreetingScreen(
                 ),
             contentAlignment = Alignment.Center,
         ) {
-            val sizeClass = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
-            if (sizeClass == WindowWidthSizeClass.COMPACT) {
+            if (isSmallScreen()) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,

@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -41,12 +42,23 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 object ScrollUpIndicatorDefaults {
     val windowInsets: WindowInsets
         @Composable get() = WindowInsets.systemBars.union(WindowInsets.displayCutout)
 
-    val EnterTransition by lazy { slideInVertically { it } }
-    val ExitTransition by lazy { slideOutVertically { it } }
+    val EnterTransition: EnterTransition
+        @Composable get() {
+            return slideInVertically(animationSpec = MaterialTheme.motionScheme.slowSpatialSpec()) {
+                it
+            }
+        }
+    val ExitTransition: ExitTransition
+        @Composable get() {
+            return slideOutVertically(animationSpec = MaterialTheme.motionScheme.slowSpatialSpec()) {
+                it
+            }
+        }
 }
 
 object ScrollUpIndicator {
@@ -61,12 +73,13 @@ fun BoxScope.ScrollUpIndicator(
     enterTransition: EnterTransition = ScrollUpIndicatorDefaults.EnterTransition,
     exitTransition: ExitTransition = ScrollUpIndicatorDefaults.ExitTransition,
     windowInsets: WindowInsets = ScrollUpIndicatorDefaults.windowInsets,
+    alignment: Alignment = Alignment.BottomEnd,
     onClick: suspend CoroutineScope.() -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     val scrollUpButtonColor = MaterialTheme.colorScheme.tertiaryContainer
     AnimatedVisibility(
-        modifier = Modifier.align(Alignment.BottomCenter),
+        modifier = Modifier.align(alignment),
         visible = visible,
         enter = enterTransition,
         exit = exitTransition,

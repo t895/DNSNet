@@ -12,6 +12,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
@@ -29,9 +30,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -39,26 +40,30 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.stringResource
@@ -71,7 +76,8 @@ import androidx.compose.ui.unit.dp
 import com.t895.materialswitch.MaterialSwitch
 import dev.clombardo.dnsnet.ui.common.theme.DnsNetTheme
 
-private val innerHorizontalPadding = 8.dp
+private val innerStartHorizontalPadding = 8.dp
+private val innerEndHorizontalPadding = 8.dp
 private val clickablePadding = 8.dp
 
 @Composable
@@ -127,31 +133,47 @@ private fun Modifier.toggleable(
 @Composable
 fun SettingInfo(
     modifier: Modifier = Modifier,
-    enabled: Boolean,
     title: String,
     details: String = "",
     maxTitleLines: Int = Int.MAX_VALUE,
     maxDetailLines: Int = Int.MAX_VALUE,
 ) {
     Column(
-        modifier = modifier.alpha(if (enabled) 1f else 0.6f),
+        modifier = modifier,
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.Start,
     ) {
         Text(
+            modifier = Modifier
+                .then(
+                    if (maxTitleLines == 1) {
+                        Modifier.basicMarquee()
+                    } else {
+                        Modifier
+                    }
+                ),
             text = title,
             style = MaterialTheme.typography.labelLarge,
             maxLines = maxTitleLines,
             overflow = TextOverflow.Ellipsis,
+            color = MaterialTheme.colorScheme.onSurface,
         )
 
         if (details.isNotEmpty()) {
             Spacer(modifier = Modifier.padding(vertical = 1.dp))
             Text(
+                modifier = Modifier
+                    .then(
+                        if (maxDetailLines == 1) {
+                            Modifier.basicMarquee()
+                        } else {
+                            Modifier
+                        }
+                    ),
                 text = details,
                 style = MaterialTheme.typography.bodySmall,
                 maxLines = maxDetailLines,
-                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -171,6 +193,19 @@ private fun StartContentContainer(
 }
 
 @Composable
+fun SettingContentTheme(
+    content: @Composable () -> Unit,
+) {
+    CompositionLocalProvider(
+        LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant,
+        LocalTextStyle provides LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+    ) {
+        content()
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
 fun ContentSetting(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
@@ -181,21 +216,31 @@ fun ContentSetting(
     startContent: @Composable (BoxScope.() -> Unit)? = null,
     endContent: @Composable (BoxScope.() -> Unit)? = null,
 ) {
+    val animatedAlpha by animateFloatAsState(
+        targetValue = if (enabled) 1f else 0.6f,
+        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+    )
     Row(
-        modifier = modifier.padding(8.dp),
+        modifier = modifier
+            .graphicsLayer {
+                alpha = animatedAlpha
+            }
+            .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (startContent != null) {
-            StartContentContainer(
-                modifier = Modifier.minimumInteractiveComponentSize(),
-                startContent = startContent,
-            )
-            Spacer(modifier = Modifier.padding(horizontal = innerHorizontalPadding))
+            SettingContentTheme {
+                Box(
+                    modifier = Modifier.minimumInteractiveComponentSize(),
+                    contentAlignment = Alignment.Center,
+                    content = startContent,
+                )
+            }
+            Spacer(modifier = Modifier.padding(horizontal = innerStartHorizontalPadding))
         }
 
         SettingInfo(
             modifier = Modifier.weight(1f),
-            enabled = enabled,
             title = title,
             details = details,
             maxTitleLines = maxTitleLines,
@@ -203,16 +248,19 @@ fun ContentSetting(
         )
 
         if (endContent != null) {
-            Spacer(modifier = Modifier.padding(horizontal = innerHorizontalPadding))
-            Box(
-                modifier = Modifier.minimumInteractiveComponentSize(),
-                contentAlignment = Alignment.Center,
-                content = endContent,
-            )
+            Spacer(modifier = Modifier.padding(horizontal = innerEndHorizontalPadding))
+            SettingContentTheme {
+                Box(
+                    modifier = Modifier.minimumInteractiveComponentSize(),
+                    contentAlignment = Alignment.Center,
+                    content = endContent,
+                )
+            }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SplitContentSetting(
     modifier: Modifier = Modifier,
@@ -220,13 +268,17 @@ fun SplitContentSetting(
     title: String = "",
     details: String = "",
     maxDetailLines: Int = 1,
-    outlineColor: Color = MaterialTheme.colorScheme.outlineVariant,
+    outlineColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     onBodyClick: () -> Unit,
     clip: Boolean = false,
     interactionSource: MutableInteractionSource? = remember { MutableInteractionSource() },
     startContent: @Composable (BoxScope.() -> Unit)? = null,
     endContent: @Composable BoxScope.() -> Unit,
 ) {
+    val animatedAlpha by animateFloatAsState(
+        targetValue = if (enabled) 1f else 0.6f,
+        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+    )
     Row(
         modifier = modifier
             .height(IntrinsicSize.Min)
@@ -242,40 +294,61 @@ fun SplitContentSetting(
         Row(
             modifier = Modifier
                 .padding(8.dp)
-                .weight(1f),
+                .weight(1f)
+                .graphicsLayer {
+                    alpha = animatedAlpha
+                },
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (startContent != null) {
-                StartContentContainer(
-                    modifier = Modifier.minimumInteractiveComponentSize(),
-                    startContent = startContent,
-                )
-                Spacer(modifier = Modifier.padding(horizontal = innerHorizontalPadding))
+                SettingContentTheme {
+                    Box(
+                        modifier = Modifier.minimumInteractiveComponentSize(),
+                        contentAlignment = Alignment.Center,
+                        content = startContent,
+                    )
+                }
+                Spacer(modifier = Modifier.padding(horizontal = innerStartHorizontalPadding))
             }
 
             SettingInfo(
                 modifier = Modifier.weight(1f),
-                enabled = enabled,
                 title = title,
                 details = details,
                 maxDetailLines = maxDetailLines,
             )
         }
-        Spacer(modifier = Modifier.padding(horizontal = innerHorizontalPadding / 2))
-        VerticalDivider(
+        Row(
             modifier = Modifier
-                .fillMaxHeight()
-                .padding(vertical = 8.dp),
-            color = outlineColor,
-        )
-        Spacer(modifier = Modifier.padding(horizontal = innerHorizontalPadding))
-        Box(
-            modifier = Modifier
-                .minimumInteractiveComponentSize()
-                .padding(end = 8.dp),
-            contentAlignment = Alignment.Center,
-            content = endContent,
-        )
+                .graphicsLayer {
+                    alpha = animatedAlpha
+                },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Spacer(modifier = Modifier.padding(horizontal = innerEndHorizontalPadding / 2))
+            Icon(
+                painter = rememberVectorPainter(Icons.AutoMirrored.Default.KeyboardArrowRight),
+                contentDescription = null,
+                tint = outlineColor,
+            )
+            Spacer(modifier = Modifier.padding(horizontal = innerEndHorizontalPadding / 2))
+            VerticalDivider(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .padding(vertical = 8.dp),
+                color = outlineColor,
+            )
+            Spacer(modifier = Modifier.padding(horizontal = innerEndHorizontalPadding))
+        }
+        SettingContentTheme {
+            Box(
+                modifier = Modifier
+                    .minimumInteractiveComponentSize()
+                    .padding(end = 8.dp),
+                contentAlignment = Alignment.Center,
+                content = endContent,
+            )
+        }
     }
 }
 
@@ -394,7 +467,7 @@ private fun CheckboxListItemPreview() {
 fun SplitCheckboxListItem(
     checked: Boolean,
     title: String,
-    outlineColor: Color = MaterialTheme.colorScheme.outlineVariant,
+    outlineColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     modifier: Modifier = Modifier,
     bodyEnabled: Boolean = true,
     checkboxEnabled: Boolean = true,
@@ -508,7 +581,7 @@ private fun SwitchListItemPreview() {
 fun SplitSwitchListItem(
     checked: Boolean,
     title: String,
-    outlineColor: Color = MaterialTheme.colorScheme.outlineVariant,
+    outlineColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     modifier: Modifier = Modifier,
     bodyEnabled: Boolean = true,
     switchEnabled: Boolean = true,
@@ -608,6 +681,7 @@ private fun IconListItemPreview() {
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ExpandableOptionsItem(
     modifier: Modifier = Modifier,
@@ -637,6 +711,7 @@ fun ExpandableOptionsItem(
                 interactionSource = sharedInteractionSource,
             ) {
                 val iconRotation by animateFloatAsState(
+                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
                     targetValue = if (expanded) 180f else 0f,
                     label = "iconRotation",
                 )
@@ -654,8 +729,14 @@ fun ExpandableOptionsItem(
 
         AnimatedVisibility(
             visible = expanded,
-            enter = expandVertically(expandFrom = Alignment.Top),
-            exit = shrinkVertically(shrinkTowards = Alignment.Top),
+            enter = expandVertically(
+                animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
+                expandFrom = Alignment.Top
+            ),
+            exit = shrinkVertically(
+                animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
+                shrinkTowards = Alignment.Top,
+            ),
         ) {
             Column(
                 modifier = Modifier
@@ -680,9 +761,9 @@ private fun ExpandableOptionsItemPreview() {
                 details = "Details",
                 onExpandClick = { expanded = !expanded },
             ) {
-                SettingInfo(enabled = true, title = "Option1")
-                SettingInfo(enabled = true, title = "Option2")
-                SettingInfo(enabled = true, title = "Option3")
+                SettingInfo(title = "Option1")
+                SettingInfo(title = "Option2")
+                SettingInfo(title = "Option3")
             }
         }
     }
@@ -748,7 +829,7 @@ fun ListSettingsContainer(
             Text(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 20.dp),
+                    .padding(start = 12.dp),
                 text = title,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
@@ -757,7 +838,7 @@ fun ListSettingsContainer(
         }
 
         SplitContentColumnContainer(
-            color = MaterialTheme.colorScheme.surfaceVariant,
+            color = MaterialTheme.colorScheme.surfaceContainer,
             circleClip = circleClip,
             content = content,
         )
@@ -831,17 +912,18 @@ private fun ListSettingsContainerPreview() {
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun IconSettingButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     title: String,
-    description: String,
+    details: String,
     icon: ImageVector,
     onClick: () -> Unit,
-    endContent: (@Composable () -> Unit)? = null,
+    endContent: (@Composable BoxScope.() -> Unit)? = null,
 ) {
-    Row(
+    ContentSetting(
         modifier = modifier
             .clickable(
                 enabled = enabled,
@@ -850,41 +932,32 @@ fun IconSettingButton(
                 role = Role.Button,
                 indication = ripple(),
             )
-            .alpha(if (enabled) 1f else 0.6f)
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(imageVector = icon, contentDescription = null)
-        Spacer(Modifier.padding(horizontal = 8.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                modifier = Modifier.basicMarquee(),
-                text = title,
-                style = MaterialTheme.typography.labelLarge,
-                maxLines = 1,
+            .fillMaxWidth(),
+        enabled = enabled,
+        title = title,
+        details = details,
+        maxTitleLines = 1,
+        maxDetailLines = 1,
+        startContent = {
+            Image(
+                modifier = Modifier.padding(start = 12.dp, top = 16.dp, bottom = 16.dp),
+                painter = rememberVectorPainter(icon),
+                contentDescription = null,
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant),
             )
-            Text(
-                modifier = Modifier.basicMarquee(),
-                text = description,
-                style = MaterialTheme.typography.labelSmall,
-                maxLines = 1,
-            )
-        }
-        if (endContent != null) {
-            endContent()
-        }
-    }
+        },
+        endContent = endContent,
+    )
 }
 
 @Preview
 @Composable
-private fun FilledTonalSettingsButtonPreview() {
+private fun IconSettingButtonPreview() {
     DnsNetTheme {
         Box(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
             IconSettingButton(
                 title = "Some submenu",
-                description = "Submenu description",
+                details = "Submenu description",
                 icon = Icons.Default.Person,
                 enabled = true,
                 onClick = {},

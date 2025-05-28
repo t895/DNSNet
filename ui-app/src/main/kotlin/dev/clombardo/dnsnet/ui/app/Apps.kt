@@ -15,20 +15,19 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.add
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -46,14 +45,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.window.core.layout.WindowWidthSizeClass
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
-import coil3.request.crossfade
 import dev.clombardo.dnsnet.settings.AllowListMode
 import dev.clombardo.dnsnet.settings.AllowListMode.Companion.toAllowListMode
 import dev.clombardo.dnsnet.ui.app.model.AppData
@@ -63,6 +59,7 @@ import dev.clombardo.dnsnet.ui.common.BasicTooltipIconButton
 import dev.clombardo.dnsnet.ui.common.ExpandableOptionsItem
 import dev.clombardo.dnsnet.ui.common.FilterItem
 import dev.clombardo.dnsnet.ui.common.ListSettingsContainer
+import dev.clombardo.dnsnet.ui.common.LoadingIndicatorBox
 import dev.clombardo.dnsnet.ui.common.MaterialHorizontalTabLayout
 import dev.clombardo.dnsnet.ui.common.RadioListItem
 import dev.clombardo.dnsnet.ui.common.ScrollUpIndicator
@@ -71,11 +68,12 @@ import dev.clombardo.dnsnet.ui.common.SearchWidget
 import dev.clombardo.dnsnet.ui.common.SortItem
 import dev.clombardo.dnsnet.ui.common.SwitchListItem
 import dev.clombardo.dnsnet.ui.common.TabLayoutContent
+import dev.clombardo.dnsnet.ui.common.isSmallScreen
 import dev.clombardo.dnsnet.ui.common.navigation.NavigationBar
 import dev.clombardo.dnsnet.ui.common.plus
 import dev.clombardo.dnsnet.ui.common.theme.DnsNetTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AppsScreen(
     modifier: Modifier = Modifier,
@@ -101,7 +99,7 @@ fun AppsScreen(
         onRefresh = onRefresh,
         state = pullToRefreshState,
         indicator = {
-            PullToRefreshDefaults.Indicator(
+            LoadingIndicatorBox(
                 state = pullToRefreshState,
                 isRefreshing = isRefreshing,
                 modifier = Modifier.align(Alignment.TopCenter),
@@ -151,12 +149,6 @@ fun AppsScreen(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    val keyboardOptions = remember {
-                        KeyboardOptions(
-                            capitalization = KeyboardCapitalization.None,
-                            autoCorrectEnabled = false,
-                        )
-                    }
                     SearchWidget(
                         modifier = Modifier.weight(
                             weight = 1f,
@@ -170,7 +162,6 @@ fun AppsScreen(
                             listViewModel.searchWidgetExpanded = false
                             listViewModel.searchValue = ""
                         },
-                        keyboardOptions = keyboardOptions,
                     )
                     Spacer(Modifier.padding(horizontal = 2.dp))
                     BasicTooltipIconButton(
@@ -201,10 +192,9 @@ fun AppsScreen(
                     clip = true,
                     startContent = {
                         AsyncImage(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier.size(56.dp),
                             model = ImageRequest.Builder(LocalContext.current)
                                 .data(it)
-                                .crossfade(true)
                                 .build(),
                             contentDescription = it.label,
                         )
@@ -218,12 +208,11 @@ fun AppsScreen(
                 listState.firstVisibleItemIndex != 0
             }
         }
-        val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
         ScrollUpIndicator(
             visible = isAtTop,
             windowInsets = ScrollUpIndicatorDefaults.windowInsets
                 .add(
-                    if (windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.COMPACT) {
+                    if (isSmallScreen()) {
                         WindowInsets(bottom = NavigationBar.height)
                     } else {
                         WindowInsets(bottom = 0.dp)
