@@ -28,10 +28,10 @@ import dev.clombardo.dnsnet.settings.BlockList
 import dev.clombardo.dnsnet.settings.Configuration
 import dev.clombardo.dnsnet.settings.ConfigurationManager
 import dev.clombardo.dnsnet.settings.DnsServer
-import dev.clombardo.dnsnet.settings.Host
-import dev.clombardo.dnsnet.settings.HostException
-import dev.clombardo.dnsnet.settings.HostFile
-import dev.clombardo.dnsnet.settings.HostState
+import dev.clombardo.dnsnet.settings.Filter
+import dev.clombardo.dnsnet.settings.SingleFilter
+import dev.clombardo.dnsnet.settings.FilterFile
+import dev.clombardo.dnsnet.settings.FilterState
 import dev.clombardo.dnsnet.settings.Preferences
 import dev.clombardo.dnsnet.ui.app.R
 import dev.clombardo.dnsnet.ui.app.model.AppData
@@ -67,14 +67,14 @@ class HomeViewModel @Inject constructor(
     private val _appList = mutableStateListOf<AppData>()
     val appList: List<AppData> = _appList
 
-    private val _hosts = mutableStateListOf<Host>()
-    val hosts: List<Host> = _hosts
+    private val _filters = mutableStateListOf<Filter>()
+    val filters: List<Filter> = _filters
 
     private val _dnsServers = mutableStateListOf<DnsServer>()
     val dnsServers: List<DnsServer> = _dnsServers
 
-    private val _showHostsFilesNotFoundDialog = MutableStateFlow(false)
-    val showHostsFilesNotFoundDialog = _showHostsFilesNotFoundDialog.asStateFlow()
+    private val _showFilterFilesNotFoundDialog = MutableStateFlow(false)
+    val showFilterFilesNotFoundDialog = _showFilterFilesNotFoundDialog.asStateFlow()
 
     private val _showFilePermissionDeniedDialog = MutableStateFlow(false)
     val showFilePermissionDeniedDialog = _showFilePermissionDeniedDialog.asStateFlow()
@@ -97,8 +97,8 @@ class HomeViewModel @Inject constructor(
     private val _showDeleteDnsServerWarningDialog = MutableStateFlow(false)
     val showDeleteDnsServerWarningDialog = _showDeleteDnsServerWarningDialog.asStateFlow()
 
-    private val _showDeleteHostWarningDialog = MutableStateFlow(false)
-    val showDeleteHostWarningDialog = _showDeleteHostWarningDialog.asStateFlow()
+    private val _showDeleteFilterWarningDialog = MutableStateFlow(false)
+    val showDeleteFilterWarningDialog = _showDeleteFilterWarningDialog.asStateFlow()
 
     private val _isWritingLogcat = MutableStateFlow(false)
     val isWritingLogcat = _isWritingLogcat.asStateFlow()
@@ -118,7 +118,7 @@ class HomeViewModel @Inject constructor(
         }
         populateAppList()
 
-        _hosts.addAll(configuration.read { hosts.getAllHosts() })
+        _filters.addAll(configuration.read { filters.getAllFilters() })
         _dnsServers.addAll(configuration.read { dnsServers.items })
     }
 
@@ -173,126 +173,126 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun onHostsFilesNotFound() {
-        _showHostsFilesNotFoundDialog.value = true
+    fun onFilterFilesNotFound() {
+        _showFilterFilesNotFoundDialog.value = true
     }
 
-    fun onDismissHostsFilesNotFound() {
-        _showHostsFilesNotFoundDialog.value = false
+    fun onDismissFilterFilesNotFound() {
+        _showFilterFilesNotFoundDialog.value = false
     }
 
-    private fun addHostFile(host: HostFile) {
+    private fun addFilterFile(filter: FilterFile) {
         configuration.edit {
-            hosts.items.add(host)
+            filters.files.add(filter)
         }
-        _hosts.add(host)
+        _filters.add(filter)
     }
 
-    private fun addHostException(host: HostException) {
+    private fun addSingleFilter(filter: SingleFilter) {
         configuration.edit {
-            hosts.exceptions.add(host)
+            filters.singleFilters.add(filter)
         }
-        _hosts.add(host)
+        _filters.add(filter)
     }
 
-    fun addHost(host: Host) {
-        when (host) {
-            is HostFile -> addHostFile(host)
-            is HostException -> addHostException(host)
+    fun addFilter(filter: Filter) {
+        when (filter) {
+            is FilterFile -> addFilterFile(filter)
+            is SingleFilter -> addSingleFilter(filter)
         }
     }
 
-    private fun removeHostFile(host: HostFile) {
-        if (configuration.read { !hosts.items.contains(host) }) {
-            logWarning("Tried to remove host that does not exist in config! - $host")
+    private fun removeFilterFile(filter: FilterFile) {
+        if (configuration.read { !this.filters.files.contains(filter) }) {
+            logWarning("Tried to remove filter that does not exist in config! - $filter")
             return
         }
 
         configuration.edit {
-            hosts.items.remove(host)
+            filters.files.remove(filter)
         }
-        _hosts.remove(host)
+        _filters.remove(filter)
     }
 
-    private fun removeHostException(host: HostException) {
-        if (configuration.read { !hosts.exceptions.contains(host) }) {
-            logWarning("Tried to remove host that does not exist in config! - $host")
+    private fun removeSingleFilter(filter: SingleFilter) {
+        if (configuration.read { !filters.singleFilters.contains(filter) }) {
+            logWarning("Tried to remove filter that does not exist in config! - $filter")
             return
         }
 
         configuration.edit {
-            hosts.exceptions.remove(host)
+            filters.singleFilters.remove(filter)
         }
-        _hosts.remove(host)
+        _filters.remove(filter)
     }
 
-    fun removeHost(host: Host) {
-        when (host) {
-            is HostFile -> removeHostFile(host)
-            is HostException -> removeHostException(host)
+    fun removeFilter(filter: Filter) {
+        when (filter) {
+            is FilterFile -> removeFilterFile(filter)
+            is SingleFilter -> removeSingleFilter(filter)
         }
     }
 
-    private fun replaceHostFile(oldHost: HostFile, newHost: HostFile) {
-        if (configuration.read { !hosts.items.contains(oldHost) }) {
-            logWarning("Tried to replace host that does not exist in config! - $oldHost")
+    private fun replaceFilterFile(oldFilter: FilterFile, newFilter: FilterFile) {
+        if (configuration.read { !this.filters.files.contains(oldFilter) }) {
+            logWarning("Tried to replace filter that does not exist in config! - $oldFilter")
             return
         }
 
         configuration.edit {
-            val oldIndex = hosts.items.indexOf(oldHost)
-            hosts.items[oldIndex] = newHost
+            val oldIndex = filters.files.indexOf(oldFilter)
+            filters.files[oldIndex] = newFilter
         }
-        val oldStateIndex = _hosts.indexOf(oldHost)
-        _hosts[oldStateIndex] = newHost
+        val oldStateIndex = _filters.indexOf(oldFilter)
+        _filters[oldStateIndex] = newFilter
     }
 
-    private fun replaceHostException(oldHost: HostException, newHost: HostException) {
-        if (configuration.read { !hosts.exceptions.contains(oldHost) }) {
-            logWarning("Tried to replace host that does not exist in config! - $oldHost")
+    private fun replaceSingleFilter(oldFilter: SingleFilter, newFilter: SingleFilter) {
+        if (configuration.read { !filters.singleFilters.contains(oldFilter) }) {
+            logWarning("Tried to replace filter that does not exist in config! - $oldFilter")
             return
         }
 
         configuration.edit {
-            val oldIndex = hosts.exceptions.indexOf(oldHost)
-            hosts.exceptions[oldIndex] = newHost
+            val oldIndex = filters.singleFilters.indexOf(oldFilter)
+            filters.singleFilters[oldIndex] = newFilter
         }
-        val oldStateIndex = _hosts.indexOf(oldHost)
-        _hosts[oldStateIndex] = newHost
+        val oldStateIndex = _filters.indexOf(oldFilter)
+        _filters[oldStateIndex] = newFilter
     }
 
-    fun replaceHost(oldHost: Host, newHost: Host) {
-        if (oldHost is HostFile && newHost is HostFile) {
-            replaceHostFile(oldHost, newHost)
-        } else if (oldHost is HostException && newHost is HostException) {
-            replaceHostException(oldHost, newHost)
+    fun replaceFilter(oldFilter: Filter, newFilter: Filter) {
+        if (oldFilter is FilterFile && newFilter is FilterFile) {
+            replaceFilterFile(oldFilter, newFilter)
+        } else if (oldFilter is SingleFilter && newFilter is SingleFilter) {
+            replaceSingleFilter(oldFilter, newFilter)
         }
     }
 
-    private fun cycleHostFile(host: HostFile) {
-        val newHost = host.copy()
-        newHost.state = when (newHost.state) {
-            HostState.IGNORE -> HostState.DENY
-            HostState.DENY -> HostState.ALLOW
-            HostState.ALLOW -> HostState.IGNORE
+    private fun cycleFilterFile(filter: FilterFile) {
+        val newFilter = filter.copy()
+        newFilter.state = when (newFilter.state) {
+            FilterState.IGNORE -> FilterState.DENY
+            FilterState.DENY -> FilterState.ALLOW
+            FilterState.ALLOW -> FilterState.IGNORE
         }
-        replaceHostFile(host, newHost)
+        replaceFilterFile(filter, newFilter)
     }
 
-    private fun cycleHostException(host: HostException) {
-        val newHost = host.copy()
-        newHost.state = when (newHost.state) {
-            HostState.IGNORE -> HostState.DENY
-            HostState.DENY -> HostState.ALLOW
-            HostState.ALLOW -> HostState.IGNORE
+    private fun cycleSingleFilter(filter: SingleFilter) {
+        val newFilter = filter.copy()
+        newFilter.state = when (newFilter.state) {
+            FilterState.IGNORE -> FilterState.DENY
+            FilterState.DENY -> FilterState.ALLOW
+            FilterState.ALLOW -> FilterState.IGNORE
         }
-        replaceHostException(host, newHost)
+        replaceSingleFilter(filter, newFilter)
     }
 
-    fun cycleHost(host: Host) {
-        when (host) {
-            is HostFile -> cycleHostFile(host)
-            is HostException -> cycleHostException(host)
+    fun cycleFilter(filter: Filter) {
+        when (filter) {
+            is FilterFile -> cycleFilterFile(filter)
+            is SingleFilter -> cycleSingleFilter(filter)
         }
     }
 
@@ -325,7 +325,7 @@ class HomeViewModel @Inject constructor(
         newDnsServer: DnsServer
     ) {
         if (configuration.read { !dnsServers.items.contains(oldServer) }) {
-            logWarning("Tried to replace host that does not exist in config! - $oldServer")
+            logWarning("Tried to replace DNS server that does not exist in config! - $oldServer")
             return
         }
 
@@ -345,10 +345,10 @@ class HomeViewModel @Inject constructor(
 
     fun onReloadSettings() {
         populateAppList()
-        _hosts.clear()
+        _filters.clear()
         _dnsServers.clear()
         configuration.read {
-            _hosts.addAll(hosts.getAllHosts())
+            _filters.addAll(filters.getAllFilters())
             _dnsServers.addAll(dnsServers.items)
             if (!blockLogging) {
                 blockLogger.clear(context)
@@ -422,12 +422,12 @@ class HomeViewModel @Inject constructor(
         _showDeleteDnsServerWarningDialog.value = false
     }
 
-    fun onDeleteHostWarning() {
-        _showDeleteHostWarningDialog.value = true
+    fun onDeleteFilterWarning() {
+        _showDeleteFilterWarningDialog.value = true
     }
 
-    fun onDismissDeleteHostWarning() {
-        _showDeleteHostWarningDialog.value = false
+    fun onDismissDeleteFilterWarning() {
+        _showDeleteFilterWarningDialog.value = false
     }
 
     fun onClearBlockLog() {
@@ -480,19 +480,19 @@ class HomeViewModel @Inject constructor(
         configuration.edit {
             lists.forEach { blockList ->
                 val listUrl = context.getString(blockList.urlResId)
-                if (this.hosts.items.firstOrNull { it.data == listUrl } == null) {
-                    this.hosts.items.add(
-                        HostFile(
+                if (this.filters.files.firstOrNull { it.data == listUrl } == null) {
+                    this.filters.files.add(
+                        FilterFile(
                             title = context.getString(blockList.titleResId),
                             data = listUrl,
-                            state = HostState.DENY,
+                            state = FilterState.DENY,
                         )
                     )
                 }
             }
         }
-        _hosts.clear()
-        _hosts.addAll(configuration.read { hosts.getAllHosts() })
+        _filters.clear()
+        _filters.addAll(configuration.read { filters.getAllFilters() })
     }
 
     fun hasCompletedEmptyConfigMigration(): Boolean {

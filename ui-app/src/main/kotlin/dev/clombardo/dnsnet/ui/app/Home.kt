@@ -27,12 +27,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.DriveFileMove
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Dns
-import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Filter1
+import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButtonMenu
@@ -73,10 +74,10 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dev.clombardo.dnsnet.settings.DnsServer
 import dev.clombardo.dnsnet.settings.DnsServerType
-import dev.clombardo.dnsnet.settings.Host
-import dev.clombardo.dnsnet.settings.HostException
-import dev.clombardo.dnsnet.settings.HostFile
-import dev.clombardo.dnsnet.settings.HostState
+import dev.clombardo.dnsnet.settings.Filter
+import dev.clombardo.dnsnet.settings.SingleFilter
+import dev.clombardo.dnsnet.settings.FilterFile
+import dev.clombardo.dnsnet.settings.FilterState
 import dev.clombardo.dnsnet.ui.app.viewmodel.HomeViewModel
 import dev.clombardo.dnsnet.ui.common.BasicDialog
 import dev.clombardo.dnsnet.ui.common.DialogButton
@@ -94,7 +95,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 enum class HomeDestinationIcon(val icon: ImageVector) {
     Start(Icons.Default.VpnKey),
-    Hosts(Icons.AutoMirrored.Filled.DriveFileMove),
+    Filters(Icons.Default.FilterAlt),
     Apps(Icons.Default.Android),
     DNS(Icons.Default.Dns);
 }
@@ -107,7 +108,7 @@ open class HomeDestination(
 ) : Parcelable
 
 object HomeDestinations {
-    val entries = listOf(Start, Hosts, Apps, DNS)
+    val entries = listOf(Start, Filters, Apps, DNS)
 
     @Parcelize
     @Serializable
@@ -115,7 +116,7 @@ object HomeDestinations {
 
     @Parcelize
     @Serializable
-    data object Hosts : HomeDestination(HomeDestinationIcon.Hosts, R.string.hosts_tab)
+    data object Filters : HomeDestination(HomeDestinationIcon.Filters, R.string.filters_tab)
 
     @Parcelize
     @Serializable
@@ -207,7 +208,7 @@ object Home {
         }
     }
 
-    const val TEST_TAG_IGNORE_MISSING_HOSTS_BUTTON = "ignore_missing_hosts_button"
+    const val TEST_TAG_IGNORE_MISSING_FILTERS_BUTTON = "ignore_missing_filters_button"
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalComposeUiApi::class)
@@ -218,13 +219,13 @@ fun App(
     vm: HomeViewModel = viewModel(),
     state: FabState,
     isDatabaseRefreshing: Boolean,
-    onRefreshHosts: () -> Unit,
+    onRefreshFilters: () -> Unit,
     onLoadDefaults: () -> Unit,
     onImport: () -> Unit,
     onExport: () -> Unit,
     onShareLogcat: () -> Unit,
     onTryToggleService: () -> Unit,
-    onStartWithoutHostsCheck: () -> Unit,
+    onStartWithoutFiltersCheck: () -> Unit,
     onReloadVpn: () -> Unit,
     onReloadDatabase: () -> Unit,
     onUpdateRefreshWork: () -> Unit,
@@ -253,25 +254,25 @@ fun App(
         )
     }
 
-    val showHostsFilesNotFoundDialog by vm.showHostsFilesNotFoundDialog.collectAsState()
-    if (showHostsFilesNotFoundDialog) {
+    val showFilterFilesNotFoundDialog by vm.showFilterFilesNotFoundDialog.collectAsState()
+    if (showFilterFilesNotFoundDialog) {
         BasicDialog(
             modifier = Modifier.semantics { testTagsAsResourceId = true },
-            title = stringResource(R.string.missing_hosts_files_title),
-            text = stringResource(R.string.missing_hosts_files_message),
+            title = stringResource(R.string.missing_filter_files_title),
+            text = stringResource(R.string.missing_filter_files_message),
             primaryButton = DialogButton(
-                modifier = Modifier.testTag(Home.TEST_TAG_IGNORE_MISSING_HOSTS_BUTTON),
+                modifier = Modifier.testTag(Home.TEST_TAG_IGNORE_MISSING_FILTERS_BUTTON),
                 text = stringResource(R.string.button_yes),
                 onClick = {
-                    onStartWithoutHostsCheck()
-                    vm.onDismissHostsFilesNotFound()
+                    onStartWithoutFiltersCheck()
+                    vm.onDismissFilterFilesNotFound()
                 },
             ),
             secondaryButton = DialogButton(
                 text = stringResource(R.string.button_no),
-                onClick = { vm.onDismissHostsFilesNotFound() },
+                onClick = { vm.onDismissFilterFilesNotFound() },
             ),
-            onDismissRequest = { vm.onDismissHostsFilesNotFound() },
+            onDismissRequest = { vm.onDismissFilterFilesNotFound() },
         )
     }
 
@@ -382,7 +383,7 @@ fun App(
                     onNavigateUp = { navController.tryPopBackstack(backstackEntry.id) },
                     onComplete = {
                         vm.addBlockLists(it)
-                        onRefreshHosts()
+                        onRefreshFilters()
                         if (route.canGoBack) {
                             navController.tryPopBackstack(backstackEntry.id)
                         } else {
@@ -406,7 +407,7 @@ fun App(
                         topLevelNavController = navController,
                         state = state,
                         isDatabaseRefreshing = isDatabaseRefreshing,
-                        onRefreshHosts = onRefreshHosts,
+                        onRefreshFilters = onRefreshFilters,
                         onImport = onImport,
                         onExport = onExport,
                         onShareLogcat = onShareLogcat,
@@ -417,20 +418,20 @@ fun App(
                     )
                 }
             }
-            composable<HostFile> { backstackEntry ->
-                val host = backstackEntry.toRoute<HostFile>()
-                EditHostDestination(
-                    host = host,
+            composable<FilterFile> { backstackEntry ->
+                val filter = backstackEntry.toRoute<FilterFile>()
+                EditFilterDestination(
+                    filter = filter,
                     vm = vm,
                     onPopBackStack = { navController.tryPopBackstack(backstackEntry.id) },
                     onReloadVpn = onReloadVpn,
                     onReloadDatabase = onReloadDatabase,
                 )
             }
-            composable<HostException> { backstackEntry ->
-                val host = backstackEntry.toRoute<HostException>()
-                EditHostDestination(
-                    host = host,
+            composable<SingleFilter> { backstackEntry ->
+                val filter = backstackEntry.toRoute<SingleFilter>()
+                EditFilterDestination(
+                    filter = filter,
                     vm = vm,
                     onPopBackStack = { navController.tryPopBackstack(backstackEntry.id) },
                     onReloadVpn = onReloadVpn,
@@ -498,13 +499,13 @@ fun App(
                     loggedConnections = vm.connectionsLog,
                     onCreateException = {
                         navController.navigate(
-                            HostException(
+                            SingleFilter(
                                 title = "",
                                 data = it.hostname,
                                 state = if (it.allowed) {
-                                    HostState.DENY
+                                    FilterState.DENY
                                 } else {
-                                    HostState.ALLOW
+                                    FilterState.ALLOW
                                 },
                             )
                         )
@@ -519,59 +520,59 @@ fun App(
 }
 
 @Composable
-fun EditHostDestination(
-    host: Host,
+fun EditFilterDestination(
+    filter: Filter,
     vm: HomeViewModel,
     onPopBackStack: () -> Unit,
     onReloadVpn: () -> Unit,
     onReloadDatabase: () -> Unit,
 ) {
-    val showDeleteHostWarningDialog by vm.showDeleteHostWarningDialog.collectAsState()
-    if (showDeleteHostWarningDialog) {
+    val showDeleteFilterWarningDialog by vm.showDeleteFilterWarningDialog.collectAsState()
+    if (showDeleteFilterWarningDialog) {
         BasicDialog(
             title = stringResource(R.string.warning),
             text = stringResource(
                 R.string.permanently_delete_warning_description,
-                host.title,
+                filter.title,
             ),
             primaryButton = DialogButton(
                 text = stringResource(R.string.action_delete),
                 onClick = {
-                    vm.removeHost(host)
-                    vm.onDismissDeleteHostWarning()
+                    vm.removeFilter(filter)
+                    vm.onDismissDeleteFilterWarning()
                     onPopBackStack()
                     onReloadVpn()
                 },
             ),
             secondaryButton = DialogButton(
                 text = stringResource(android.R.string.cancel),
-                onClick = { vm.onDismissDeleteHostWarning() },
+                onClick = { vm.onDismissDeleteFilterWarning() },
             ),
-            onDismissRequest = { vm.onDismissDeleteHostWarning() },
+            onDismissRequest = { vm.onDismissDeleteFilterWarning() },
         )
     }
 
-    EditHostScreen(
-        host = host,
+    EditFilterScreen(
+        filter = filter,
         onNavigateUp = onPopBackStack,
-        onSave = { hostToSave ->
-            if (host.title.isEmpty()) {
-                vm.addHost(hostToSave)
-                if (host is HostException) {
-                    vm.removeBlockLogEntry(host.data)
+        onSave = { filterToSave ->
+            if (filter.title.isEmpty()) {
+                vm.addFilter(filterToSave)
+                if (filter is SingleFilter) {
+                    vm.removeBlockLogEntry(filter.data)
                 }
             } else {
-                vm.replaceHost(host, hostToSave)
+                vm.replaceFilter(filter, filterToSave)
             }
             onPopBackStack()
             onReloadDatabase()
         },
-        onDelete = if (host.title.isEmpty()) {
+        onDelete = if (filter.title.isEmpty()) {
             null
         } else {
-            { vm.onDeleteHostWarning() }
+            { vm.onDeleteFilterWarning() }
         },
-        onUriPermissionAcquireFailed = if (host is HostFile) {
+        onUriPermissionAcquireFailed = if (filter is FilterFile) {
             { vm.onFilePermissionDenied() }
         } else {
             null
@@ -585,13 +586,13 @@ fun AppPreview() {
     App(
         state = FabState.Inactive,
         isDatabaseRefreshing = false,
-        onRefreshHosts = {},
+        onRefreshFilters = {},
         onLoadDefaults = {},
         onImport = {},
         onExport = {},
         onShareLogcat = {},
         onTryToggleService = {},
-        onStartWithoutHostsCheck = {},
+        onStartWithoutFiltersCheck = {},
         onReloadVpn = {},
         onReloadDatabase = {},
         onUpdateRefreshWork = {},
@@ -607,7 +608,7 @@ fun HomeScreen(
     topLevelNavController: NavHostController,
     state: FabState,
     isDatabaseRefreshing: Boolean,
-    onRefreshHosts: () -> Unit,
+    onRefreshFilters: () -> Unit,
     onImport: () -> Unit,
     onExport: () -> Unit,
     onShareLogcat: () -> Unit,
@@ -654,7 +655,7 @@ fun HomeScreen(
         },
         floatingActionButton = {
             AnimatedVisibility(
-                visible = currentDestination == HomeDestinations.Hosts ||
+                visible = currentDestination == HomeDestinations.Filters ||
                         currentDestination == HomeDestinations.DNS,
                 enter = NavigationScaffold.FabEnter,
                 exit = NavigationScaffold.FabExit,
@@ -669,7 +670,7 @@ fun HomeScreen(
                         ToggleFloatingActionButton(
                             checked = expanded,
                             onCheckedChange = {
-                                if (currentDestination == HomeDestinations.Hosts) {
+                                if (currentDestination == HomeDestinations.Filters) {
                                     expanded = it
                                 } else if (currentDestination == HomeDestinations.DNS) {
                                     when (vm.configuration.read { dnsServers.type }) {
@@ -712,27 +713,27 @@ fun HomeScreen(
                 ) {
                     FloatingActionButtonMenuItem(
                         text = {
-                            Text(stringResource(R.string.add_host))
+                            Text(stringResource(R.string.add_filter))
                         },
                         icon = {
                             Icon(
-                                painter = rememberVectorPainter(Icons.Default.Shield),
+                                painter = rememberVectorPainter(Icons.Default.Filter1),
                                 contentDescription = null,
                             )
                         },
-                        onClick = { topLevelNavController.navigate(HostException()) }
+                        onClick = { topLevelNavController.navigate(SingleFilter()) }
                     )
                     FloatingActionButtonMenuItem(
                         text = {
-                            Text(stringResource(R.string.add_hosts_file))
+                            Text(stringResource(R.string.add_filter_file))
                         },
                         icon = {
                             Icon(
-                                painter = rememberVectorPainter(Icons.AutoMirrored.Filled.DriveFileMove),
+                                painter = rememberVectorPainter(Icons.AutoMirrored.Default.InsertDriveFile),
                                 contentDescription = null,
                             )
                         },
-                        onClick = { topLevelNavController.navigate(HostFile()) }
+                        onClick = { topLevelNavController.navigate(FilterFile()) }
                     )
                     FloatingActionButtonMenuItem(
                         text = {
@@ -756,7 +757,7 @@ fun HomeScreen(
     ) { contentPadding ->
         // List state must be hoisted outside of the NavHost or it will be lost on recomposition
         val startListState = rememberLazyListState()
-        val hostsListState = rememberLazyListState()
+        val filterListState = rememberLazyListState()
         val appListState = rememberLazyListState()
         val dnsListState = rememberLazyListState()
         NavHost(
@@ -836,31 +837,31 @@ fun HomeScreen(
                     onChangeVpnStatusClick = onTryToggleService,
                 )
             }
-            composable<HomeDestinations.Hosts> {
+            composable<HomeDestinations.Filters> {
                 var refreshDaily by remember {
-                    mutableStateOf(vm.configuration.read { hosts.automaticRefresh })
+                    mutableStateOf(vm.configuration.read { filters.automaticRefresh })
                 }
-                HostsScreen(
+                FiltersScreen(
                     contentPadding = contentPadding,
-                    listState = hostsListState,
+                    listState = filterListState,
                     refreshDaily = refreshDaily,
                     onRefreshDailyClick = {
                         vm.configuration.edit {
-                            hosts.automaticRefresh = !hosts.automaticRefresh
-                            refreshDaily = hosts.automaticRefresh
+                            filters.automaticRefresh = !filters.automaticRefresh
+                            refreshDaily = filters.automaticRefresh
                         }
                         onUpdateRefreshWork()
                     },
-                    hosts = vm.hosts,
-                    onHostClick = { host ->
-                        topLevelNavController.navigate(host)
+                    filters = vm.filters,
+                    onFilterClick = { filter ->
+                        topLevelNavController.navigate(filter)
                     },
-                    onHostStateChanged = { host ->
-                        vm.cycleHost(host)
+                    onFilterStateChanged = { filter ->
+                        vm.cycleFilter(filter)
                         onReloadDatabase()
                     },
-                    isRefreshingHosts = isDatabaseRefreshing,
-                    onRefreshHosts = onRefreshHosts,
+                    isRefreshingFilters = isDatabaseRefreshing,
+                    onRefreshFilters = onRefreshFilters,
                     onOpenPresets = {
                         topLevelNavController.navigate(
                             TopLevelDestination.Presets(canGoBack = true)

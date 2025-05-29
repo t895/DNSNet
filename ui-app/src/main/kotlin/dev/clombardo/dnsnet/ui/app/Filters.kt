@@ -32,6 +32,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -44,10 +45,13 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,16 +60,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import dev.clombardo.dnsnet.settings.Host
-import dev.clombardo.dnsnet.settings.HostException
-import dev.clombardo.dnsnet.settings.HostFile
-import dev.clombardo.dnsnet.settings.HostState
+import dev.clombardo.dnsnet.settings.Filter
+import dev.clombardo.dnsnet.settings.SingleFilter
+import dev.clombardo.dnsnet.settings.FilterFile
+import dev.clombardo.dnsnet.settings.FilterState
 import dev.clombardo.dnsnet.ui.common.BasicTooltipButton
 import dev.clombardo.dnsnet.ui.common.BasicTooltipIconButton
 import dev.clombardo.dnsnet.ui.common.FloatingTopActions
@@ -108,25 +113,25 @@ private fun IconText(
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun HostsScreen(
+fun FiltersScreen(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
     listState: LazyListState = rememberLazyListState(),
     refreshDaily: Boolean,
     onRefreshDailyClick: () -> Unit,
-    hosts: List<Host>,
-    onHostClick: (Host) -> Unit,
-    onHostStateChanged: (Host) -> Unit,
-    isRefreshingHosts: Boolean,
-    onRefreshHosts: () -> Unit,
+    filters: List<Filter>,
+    onFilterClick: (Filter) -> Unit,
+    onFilterStateChanged: (Filter) -> Unit,
+    isRefreshingFilters: Boolean,
+    onRefreshFilters: () -> Unit,
     onOpenPresets: () -> Unit,
 ) {
     val itemStateStrings = stringArrayResource(R.array.item_states)
-    val getStateString = { state: HostState ->
+    val getStateString = { state: FilterState ->
         when (state) {
-            HostState.IGNORE -> itemStateStrings[2]
-            HostState.DENY -> itemStateStrings[0]
-            HostState.ALLOW -> itemStateStrings[1]
+            FilterState.IGNORE -> itemStateStrings[2]
+            FilterState.DENY -> itemStateStrings[0]
+            FilterState.ALLOW -> itemStateStrings[1]
         }
     }
     LazyColumn(
@@ -136,7 +141,7 @@ fun HostsScreen(
         state = listState,
     ) {
         item {
-            ListSettingsContainer(title = stringResource(R.string.hosts_title)) {
+            ListSettingsContainer {
                 item {
                     Column(
                         modifier = Modifier.padding(16.dp),
@@ -183,7 +188,7 @@ fun HostsScreen(
 
             Spacer(modifier = Modifier.padding(vertical = 4.dp))
 
-            if (hosts.isNotEmpty()) {
+            if (filters.isNotEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center,
@@ -196,8 +201,8 @@ fun HostsScreen(
                     ) {
                         FilledTonalButton(
                             onClick = {
-                                if (!isRefreshingHosts) {
-                                    onRefreshHosts()
+                                if (!isRefreshingFilters) {
+                                    onRefreshFilters()
                                 }
                             },
                         ) {
@@ -205,7 +210,7 @@ fun HostsScreen(
                         }
 
                         AnimatedVisibility(
-                            visible = isRefreshingHosts,
+                            visible = isRefreshingFilters,
                             enter = Animation.ShowSpinnerHorizontal,
                             exit = Animation.HideSpinnerHorizontal,
                         ) {
@@ -224,17 +229,17 @@ fun HostsScreen(
             Spacer(modifier = Modifier.padding(vertical = 4.dp))
         }
 
-        items(hosts) {
+        items(filters) {
             val iconResource = when (it.state) {
-                HostState.DENY -> R.drawable.ic_state_deny
-                HostState.ALLOW -> R.drawable.ic_state_allow
+                FilterState.DENY -> R.drawable.ic_state_deny
+                FilterState.ALLOW -> R.drawable.ic_state_allow
                 else -> R.drawable.ic_state_ignore
             }
 
             SplitContentSetting(
                 modifier = Modifier.animateItem(),
                 onBodyClick = {
-                    onHostClick(it)
+                    onFilterClick(it)
                 },
                 title = it.title,
                 details = it.data,
@@ -244,13 +249,13 @@ fun HostsScreen(
                     TooltipIconButton(
                         painter = painterResource(iconResource),
                         contentDescription = stateText,
-                        onClick = { onHostStateChanged(it) },
+                        onClick = { onFilterStateChanged(it) },
                     )
                 },
             )
         }
 
-        if (hosts.isEmpty()) {
+        if (filters.isEmpty()) {
             item {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
@@ -275,38 +280,38 @@ fun HostsScreen(
 
 @Preview
 @Composable
-private fun HostsScreenPreview() {
+private fun FiltersScreenPreview() {
     val items = buildList {
-        val item1 = HostFile()
+        val item1 = FilterFile()
         item1.title = "StevenBlack's hosts file"
         item1.data = "https://url.to.hosts.file.com/"
-        item1.state = HostState.IGNORE
+        item1.state = FilterState.IGNORE
         add(item1)
 
-        val item2 = HostFile()
+        val item2 = FilterFile()
         item2.title = "StevenBlack's hosts file"
         item2.data = "https://url.to.hosts.file.com/"
-        item2.state = HostState.DENY
+        item2.state = FilterState.DENY
         add(item2)
 
-        val item3 = HostFile()
+        val item3 = FilterFile()
         item3.title = "StevenBlack's hosts file"
         item3.data = "https://url.to.hosts.file.com/"
-        item3.state = HostState.ALLOW
+        item3.state = FilterState.ALLOW
         add(item3)
     }
 
-    var isRefreshingHosts by remember { mutableStateOf(false) }
+    var isRefreshingFilters by remember { mutableStateOf(false) }
     DnsNetTheme {
-        HostsScreen(
+        FiltersScreen(
             modifier = Modifier.background(MaterialTheme.colorScheme.surface),
             refreshDaily = false,
             onRefreshDailyClick = {},
-            hosts = items,
-            onHostClick = {},
-            onHostStateChanged = {},
-            isRefreshingHosts = isRefreshingHosts,
-            onRefreshHosts = { isRefreshingHosts = !isRefreshingHosts },
+            filters = items,
+            onFilterClick = {},
+            onFilterStateChanged = {},
+            isRefreshingFilters = isRefreshingFilters,
+            onRefreshFilters = { isRefreshingFilters = !isRefreshingFilters },
             onOpenPresets = {},
         )
     }
@@ -314,18 +319,18 @@ private fun HostsScreenPreview() {
 
 @Preview
 @Composable
-private fun HostsScreenNoBlockItemsPreview() {
-    var isRefreshingHosts by remember { mutableStateOf(false) }
+private fun FiltersScreenNoBlockItemsPreview() {
+    var isRefreshingFilterFiles by remember { mutableStateOf(false) }
     DnsNetTheme {
-        HostsScreen(
+        FiltersScreen(
             modifier = Modifier.background(MaterialTheme.colorScheme.surface),
             refreshDaily = false,
             onRefreshDailyClick = {},
-            hosts = listOf(),
-            onHostClick = {},
-            onHostStateChanged = {},
-            isRefreshingHosts = isRefreshingHosts,
-            onRefreshHosts = { isRefreshingHosts = !isRefreshingHosts },
+            filters = listOf(),
+            onFilterClick = {},
+            onFilterStateChanged = {},
+            isRefreshingFilters = isRefreshingFilterFiles,
+            onRefreshFilters = { isRefreshingFilterFiles = !isRefreshingFilterFiles },
             onOpenPresets = {},
         )
     }
@@ -333,7 +338,7 @@ private fun HostsScreenNoBlockItemsPreview() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditHost(
+fun EditFilter(
     modifier: Modifier = Modifier,
     titleText: String,
     titleTextError: Boolean,
@@ -341,10 +346,10 @@ fun EditHost(
     dataText: String,
     dataTextError: Boolean,
     onDataTextChanged: (String) -> Unit,
-    onOpenHostsDirectoryClick: (() -> Unit)?,
-    state: HostState,
-    singleHost: Boolean,
-    onStateChanged: (HostState) -> Unit,
+    onOpenFilterFileClick: (() -> Unit)?,
+    state: FilterState,
+    singleFilter: Boolean,
+    onStateChanged: (FilterState) -> Unit,
 ) {
     Column(
         modifier = modifier,
@@ -368,16 +373,16 @@ fun EditHost(
         OutlinedTextField(
             modifier = Modifier.fillMaxWidth(),
             label = {
-                Text(text = stringResource(id = if (singleHost) R.string.hostname else R.string.location))
+                Text(text = stringResource(id = if (singleFilter) R.string.filter else R.string.location))
             },
             value = dataText,
             onValueChange = onDataTextChanged,
-            trailingIcon = if (onOpenHostsDirectoryClick != null) {
+            trailingIcon = if (onOpenFilterFileClick != null) {
                 {
                     BasicTooltipIconButton(
                         icon = Icons.Default.AttachFile,
                         contentDescription = stringResource(R.string.action_use_file),
-                        onClick = onOpenHostsDirectoryClick,
+                        onClick = onOpenFilterFileClick,
                     )
                 }
             } else {
@@ -405,9 +410,9 @@ fun EditHost(
                     .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                     .fillMaxWidth(),
                 value = when (state) {
-                    HostState.IGNORE -> itemStates[2]
-                    HostState.DENY -> itemStates[0]
-                    HostState.ALLOW -> itemStates[1]
+                    FilterState.IGNORE -> itemStates[2]
+                    FilterState.DENY -> itemStates[0]
+                    FilterState.ALLOW -> itemStates[1]
                 },
                 onValueChange = {},
                 readOnly = true,
@@ -433,9 +438,9 @@ fun EditHost(
                             expanded = false
                             onStateChanged(
                                 when (index) {
-                                    0 -> HostState.DENY
-                                    1 -> HostState.ALLOW
-                                    else -> HostState.IGNORE
+                                    0 -> FilterState.DENY
+                                    1 -> FilterState.ALLOW
+                                    else -> FilterState.IGNORE
                                 }
                             )
                         },
@@ -444,17 +449,35 @@ fun EditHost(
                 }
             }
         }
+
+        Spacer(modifier = Modifier.padding(vertical = 8.dp))
+        CompositionLocalProvider(
+            LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant
+        ) {
+            Icon(
+                painter = rememberVectorPainter(Icons.Default.Info),
+                contentDescription = null,
+            )
+            Text(stringResource(R.string.supported_formats))
+            CompositionLocalProvider(
+                LocalTextStyle provides MaterialTheme.typography.labelMedium
+            ) {
+                Text(stringResource(R.string.supported_formats_host_name))
+                Text(stringResource(R.string.supported_formats_wildcard))
+                Text(stringResource(R.string.supported_formats_adblock_plus))
+            }
+        }
     }
 }
 
 @Preview
 @Composable
-private fun EditHostPreview() {
+private fun EditFilterPreview() {
     DnsNetTheme {
-        var state by remember { mutableStateOf(HostState.IGNORE) }
+        var state by remember { mutableStateOf(FilterState.IGNORE) }
         var titleText by remember { mutableStateOf("") }
         var locationText by remember { mutableStateOf("") }
-        EditHost(
+        EditFilter(
             modifier = Modifier
                 .background(MaterialTheme.colorScheme.surface)
                 .fillMaxWidth()
@@ -465,9 +488,9 @@ private fun EditHostPreview() {
             dataText = locationText,
             dataTextError = false,
             onDataTextChanged = { locationText = it },
-            onOpenHostsDirectoryClick = {},
+            onOpenFilterFileClick = {},
             state = state,
-            singleHost = true,
+            singleFilter = true,
             onStateChanged = { state = it },
         )
     }
@@ -475,19 +498,19 @@ private fun EditHostPreview() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditHostScreen(
+fun EditFilterScreen(
     modifier: Modifier = Modifier,
-    host: Host,
+    filter: Filter,
     onNavigateUp: () -> Unit,
-    onSave: (Host) -> Unit,
+    onSave: (Filter) -> Unit,
     onDelete: (() -> Unit)? = null,
     onUriPermissionAcquireFailed: (() -> Unit)? = null,
 ) {
-    var titleInput by rememberSaveable { mutableStateOf(host.title) }
+    var titleInput by rememberSaveable { mutableStateOf(filter.title) }
     var titleInputError by rememberSaveable { mutableStateOf(false) }
-    var dataInput by rememberSaveable { mutableStateOf(host.data) }
+    var dataInput by rememberSaveable { mutableStateOf(filter.data) }
     var dataInputError by rememberSaveable { mutableStateOf(false) }
-    var stateInput by rememberSaveable { mutableStateOf(host.state) }
+    var stateInput by rememberSaveable { mutableStateOf(filter.state) }
 
     if (titleInput.isNotBlank()) {
         titleInputError = false
@@ -550,17 +573,17 @@ fun EditHostScreen(
                                     return@BasicTooltipButton
                                 }
 
-                                when (host) {
-                                    is HostFile -> onSave(
-                                        HostFile(
+                                when (filter) {
+                                    is FilterFile -> onSave(
+                                        FilterFile(
                                             titleInput,
                                             dataInput,
                                             stateInput
                                         )
                                     )
 
-                                    is HostException ->
-                                        onSave(HostException(titleInput, dataInput, stateInput))
+                                    is SingleFilter ->
+                                        onSave(SingleFilter(titleInput, dataInput, stateInput))
                                 }
                             },
                         )
@@ -574,20 +597,20 @@ fun EditHostScreen(
             contentPadding = contentPadding,
         ) {
             item {
-                val text = when (host) {
-                    is HostFile -> {
-                        if (host.data.isEmpty()) {
-                            stringResource(R.string.add_hosts_file)
+                val text = when (filter) {
+                    is FilterFile -> {
+                        if (filter.data.isEmpty()) {
+                            stringResource(R.string.add_filter_file)
                         } else {
-                            stringResource(R.string.edit_hosts_file)
+                            stringResource(R.string.edit_filter_file)
                         }
                     }
 
-                    is HostException -> {
-                        if (host.title.isEmpty()) {
-                            stringResource(R.string.add_host)
+                    is SingleFilter -> {
+                        if (filter.title.isEmpty()) {
+                            stringResource(R.string.add_filter)
                         } else {
-                            stringResource(R.string.edit_host)
+                            stringResource(R.string.edit_filter)
                         }
                     }
                 }
@@ -595,7 +618,7 @@ fun EditHostScreen(
             }
 
             item {
-                EditHost(
+                EditFilter(
                     modifier = Modifier.padding(horizontal = ListPadding),
                     titleText = titleInput,
                     titleTextError = titleInputError,
@@ -603,13 +626,13 @@ fun EditHostScreen(
                     dataText = dataInput,
                     dataTextError = dataInputError,
                     onDataTextChanged = { dataInput = it },
-                    onOpenHostsDirectoryClick = if (host is HostFile) {
+                    onOpenFilterFileClick = if (filter is FilterFile) {
                         { locationLauncher.launch(arrayOf("*/*")) }
                     } else {
                         null
                     },
                     state = stateInput,
-                    singleHost = host is HostException,
+                    singleFilter = filter is SingleFilter,
                     onStateChanged = { stateInput = it },
                 )
             }
@@ -619,10 +642,10 @@ fun EditHostScreen(
 
 @Preview
 @Composable
-private fun EditHostScreenPreview() {
+private fun EditFilterScreenPreview() {
     DnsNetTheme {
-        EditHostScreen(
-            host = HostFile(),
+        EditFilterScreen(
+            filter = FilterFile(),
             onNavigateUp = {},
             onSave = {},
             onDelete = {},

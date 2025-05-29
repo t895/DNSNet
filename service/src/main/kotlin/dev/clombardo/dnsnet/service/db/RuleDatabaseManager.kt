@@ -44,8 +44,8 @@ class RuleDatabaseManager(
         try {
             ruleDatabase.initialize(
                 androidFileHelper = NativeFileHelperWrapper(context),
-                hostItems = configuration.read { hosts.items.map { it.toNative() } },
-                hostExceptions = configuration.read { hosts.exceptions.map { it.toNative() } },
+                filterFiles = configuration.read { this.filters.files.map { it.toNative() } },
+                singleFilters = configuration.read { filters.singleFilters.map { it.toNative() } },
             )
         } catch (e: RuleDatabaseException) {
             when (e) {

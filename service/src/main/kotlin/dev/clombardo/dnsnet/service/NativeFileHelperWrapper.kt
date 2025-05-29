@@ -13,6 +13,6 @@ import dev.clombardo.dnsnet.file.FileHelper
 import uniffi.net.AndroidFileHelper
 
 class NativeFileHelperWrapper(private val context: Context) : AndroidFileHelper {
-    override fun getHostFd(host: String): Int? =
-        FileHelper.getDetachedReadOnlyFd(context, host)
+    override fun getFilterFileFd(path: String): Int? =
+        FileHelper.getDetachedReadOnlyFd(context, path)
 }

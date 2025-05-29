@@ -17,7 +17,7 @@ import coil3.disk.directory
 import coil3.memory.MemoryCache
 import dagger.hilt.android.HiltAndroidApp
 import dev.clombardo.dnsnet.notification.NotificationChannels
-import dev.clombardo.dnsnet.service.HostUtil
+import dev.clombardo.dnsnet.service.FilterUtil
 import dev.clombardo.dnsnet.service.db.RuleDatabaseUpdateWorker
 import dev.clombardo.dnsnet.settings.Configuration
 import dev.clombardo.dnsnet.settings.ConfigurationManager
@@ -70,7 +70,7 @@ class DnsNetApplication : Application(), androidx.work.Configuration.Provider {
             preferences.SetupComplete = true
         }
 
-        if (!HostUtil.areHostsFilesExistent(this, configuration)) {
+        if (!FilterUtil.areFilterFilesExistent(this, configuration)) {
             RuleDatabaseUpdateWorker.runNow(this)
         }
     }

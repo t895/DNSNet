@@ -121,7 +121,7 @@ data class Configuration(
     var version: Int = 1,
     var minorVersion: Int = 0,
     var autoStart: Boolean = false,
-    var hosts: Hosts = Hosts(),
+    @SerialName("hosts") var filters: Filters = Filters(),
     var dnsServers: DnsServers = DnsServers(),
     var appList: AppList = AppList(),
     var showNotification: Boolean = true,
@@ -185,12 +185,12 @@ data class Configuration(
         when (level) {
             1 -> {
                 // This is always enabled after v0.2.3
-                hosts.enabled = true
+                filters.enabled = true
                 logInfo("Updated to config v1.1 successfully")
             }
 
             2 -> {
-                if (!replaced && hosts.items.isEmpty()) {
+                if (!replaced && filters.files.isEmpty()) {
                     preferences.ShouldShowPresetsWhenNoBlockLists = true
                 }
                 logInfo("Updated to config v1.2 successfully")
@@ -246,7 +246,7 @@ value class ImmutableConfiguration(private val config: Configuration) {
     val version get() = config.version
     val minorVersion get() = config.minorVersion
     val autoStart get() = config.autoStart
-    val hosts get() = config.hosts.asImmutable()
+    val filters get() = config.filters.asImmutable()
     val dnsServers get() = config.dnsServers.asImmutable()
     val appList get() = config.appList.asImmutable()
     val showNotification get() = config.showNotification
@@ -389,51 +389,51 @@ enum class DnsServerType {
     Standard, DoH3
 }
 
-sealed interface Host : Parcelable {
+sealed interface Filter : Parcelable {
     var title: String
     var data: String
-    var state: HostState
+    var state: FilterState
 }
 
 @Parcelize
 @Serializable
-data class HostFile(
+data class FilterFile(
     override var title: String = "",
     @SerialName("location") override var data: String = "",
-    override var state: HostState = HostState.IGNORE,
-) : Host {
+    override var state: FilterState = FilterState.IGNORE,
+) : Filter {
     fun isDownloadable(): Boolean =
         data.startsWith("https://") || data.startsWith("http://")
 }
 
 @Parcelize
 @Serializable
-data class HostException(
+data class SingleFilter(
     override var title: String = "",
     @SerialName("hostname") override var data: String = "",
-    override var state: HostState = HostState.IGNORE,
-) : Host
+    override var state: FilterState = FilterState.IGNORE,
+) : Filter
 
 @Serializable
-data class Hosts(
+data class Filters(
     var enabled: Boolean = true,
     var automaticRefresh: Boolean = false,
-    var items: MutableList<HostFile> = mutableListOf(),
-    var exceptions: MutableList<HostException> = mutableListOf(),
+    @SerialName("items") var files: MutableList<FilterFile> = mutableListOf(),
+    @SerialName("exceptions") var singleFilters: MutableList<SingleFilter> = mutableListOf(),
 ) {
-    fun getAllHosts(): List<Host> = items + exceptions
+    fun getAllFilters(): List<Filter> = files + singleFilters
 
-    fun asImmutable(): ImmutableHosts = ImmutableHosts(this)
+    fun asImmutable(): ImmutableFilters = ImmutableFilters(this)
 }
 
 @JvmInline
-value class ImmutableHosts(private val hosts: Hosts) {
-    val enabled get() = hosts.enabled
-    val automaticRefresh get() = hosts.automaticRefresh
-    val items get() = hosts.items.toList()
-    val exceptions get() = hosts.exceptions.toList()
+value class ImmutableFilters(private val filters: Filters) {
+    val enabled get() = this@ImmutableFilters.filters.enabled
+    val automaticRefresh get() = this@ImmutableFilters.filters.automaticRefresh
+    val files get() = this@ImmutableFilters.filters.files.toList()
+    val singleFilters get() = this@ImmutableFilters.filters.singleFilters.toList()
 
-    fun getAllHosts(): List<Host> = hosts.getAllHosts()
+    fun getAllFilters(): List<Filter> = this@ImmutableFilters.filters.getAllFilters()
 }
 
 @Serializable
@@ -489,11 +489,11 @@ value class ImmutableDnsServers(private val dnsServers: DnsServers) {
 
 // DO NOT change the order of these states. They correspond to UI functionality.
 @Keep
-enum class HostState {
+enum class FilterState {
     IGNORE, DENY, ALLOW;
 
     companion object {
-        fun Int.toHostState(): HostState = entries.firstOrNull { it.ordinal == this } ?: IGNORE
+        fun Int.toFilterState(): FilterState = entries.firstOrNull { it.ordinal == this } ?: IGNORE
     }
 }
 

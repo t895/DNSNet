@@ -32,7 +32,7 @@ import dev.clombardo.dnsnet.notification.NotificationChannels
 import dev.clombardo.dnsnet.resources.R
 import dev.clombardo.dnsnet.service.vpn.AdVpnService
 import dev.clombardo.dnsnet.settings.ConfigurationManager
-import dev.clombardo.dnsnet.settings.Host
+import dev.clombardo.dnsnet.settings.Filter
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -88,7 +88,7 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
         val start = System.currentTimeMillis()
         val jobs = mutableListOf<Deferred<Unit>>()
         configuration.edit {
-            hosts.items.forEach {
+            filters.files.forEach {
                 val update = RuleDatabaseItemUpdate(context, this@RuleDatabaseUpdateWorker, it)
                 if (update.shouldDownload()) {
                     val job = async(context = coroutineContext) { update.run() }
@@ -121,9 +121,9 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationBuilder =
             NotificationCompat.Builder(context, NotificationChannels.UPDATE_STATUS)
-                .setContentTitle(context.getString(R.string.updating_hostfiles))
+                .setContentTitle(context.getString(R.string.updating_filter_files))
                 .setSmallIcon(R.drawable.ic_refresh)
-                .setProgress(configuration.read { hosts.items.size }, 0, false)
+                .setProgress(configuration.read { this.filters.files.size }, 0, false)
     }
 
     /**
@@ -150,7 +150,7 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
      * @param uri URI to check
      */
     private fun isGarbage(uri: Uri): Boolean {
-        for (item in configuration.read { hosts.items }) {
+        for (item in configuration.read { this.filters.files }) {
             if (item.data.toUri() == uri) {
                 return false
             }
@@ -173,7 +173,7 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
 
         notificationBuilder.setProgress(pending.size + done.size, done.size, false)
             .setStyle(NotificationCompat.BigTextStyle().bigText(builder.toString()))
-            .setContentText(context.getString(R.string.updating_n_host_files, pending.size))
+            .setContentText(context.getString(R.string.updating_n_filter_files, pending.size))
         notificationManager.notify(UPDATE_NOTIFICATION_ID, notificationBuilder.build())
     }
 
@@ -201,7 +201,7 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
 
             notificationBuilder
                 .setProgress(0, 0, false)
-                .setContentText(context.getString(R.string.could_not_update_all_hosts))
+                .setContentText(context.getString(R.string.could_not_update_all_filter_files))
                 .setSmallIcon(R.drawable.ic_warning)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
@@ -217,13 +217,13 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
      * @param message Message
      */
     @Synchronized
-    fun addError(item: Host, message: String) {
+    fun addError(item: Filter, message: String) {
         logDebug("error: ${item.title}:$message")
         errors.add("${item.title}\n$message")
     }
 
     @Synchronized
-    fun addDone(item: Host) {
+    fun addDone(item: Filter) {
         logDebug("done: ${item.title}")
         pending.remove(item.title)
         done.add(item.title)
@@ -236,7 +236,7 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
      * @param item The item currently being processed.
      */
     @Synchronized
-    fun addBegin(item: Host) {
+    fun addBegin(item: Filter) {
         pending.add(item.title)
         updateProgressNotification()
     }

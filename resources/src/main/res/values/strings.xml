@@ -3,7 +3,7 @@
     <string name="app_shortdesc">Host blocking and custom DNS servers</string>
     <string name="custom_dns">Custom DNS servers</string>
     <string name="start_tab">Start</string>
-    <string name="hosts_tab">Hosts</string>
+    <string name="filters_tab">Filters</string>
     <string name="dns_tab">DNS</string>
     <string name="action_export">Export settings</string>
     <string name="export_description">Create a backup copy of your configuration</string>
@@ -13,15 +13,15 @@
     <string name="load_defaults_description">Resets all settings back to their default values</string>
     <string name="action_about">About</string>
     <string name="about_description">Information about DNSNet</string>
-    <string name="info_app_license">This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.</string>
+    <string name="info_app_license" translatable="false">This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.</string>
     <string name="info_app_copyright" translatable="false">©2025 Charles Lombardo</string>
     <string name="switch_onboot">Resume on system start-up</string>
     <string name="title">Title</string>
-    <string name="location">Location (URL or host)</string>
+    <string name="location">Location</string>
     <string name="action">Action</string>
     <string name="cannot_read_config">Cannot read configuration</string>
     <string name="cannot_write_config">Cannot write configuration: %s</string>
-    <string name="action_refresh">Refresh host files</string>
+    <string name="action_refresh">Refresh filter files</string>
     <string name="notification_starting">Starting</string>
     <string name="notification_running">Active</string>
     <string name="notification_stopping">Stopping</string>
@@ -42,8 +42,8 @@
     <string name="app_version_info">Version: %s</string>
     <string name="dns66_credit">Based on DNS66 created by Julian Andres Klode</string>
     <string name="adbuster_credit">Parts derived from AdBuster created by Daniel Brodie</string>
-    <string name="missing_hosts_files_message">Some of your configured (non-ignored) hosts files are missing.\n\nUse the ‘Refresh’ action to download hosts files.\n\nDo you still want to continue?</string>
-    <string name="missing_hosts_files_title">Missing hosts file</string>
+    <string name="missing_filter_files_message">Some of your configured (non-ignored) filter files are missing.\n\nUse the refresh button in the filter tab to download them.\n\nDo you still want to continue?</string>
+    <string name="missing_filter_files_title">Missing filter file</string>
     <string name="button_no">No</string>
     <string name="button_yes">Yes</string>
     <string name="website" translatable="false">https://github.com/t895/DNSNet</string>
@@ -53,14 +53,14 @@
     <string name="allowlist_description">Bypass DNSNet for marked apps</string>
     <string name="location_dns">IP address of DNS server (IPv4 or IPv6)</string>
     <string name="state_dns_enabled">Enabled</string>
-    <string name="host_update_error_item">Error %1$d: %2$s</string>
+    <string name="filter_update_error_item">Error %1$d: %2$s</string>
     <string name="update_incomplete">Update incomplete</string>
-    <string name="update_incomplete_description">Some host files could not be downloaded. If files were previously downloaded, old versions will continue to be used.</string>
-    <string name="updating_hostfiles">Updating hostfiles</string>
+    <string name="update_incomplete_description">Some filter files could not be downloaded. If files were previously downloaded, old versions will continue to be used.</string>
+    <string name="updating_filter_files">Updating filter files</string>
     <string name="action_use_file">Use file</string>
     <string name="persistable_uri_permission_failed">Cannot use the requested file: Not permitted to persistently use requested file</string>
-    <string name="updating_n_host_files">Updating %1$d host files</string>
-    <string name="could_not_update_all_hosts">Could not update all hostfiles</string>
+    <string name="could_not_update_all_filter_files">Could not update all filter files</string>
+    <string name="updating_n_filter_files">Updating %1$d filter files</string>
     <string name="permission_denied">Permission denied</string>
     <string name="invalid_url_s">Invalid URL: %1$s</string>
     <string name="file_not_found">File not found</string>
@@ -87,7 +87,7 @@
     <string name="notifications_running">Running service</string>
     <string name="notifications_running_desc">Notifications to interact with running service</string>
     <string name="notifications_update">Status</string>
-    <string name="notifications_update_desc">Notifications about updating hostfiles</string>
+    <string name="notifications_update_desc">Notifications about updating filter files</string>
     <string name="notifications_paused">Paused service</string>
     <string name="notifications_paused_desc">Notifications to resume after pausing</string>
     <string name="notifications_group_service">Service control</string>
@@ -137,13 +137,14 @@
     <string name="reset_settings_warning_description">This will permanently delete your current settings.</string>
     <string name="permanently_delete_warning_description">This will permanently delete %s</string>
     <string name="create_exception">Create exception</string>
-    <string name="add_hosts_file">Add hosts file</string>
-    <string name="edit_hosts_file">Edit hosts file</string>
-    <string name="add_host">Add host</string>
-    <string name="edit_host">Edit host</string>
-    <string name="hostname">Hostname</string>
-    <string name="start_title">General DNSNet configuration</string>
-    <string name="hosts_title">Filter hosts with files and exceptions</string>
+    <string name="add_filter_file">Add filter file</string>
+    <string name="edit_filter_file">Edit filter file</string>
+    <string name="add_filter">Add filter</string>
+    <string name="edit_filter">Edit filter</string>
+    <string name="supported_formats">Supported formats</string>
+    <string name="supported_formats_host_name">Host names (e.g. example.com)</string>
+    <string name="supported_formats_wildcard">Wildcard (e.g. *.example.com)</string>
+    <string name="supported_formats_adblock_plus">Adblock Plus (e.g. ||example.com^)</string>
     <string name="credits">Credits</string>
     <string name="open_license">Open license</string>
     <string name="dns66_license_link" translatable="false">https://github.com/julian-klode/dns66/blob/890243fc916aabe2d73eef9d51f833d190d3bd84/COPYING</string>

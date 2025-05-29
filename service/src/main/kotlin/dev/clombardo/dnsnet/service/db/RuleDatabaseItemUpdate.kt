@@ -18,7 +18,7 @@ import dev.clombardo.dnsnet.resources.R
 import dev.clombardo.dnsnet.file.FileHelper
 import dev.clombardo.dnsnet.file.SingleWriterMultipleReaderFile
 import dev.clombardo.dnsnet.log.logDebug
-import dev.clombardo.dnsnet.settings.HostFile
+import dev.clombardo.dnsnet.settings.FilterFile
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
@@ -38,7 +38,7 @@ import javax.net.ssl.HttpsURLConnection
 class RuleDatabaseItemUpdate(
     private val context: Context,
     private val worker: RuleDatabaseUpdateWorker,
-    private val item: HostFile,
+    private val item: FilterFile,
 ) {
     companion object {
         private const val CONNECT_TIMEOUT_MILLIS = 3000
@@ -184,11 +184,11 @@ class RuleDatabaseItemUpdate(
             if (connection.responseCode == 404) {
                 worker.addError(item, context.getString(R.string.file_not_found))
             } else if (connection.responseCode != 304) {
-                context.resources.getString(R.string.host_update_error_item)
+                context.resources.getString(R.string.filter_update_error_item)
                 worker.addError(
                     item,
                     context.resources.getString(
-                        R.string.host_update_error_item,
+                        R.string.filter_update_error_item,
                         connection.getResponseCode(),
                         connection.getResponseMessage()
                     )

@@ -29,7 +29,6 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -61,7 +60,7 @@ import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.clombardo.dnsnet.log.logDebug
 import dev.clombardo.dnsnet.log.logInfo
-import dev.clombardo.dnsnet.service.HostUtil
+import dev.clombardo.dnsnet.service.FilterUtil
 import dev.clombardo.dnsnet.service.db.RuleDatabaseUpdateWorker
 import dev.clombardo.dnsnet.service.vpn.AdVpnService
 import dev.clombardo.dnsnet.ui.app.App
@@ -149,7 +148,7 @@ class MainActivity : AppCompatActivity() {
                         vm = vm,
                         state = status.toFabState(),
                         isDatabaseRefreshing = isDatabaseRefreshing,
-                        onRefreshHosts = { RuleDatabaseUpdateWorker.runNow(this@MainActivity) },
+                        onRefreshFilters = { RuleDatabaseUpdateWorker.runNow(this@MainActivity) },
                         onLoadDefaults = {
                             vm.configuration.resetInstance()
                             vm.onReloadSettings()
@@ -159,7 +158,7 @@ class MainActivity : AppCompatActivity() {
                         onExport = { exportLauncher.launch("dnsnet.json") },
                         onShareLogcat = { logcatLauncher.launch("dnsnet-log.txt") },
                         onTryToggleService = { tryToggleService(true, vpnLauncher) },
-                        onStartWithoutHostsCheck = { tryToggleService(false, vpnLauncher) },
+                        onStartWithoutFiltersCheck = { tryToggleService(false, vpnLauncher) },
                         onReloadVpn = { AdVpnService.reconnect(this@MainActivity) },
                         onReloadDatabase = { AdVpnService.reloadDatabase(this@MainActivity) },
                         onUpdateRefreshWork = ::updateRefreshWork,
@@ -219,8 +218,8 @@ class MainActivity : AppCompatActivity() {
                 vm.onPrivateDnsEnabledWarning()
                 return
             }
-            if (!HostUtil.areHostsFilesExistent(this, vm.configuration) && hostsCheck) {
-                vm.onHostsFilesNotFound()
+            if (!FilterUtil.areFilterFilesExistent(this, vm.configuration) && hostsCheck) {
+                vm.onFilterFilesNotFound()
                 return
             }
             tryStartService(launcher)
@@ -268,7 +267,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateRefreshWork() {
         val workManager = WorkManager.getInstance(this)
-        if (vm.configuration.read { hosts.automaticRefresh }) {
+        if (vm.configuration.read { filters.automaticRefresh }) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.UNMETERED)
                 .setRequiresDeviceIdle(true)

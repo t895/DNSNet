@@ -12,28 +12,28 @@ import android.content.Context
 import dev.clombardo.dnsnet.file.FileHelper
 import dev.clombardo.dnsnet.log.logInfo
 import dev.clombardo.dnsnet.settings.ConfigurationManager
-import dev.clombardo.dnsnet.settings.Host
-import dev.clombardo.dnsnet.settings.HostState
-import uniffi.net.NativeHost
-import uniffi.net.NativeHostState
+import dev.clombardo.dnsnet.settings.Filter
+import dev.clombardo.dnsnet.settings.FilterState
+import uniffi.net.NativeFilter
+import uniffi.net.NativeFilterState
 import java.io.IOException
 
-object HostUtil {
+object FilterUtil {
     /**
-     * Check if all configured hosts files exist.
+     * Check if all configured filter files exist.
      *
-     * @return true if all host files exist or no host files were configured.
+     * @return true if all filter files exist or no filter files were configured.
      */
-    fun areHostsFilesExistent(context: Context, configuration: ConfigurationManager): Boolean {
+    fun areFilterFilesExistent(context: Context, configuration: ConfigurationManager): Boolean {
         return configuration.read {
-            for (item in hosts.items) {
-                if (item.state != HostState.IGNORE) {
+            for (item in this.filters.files) {
+                if (item.state != FilterState.IGNORE) {
                     try {
                         val reader =
                             FileHelper.openPath(context, item.data) ?: return@read false
                         reader.close()
                     } catch (e: IOException) {
-                        logInfo("areHostFilesExistent: Failed to open file {$item}", e)
+                        logInfo("areFilterFilesExistent: Failed to open file {$item}", e)
                         return@read false
                     }
                 }
@@ -43,11 +43,11 @@ object HostUtil {
     }
 }
 
-fun HostState.toNative(): NativeHostState =
+fun FilterState.toNative(): NativeFilterState =
     try {
-        NativeHostState.entries[ordinal]
+        NativeFilterState.entries[ordinal]
     } catch (e: IndexOutOfBoundsException) {
-        NativeHostState.IGNORE
+        NativeFilterState.IGNORE
     }
 
-fun Host.toNative(): NativeHost = NativeHost(title, data, state.toNative())
+fun Filter.toNative(): NativeFilter = NativeFilter(title, data, state.toNative())

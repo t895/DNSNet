@@ -14,8 +14,8 @@ import androidx.test.filters.SmallTest
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Before
 import org.junit.Test
-import uniffi.net.NativeHost
-import uniffi.net.NativeHostState
+import uniffi.net.NativeFilter
+import uniffi.net.NativeFilterState
 import uniffi.net.RuleDatabase
 import uniffi.net.RuleDatabaseController
 
@@ -28,75 +28,75 @@ class RuleDatabaseTest {
         ruleDatabase = RuleDatabase(RuleDatabaseController())
         ruleDatabase.initialize(
             androidFileHelper = NativeFileHelperWrapper(ApplicationProvider.getApplicationContext()),
-            hostItems = emptyList(),
-            hostExceptions = listOf(
+            filterFiles = emptyList(),
+            singleFilters = listOf(
                 // Single host denied test
-                NativeHost(
+                NativeFilter(
                     title = "title",
                     data = "singlehostdenied.com",
-                    state = NativeHostState.DENY
+                    state = NativeFilterState.DENY
                 ),
 
                 // Single host allowed test
-                NativeHost(
+                NativeFilter(
                     title = "title",
                     data = "singlehostallowed.com",
-                    state = NativeHostState.DENY
+                    state = NativeFilterState.DENY
                 ),
-                NativeHost(
+                NativeFilter(
                     title = "title",
                     data = "singlehostallowed.com",
-                    state = NativeHostState.ALLOW
+                    state = NativeFilterState.ALLOW
                 ),
 
                 // Single star wildcard denied test
-                NativeHost(
+                NativeFilter(
                     title = "title",
                     data = "*.starwildcard.denied.com",
-                    state = NativeHostState.DENY
+                    state = NativeFilterState.DENY
                 ),
 
                 // Single ABP wildcard denied test
-                NativeHost(
+                NativeFilter(
                     title = "title",
                     data = "||abpwildcard.denied.com^",
-                    state = NativeHostState.DENY
+                    state = NativeFilterState.DENY
                 ),
 
                 // Wildcard exclusion test
-                NativeHost(
+                NativeFilter(
                     title = "title",
                     data = "*.wildcard.exclusion.com",
-                    state = NativeHostState.DENY
+                    state = NativeFilterState.DENY
                 ),
-                NativeHost(
+                NativeFilter(
                     title = "title",
                     data = "*.spacer.spacer.wildcard.exclusion.com",
-                    state = NativeHostState.ALLOW
+                    state = NativeFilterState.ALLOW
                 ),
 
                 // Wildcard exclusion test reversed
-                NativeHost(
+                NativeFilter(
                     title = "title",
                     data = "*.wildcardreversed.exclusionreversed.com",
-                    state = NativeHostState.ALLOW
+                    state = NativeFilterState.ALLOW
                 ),
-                NativeHost(
+                NativeFilter(
                     title = "title",
                     data = "*.block.block.wildcardreversed.exclusionreversed.com",
-                    state = NativeHostState.DENY
+                    state = NativeFilterState.DENY
                 ),
             ),
         )
     }
 
     @Test
-    fun singleHostDenied() {
+    fun singleHostNameDenied() {
         assert(ruleDatabase.isBlocked("singlehostdenied.com"))
     }
 
     @Test
-    fun singleHostAllowed() {
+    fun singleHostNameAllowed() {
         assert(!ruleDatabase.isBlocked("singlehostallowed.com"))
     }
 

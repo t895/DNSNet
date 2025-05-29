@@ -91,7 +91,7 @@ fun StartScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item {
-                ListSettingsContainer(title = stringResource(R.string.start_title)) {
+                ListSettingsContainer {
                     item {
                         SwitchListItem(
                             title = stringResource(id = R.string.switch_onboot),

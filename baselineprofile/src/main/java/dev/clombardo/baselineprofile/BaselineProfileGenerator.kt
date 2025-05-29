@@ -97,17 +97,43 @@ class BaselineProfileGenerator {
             device.wait(Until.hasObject(startButton), 5_000)
             device.findObject(startButton).clickAndWait(Until.newWindow(), 5_000)
 
-            val missingHostsButton = By.res(Home.TEST_TAG_IGNORE_MISSING_HOSTS_BUTTON)
-            device.wait(Until.hasObject(missingHostsButton), 5_000)
-            device.findObject(missingHostsButton)?.click()
+            val missingFiltersButton = By.res(Home.TEST_TAG_IGNORE_MISSING_FILTERS_BUTTON)
+            device.wait(Until.hasObject(missingFiltersButton), 5_000)
+            device.findObject(missingFiltersButton)?.click()
+
+            val openSettingsButton = By.text("Open settings")
+            device.wait(Until.hasObject(openSettingsButton), 5_000)
+            val openSettingsButtonObject = device.findObject(openSettingsButton)
+            if (openSettingsButtonObject != null) {
+                openSettingsButtonObject.click()
+
+                val privateDnsButton = By.text("Private DNS")
+                device.wait(Until.hasObject(privateDnsButton), 5_000)
+                device.findObject(privateDnsButton)!!.click()
+
+                val offButton = By.text("Off")
+                device.wait(Until.hasObject(offButton), 5_000)
+                device.findObject(offButton)!!.click()
+
+                val saveButton = By.text("Save")
+                device.wait(Until.hasObject(saveButton), 5_000)
+                device.findObject(saveButton)!!.click()
+
+                device.waitForIdle()
+                device.pressBack()
+
+                val tryAgainButton = By.text("Try again")
+                device.wait(Until.hasObject(tryAgainButton), 5_000)
+                device.findObject(tryAgainButton)?.click()
+            }
 
             val vpnOkButton = By.text("OK")
             device.wait(Until.hasObject(vpnOkButton), 5_000)
             device.findObject(vpnOkButton)?.click()
 
-            val hosts = By.res("homeNavigation:Hosts")
-            device.wait(Until.hasObject(hosts), 5_000)
-            device.findObject(hosts).click()
+            val filters = By.res("homeNavigation:Filters")
+            device.wait(Until.hasObject(filters), 5_000)
+            device.findObject(filters).click()
 
             val apps = By.res("homeNavigation:Apps")
             device.findObject(apps).click()

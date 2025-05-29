@@ -47,7 +47,7 @@ of your requests. In the case of DNSNet, this is not the case.
 DNSNet uses Android's "VPN service" API as a way to read and filter your internet traffic entirely
 on-device. It starts by getting access to a "tunnel" that provides your network requests. Then, it
 reads the hostname (e.g. google.com) of each DNS request. Finally, it blocks or allows each request
-based on the configuration as seen in the "Hosts" screen of the app.
+based on the configuration as seen in the "Filters" screen of the app.
 
 It's important to note that this approach is not perfect and has some notable downsides:
 * While this app has been tuned to be as efficient as possible, it is still a service that must run
