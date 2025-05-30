@@ -24,6 +24,9 @@ import dev.clombardo.dnsnet.settings.ConfigurationManager
 import dev.clombardo.dnsnet.settings.Preferences
 import dev.clombardo.dnsnet.ui.app.coil.AppImageFetcher
 import dev.clombardo.dnsnet.ui.app.coil.AppImageKeyer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import uniffi.net.rustInit
 import java.io.File
 import javax.inject.Inject
@@ -64,14 +67,14 @@ class DnsNetApplication : Application(), androidx.work.Configuration.Provider {
         }
 
         // Prevent existing users (pre-1.1.9) from seeing the setup screen
-        if (File(applicationContext.filesDir, Configuration.DEFAULT_CONFIG_FILENAME).exists() ||
-            preferences.NotificationPermissionActedUpon
-        ) {
+        if (preferences.NotificationPermissionActedUpon) {
             preferences.SetupComplete = true
         }
 
-        if (!FilterUtil.areFilterFilesExistent(this, configuration)) {
-            RuleDatabaseUpdateWorker.runNow(this)
+        CoroutineScope(Dispatchers.IO).launch {
+            if (!FilterUtil.areFilterFilesExistent(this@DnsNetApplication, configuration)) {
+                RuleDatabaseUpdateWorker.runNow(this@DnsNetApplication)
+            }
         }
     }
 

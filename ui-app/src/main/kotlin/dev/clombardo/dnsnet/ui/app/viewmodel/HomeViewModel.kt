@@ -496,10 +496,9 @@ class HomeViewModel @Inject constructor(
     }
 
     fun hasCompletedEmptyConfigMigration(): Boolean {
-        val configExists = File(context.filesDir, Configuration.DEFAULT_CONFIG_FILENAME).exists()
         val shouldShowPresets = preferences.ShouldShowPresetsWhenNoBlockLists
         preferences.ShouldShowPresetsWhenNoBlockLists = false
-        return configExists && !shouldShowPresets
+        return !shouldShowPresets
     }
 
     companion object {

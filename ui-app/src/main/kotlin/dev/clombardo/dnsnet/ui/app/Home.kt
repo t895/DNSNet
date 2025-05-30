@@ -43,6 +43,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -75,9 +76,9 @@ import androidx.navigation.toRoute
 import dev.clombardo.dnsnet.settings.DnsServer
 import dev.clombardo.dnsnet.settings.DnsServerType
 import dev.clombardo.dnsnet.settings.Filter
-import dev.clombardo.dnsnet.settings.SingleFilter
 import dev.clombardo.dnsnet.settings.FilterFile
 import dev.clombardo.dnsnet.settings.FilterState
+import dev.clombardo.dnsnet.settings.SingleFilter
 import dev.clombardo.dnsnet.ui.app.viewmodel.HomeViewModel
 import dev.clombardo.dnsnet.ui.common.BasicDialog
 import dev.clombardo.dnsnet.ui.common.DialogButton
@@ -629,8 +630,10 @@ fun HomeScreen(
         }
     }
 
-    if (!vm.hasCompletedEmptyConfigMigration()) {
-        topLevelNavController.popNavigate(TopLevelDestination.Presets(canGoBack = false))
+    LaunchedEffect(Unit) {
+        if (!vm.hasCompletedEmptyConfigMigration()) {
+            topLevelNavController.popNavigate(TopLevelDestination.Presets(canGoBack = false))
+        }
     }
 
     val context = LocalContext.current
