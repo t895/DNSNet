@@ -1,0 +1,3 @@
+DNSNet memungkinkan Anda untuk mengambil kendali penuh atas lalu lintas internet yang masuk dan keluar dari perangkat Anda. Anda dapat mengunduh berkas host untuk memblokir sekumpulan nama host yang diketahui beriklan atau berbahaya, lalu membuat pengecualian sesuai keinginan Anda.
+
+Aplikasi ini bekerja dengan membuat layanan VPN ringan yang menyaring lalu lintas internet saat Anda menggunakan perangkat. Jika Anda mengalami masalah saat menyambung ke sebuah situs atau menggunakan aplikasi, Anda selalu bisa mengecualikan aplikasi dari penyaringan atau membuat pengecualian untuk nama host tertentu.
