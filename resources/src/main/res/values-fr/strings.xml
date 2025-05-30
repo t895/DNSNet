@@ -3,7 +3,6 @@
     <string name="app_shortdesc">Blocage d\'hôtes et serveur DNS personnalisé</string>
     <string name="custom_dns">Activer les serveurs DNS personnalisés</string>
     <string name="start_tab">Démarrer</string>
-    <string name="hosts_tab">Hôtes</string>
     <string name="dns_tab">DNS</string>
     <string name="action_export">Exporter les paramètres</string>
     <string name="action_import">Importer les paramètres</string>
@@ -34,26 +33,16 @@
     <!-- Translate with something like <Language> Translation: Your Name -->
     <string name="translator_credits">Traduction française : Julien Lepiller</string>
     <string name="app_version_info">Version : %s</string>
-    <string name="missing_hosts_files_message">Certains de vos fichiers d\'hôtes configurés (non ignorés) sont manquants.\n
-     \n
-  Utilisez l\'action « Rafraichir » pour télécharger les fichiers d\'hôtes.\n
-     \n
-  Souhaitez-vous continuer ?</string>
-    <string name="missing_hosts_files_title">Fichier d\'hôtes manquant</string>
     <string name="button_no">Non</string>
     <string name="button_yes">Oui</string>
     <string name="allowlist_tab">Apps</string>
     <string name="dns_description">Active vos serveurs DNS préférés</string>
     <string name="location_dns">Adresse IP du serveur DNS (IPv4 ou IPv6)</string>
     <string name="state_dns_enabled">Activé</string>
-    <string name="host_update_error_item">Erreur %1$d : %2$s</string>
     <string name="update_incomplete">Mise à jour incomplète</string>
     <string name="update_incomplete_description">Certains fichiers d\'hôtes n\'ont pas pu être téléchargés. Si les fichiers ont déjà été téléchargés, les anciennes versions seront utilisées.</string>
-    <string name="updating_hostfiles">Mise à jour des fichiers d\'hôtes</string>
     <string name="action_use_file">Utiliser le fichier</string>
     <string name="persistable_uri_permission_failed">Impossible d\'utiliser le fichier demandé : utilisation persistante du fichier demandé non permise</string>
-    <string name="updating_n_host_files">Mise à jour de %1$d fichiers d\'hôtes</string>
-    <string name="could_not_update_all_hosts">Impossible de mettre à jour tous les fichiers d\'hôtes</string>
     <string name="permission_denied">Permission refusée</string>
     <string name="invalid_url_s">URL invalide : %1$s</string>
     <string name="file_not_found">Fichier introuvable</string>
@@ -95,7 +84,6 @@
     <string name="alphabetical">Alphabétiquement</string>
     <string name="attempts">Tentatives</string>
     <string name="reset">Réinitialiser</string>
-    <string name="hostname">Nom du hôte</string>
     <string name="credits">Crédits</string>
     <string name="search">Recherche</string>
     <string name="ascending">Ascendant</string>
@@ -176,12 +164,6 @@
     <string name="reset_settings_warning_description">Cette opération supprimera définitivement vos paramètres actuels.</string>
     <string name="permanently_delete_warning_description">Cette opération supprime définitivement %s</string>
     <string name="create_exception">Créer une exception</string>
-    <string name="add_hosts_file">Ajouter un fichier hosts</string>
-    <string name="edit_hosts_file">Modifier le fichier hosts</string>
-    <string name="add_host">Ajouter un hôte</string>
-    <string name="edit_host">Modifier l\'hôte</string>
-    <string name="start_title">Configuration générale de DNSNet</string>
-    <string name="hosts_title">Filtrer les hôtes à l\'aide de fichiers et d\'exceptions</string>
     <string name="failed_to_open_link">Échec de l\'ouverture du lien</string>
     <string name="open_license">Licence ouverte</string>
     <string name="system_apps">Applications système</string>

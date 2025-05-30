@@ -3,7 +3,6 @@
     <string name="app_shortdesc">Blokowanie hostów i niestandardowe serwery DNS</string>
     <string name="custom_dns">Niestandardowe serwery DNS</string>
     <string name="start_tab">Start</string>
-    <string name="hosts_tab">Pliki hosts</string>
     <string name="dns_tab">Serwery DNS</string>
     <string name="action_export">Eksportuj ustawienia</string>
     <string name="action_import">Importuj ustawienia</string>
@@ -34,22 +33,16 @@
     <!-- Translate with something like <Language> Translation: Your Name -->
     <string name="translator_credits">Tłumaczyli: justmix4</string>
     <string name="app_version_info">Wersja: %s</string>
-    <string name="missing_hosts_files_message">Niektóre z Twoich skonfigurowanych (nieignorowanych) plików hosts są brakujące.\n\nUżyj przycisku "Odśwież", aby pobrać pliki hosts.\n\nCzy nadal chcesz kontynuować?</string>
-    <string name="missing_hosts_files_title">Brak plików hosts</string>
     <string name="button_no">Nie</string>
     <string name="button_yes">Tak</string>
     <string name="allowlist_tab">Aplikacje</string>
     <string name="dns_description">Włącz preferowane serwery DNS</string>
     <string name="location_dns">Adres IP serwera DNS (IPv4 oder IPv6)</string>
     <string name="state_dns_enabled">Włączone</string>
-    <string name="host_update_error_item">Błąd %1$d: %2$s</string>
     <string name="update_incomplete">Aktualizacja niekompletna</string>
     <string name="update_incomplete_description">Niektóre pliki hosts nie mogą zostać pobrane. Jeśli pliki zostały wcześniej pobrane, stare wersje będą nadal używane.</string>
-    <string name="updating_hostfiles">Aktualizowanie plików hosts</string>
     <string name="action_use_file">Użyj pliku</string>
     <string name="persistable_uri_permission_failed">Nie można użyć żądanego pliku: Nie wolno ciągle używać żądanego pliku</string>
-    <string name="updating_n_host_files">Aktualizowanie %1$d plików hosts</string>
-    <string name="could_not_update_all_hosts">Nie można zaktualizować wszystkich plików hosts</string>
     <string name="permission_denied">Zezwolenie zostało odrzucone</string>
     <string name="invalid_url_s">Nieprawidłowy URL: %1$s</string>
     <string name="file_not_found">Nie znaleziono pliku</string>
@@ -80,7 +73,6 @@
     <string name="warning">Ostrzeżenie</string>
     <string name="disable">Wyłącz</string>
     <string name="alphabetical">Alfabetycznie</string>
-    <string name="hostname">Nazwa hosta</string>
     <string name="credits">Twórcy</string>
     <string name="descending">Malejąco</string>
     <string name="filter">Filtr</string>

@@ -4,7 +4,6 @@
     <string name="app_shortdesc">Host engelleme ve özel DNS sunucuları</string>
     <string name="custom_dns">Özel DNS sunucuları</string>
     <string name="start_tab">Başlat</string>
-    <string name="hosts_tab">Hostlar</string>
     <string name="dns_tab">DNS</string>
     <string name="action_export">Ayarları dışa aktar</string>
     <string name="export_description">Yapılandırmanızın yedek kopyasını oluşturun</string>
@@ -41,8 +40,6 @@
     <string name="app_version_info">Sürüm: %s</string>
     <string name="dns66_credit">Julian Andres Klode tarafından oluşturulan DNS66 temel alınmıştır</string>
     <string name="adbuster_credit">Bazı kısımlar Daniel Brodie tarafından oluşturulan AdBuster\'dan türetilmiştir</string>
-    <string name="missing_hosts_files_message">Yapılandırılmış (yoksayılmayan) host dosyalarınızdan bazıları eksik.\n\nHost dosyalarını indirmek için \'Yenile\' eylemini kullanın.\n\nYine de devam etmek istiyor musunuz?</string>
-    <string name="missing_hosts_files_title">Eksik host dosyası</string>
     <string name="button_no">Hayır</string>
     <string name="button_yes">Evet</string>
     <string name="website" translatable="false">https://github.com/t895/DNSNet</string>
@@ -52,14 +49,10 @@
     <string name="allowlist_description">İşaretli uygulamalar için DNSNet\'i atla</string>
     <string name="location_dns">DNS sunucusunun IP adresi (IPv4 veya IPv6)</string>
     <string name="state_dns_enabled">Etkinleştirildi</string>
-    <string name="host_update_error_item">Hata %1$d: %2$s</string>
     <string name="update_incomplete">Güncelleme tamamlanmadı</string>
     <string name="update_incomplete_description">Bazı host dosyaları indirilemedi. Dosyalar daha önce indirilmişse, eski sürümler kullanılmaya devam edilecek.</string>
-    <string name="updating_hostfiles">Host dosyaları güncelleniyor</string>
     <string name="action_use_file">Dosyayı kullan</string>
     <string name="persistable_uri_permission_failed">İstenen dosya kullanılamıyor: İstenen dosyayı kalıcı olarak kullanma izni yok</string>
-    <string name="updating_n_host_files">%1$d host dosyası güncelleniyor</string>
-    <string name="could_not_update_all_hosts">Tüm host dosyaları güncellenemedi</string>
     <string name="permission_denied">İzin reddedildi</string>
     <string name="invalid_url_s">Geçersiz URL: %1$s</string>
     <string name="file_not_found">Dosya bulunamadı</string>
@@ -133,13 +126,6 @@
     <string name="reset_settings_warning_description">Bu işlem mevcut ayarlarınızı kalıcı olarak silecektir.</string>
     <string name="permanently_delete_warning_description">Bu işlem %s öğesini kalıcı olarak silecektir</string>
     <string name="create_exception">İstisna oluştur</string>
-    <string name="add_hosts_file">Host dosyası ekle</string>
-    <string name="edit_hosts_file">Host dosyasını düzenle</string>
-    <string name="add_host">Host ekle</string>
-    <string name="edit_host">Host düzenle</string>
-    <string name="hostname">Host adı</string>
-    <string name="start_title">Genel DNSNet yapılandırması</string>
-    <string name="hosts_title">Dosyalar ve istisnalarla hostları filtrele</string>
     <string name="credits">Katkıda Bulunanlar</string>
     <string name="open_license">Lisansı aç</string>
     <string name="dns66_license_link" translatable="false">https://github.com/julian-klode/dns66/blob/main/COPYING</string>

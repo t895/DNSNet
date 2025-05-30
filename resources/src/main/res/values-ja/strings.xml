@@ -3,7 +3,6 @@
     <string name="app_shortdesc">ホストのブロックとカスタム DNS サーバー</string>
     <string name="custom_dns">カスタム DNS サーバーを有効にする</string>
     <string name="start_tab">開始</string>
-    <string name="hosts_tab">ホスト</string>
     <string name="dns_tab">DNS サーバー</string>
     <string name="action_export">設定をエクスポート</string>
     <string name="action_import">設定をインポート</string>
@@ -34,22 +33,16 @@
     <!-- Translate with something like <Language> Translation: Your Name -->
     <string name="translator_credits">日本語翻訳: Naofumi Fukue</string>
     <string name="app_version_info">バージョン: %s</string>
-    <string name="missing_hosts_files_message">いくつかの設定した (無視以外) hosts ファイルが見つかりません。‘更新’ 操作を使用して hosts ファイルをダウンロードしてください。\n\nそれでも続行しますか?</string>
-    <string name="missing_hosts_files_title">hosts ファイルが見つかりません</string>
     <string name="button_no">いいえ</string>
     <string name="button_yes">はい</string>
     <string name="allowlist_tab">アプリ</string>
     <string name="dns_description">優先の DNS サーバーを有効にする</string>
     <string name="location_dns">DNS サーバーの IP アドレス (IPv4 または IPv6)</string>
     <string name="state_dns_enabled">有効</string>
-    <string name="host_update_error_item">エラー %1$d: %2$s</string>
     <string name="update_incomplete">更新が未完了</string>
     <string name="update_incomplete_description">一部のホストファイルがダウンロードできませんでした。 ファイルを以前ダウンロードしている場合は、古いバージョンが引き続き使用されます。</string>
-    <string name="updating_hostfiles">ホストファイルを更新中</string>
     <string name="action_use_file">ファイルを使用</string>
     <string name="persistable_uri_permission_failed">要求したファイルを使用できません: 要求したファイルを永続的に使用できません</string>
-    <string name="updating_n_host_files">%1$d ホストファイルを更新中</string>
-    <string name="could_not_update_all_hosts">すべてのホストファイルを更新できませんでした</string>
     <string name="permission_denied">アクセスが拒否されました</string>
     <string name="invalid_url_s">無効な URL: %1$s</string>
     <string name="file_not_found">ファイルが見つかりません</string>

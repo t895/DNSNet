@@ -3,7 +3,6 @@
     <string name="app_shortdesc">Vertsblokkering og tilpassede DNS-tjenere</string>
     <string name="custom_dns">Tilpassede DNS-tjenere</string>
     <string name="start_tab">Start</string>
-    <string name="hosts_tab">Verter</string>
     <string name="dns_tab">DNS</string>
     <string name="action_export">Eksporter innstillinger</string>
     <string name="action_import">Importer innstillinger</string>
@@ -32,22 +31,16 @@
         <item>@string/ignore</item>
     </string-array>
     <string name="app_version_info">Versjon: %s</string>
-    <string name="missing_hosts_files_message">Noen av dine oppsatte (og ikke-ignorerte) vertsfiler mangler.\n\nBruk Oppfrisk-handlingen til å laste ned vertsfiler.\n\nVil du fortsette?</string>
-    <string name="missing_hosts_files_title">Manglende vertsfil</string>
     <string name="button_no">Nei</string>
     <string name="button_yes">Ja</string>
     <string name="allowlist_tab">Apper</string>
     <string name="dns_description">Aktiver dine foretrukkede DNS-tjenere</string>
     <string name="location_dns">IP-adressen til DNS-tjeneren (IPv6 eller IPv4)</string>
     <string name="state_dns_enabled">Aktivert</string>
-    <string name="host_update_error_item">Feil %1$d: %2$s</string>
     <string name="update_incomplete">Oppdateringen ble ikke fullført</string>
     <string name="update_incomplete_description">Noen vertsfiler kunne ikke bli lastet ned. Dersom filene ble lastet ned tidligere, vil de gamle versjonene fortsatt bli brukt.</string>
-    <string name="updating_hostfiles">Oppdaterer vertsfiler</string>
     <string name="action_use_file">Bruk fil</string>
     <string name="persistable_uri_permission_failed">Kan ikke bruke den ønskede filen: Har ikke tillatelse til å kontinuerlig bruke den ønskede filen</string>
-    <string name="updating_n_host_files">Oppdaterer %1$d vertsfiler</string>
-    <string name="could_not_update_all_hosts">Klarte ikke å oppdatere alle vertsfilene</string>
     <string name="permission_denied">Tillatelse avslåttPermission denied</string>
     <string name="invalid_url_s">Ugyldig nettadresse: %1$s</string>
     <string name="file_not_found">Filen ble ikke funnet</string>

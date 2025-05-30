@@ -3,7 +3,6 @@
     <string name="app_shortdesc">Verkkotunnusten estot ja DNS-palvelimien muokkaus</string>
     <string name="custom_dns">Mukautetut DNS-palvelimet</string>
     <string name="start_tab">Aloita</string>
-    <string name="hosts_tab">Hosts</string>
     <string name="dns_tab">DNS</string>
     <string name="action_export">Vie asetukset</string>
     <string name="action_import">Tuo asetukset</string>
@@ -34,22 +33,16 @@
     <!-- Translate with something like <Language> Translation: Your Name -->
     <string name="translator_credits">Suomeksi kääntänyt: Ilmari Jaaranen</string>
     <string name="app_version_info">Versio: %s</string>
-    <string name="missing_hosts_files_message">Jotkut asetetuista (ei-ohitetuista) hosts-tiedostoista puuttuvat.\n\nKäytä ‘Virkistä’ toimintoa lataaksesi hosts-tiedostot.\n\nHaluatko silti jatkaa?</string>
-    <string name="missing_hosts_files_title">Hosts-tiedosto puuttuu</string>
     <string name="button_no">Ei</string>
     <string name="button_yes">Kyllä</string>
     <string name="allowlist_tab">Apps</string>
     <string name="dns_description">Aktivoi haluamasi DNS-palvelimet</string>
     <string name="location_dns">DNS-palvelimen IP-osoite (IPv4 tai IPv6)</string>
     <string name="state_dns_enabled">Käytössä</string>
-    <string name="host_update_error_item">Virhe %1$d: %2$s</string>
     <string name="update_incomplete">Päivitys puutteellinen</string>
     <string name="update_incomplete_description">Joitakin hosts-tiedostoista ei pystytty lataamaan. Jatketaan käyttämällä vanhoja tiedostoja, mikäli ne ladattiin aiemmin.</string>
-    <string name="updating_hostfiles">Päivitetään hosts-tiedostoja</string>
     <string name="action_use_file">Käytä tiedostoa</string>
     <string name="persistable_uri_permission_failed">Ei voida käyttää pyydettyä tiedostoa: Ei sallittu käyttää pyydettyä tiedostoa pysyvästi</string>
-    <string name="updating_n_host_files">Päivitetään %1$d hosts-tiedostoja</string>
-    <string name="could_not_update_all_hosts">Ei kyetty päivittämään kaikkia hosts-tiedostoja</string>
     <string name="permission_denied">Pääsy estetty</string>
     <string name="invalid_url_s">Virheellinen URL: %1$s</string>
     <string name="file_not_found">Tiedostoa ei löytynyt</string>

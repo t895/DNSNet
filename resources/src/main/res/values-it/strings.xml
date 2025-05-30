@@ -3,7 +3,6 @@
     <string name="app_shortdesc">Filtro hosts e server DNS personalizzati</string>
     <string name="custom_dns">Server DNS personalizzati</string>
     <string name="start_tab">Avvia</string>
-    <string name="hosts_tab">Hosts</string>
     <string name="dns_tab">DNS</string>
     <string name="action_export">Esporta impostazioni</string>
     <string name="action_import">Importa impostazioni</string>
@@ -34,22 +33,16 @@
     <!-- Translate with something like <Language> Translation: Your Name -->
     <string name="translator_credits">Traduzione italiana: TJL73 - http://tjl73.altervista.org/</string>
     <string name="app_version_info">Versione: %s</string>
-    <string name="missing_hosts_files_message">Alcuni dei file hosts configurati (non ignorati) sono mancanti.\n\nUtilizzare la funzione \"Ricarica\" per scaricare gli hosts file aggiornati.\n\nVuoi continuare?</string>
-    <string name="missing_hosts_files_title">File hosts mancante</string>
     <string name="button_no">No</string>
     <string name="button_yes">Sì</string>
     <string name="allowlist_tab">Apps</string>
     <string name="dns_description">Abilita i tuoi server DNS preferiti</string>
     <string name="location_dns">Indirizzo IP del server DNS (IPv4 o IPv6)</string>
     <string name="state_dns_enabled">Abilitato</string>
-    <string name="host_update_error_item">Errore %1$d: %2$s</string>
     <string name="update_incomplete">Aggiornamento incompleto</string>
     <string name="update_incomplete_description">Alcuni file hosts non possono essere scaricati. Di quelli già scaricati precedentemente, verrà utilizzata la vecchia versione.</string>
-    <string name="updating_hostfiles">Aggiornamento file hosts</string>
     <string name="action_use_file">Usa il file</string>
     <string name="persistable_uri_permission_failed">Impossibile utilizzare il file richiesto: Uso persistente del file richiesto non consentito</string>
-    <string name="updating_n_host_files">Aggiornamento del file hosts %1$d</string>
-    <string name="could_not_update_all_hosts">Impossibile aggiornare tutti i file hosts</string>
     <string name="permission_denied">Permesso negato</string>
     <string name="invalid_url_s">URL non valido: %1$s</string>
     <string name="file_not_found">File non trovato</string>
@@ -165,13 +158,6 @@
     <string name="reset_settings_warning_description">Questa operazione eliminerà in modo permanente le impostazioni correnti.</string>
     <string name="permanently_delete_warning_description">Questo eliminerà in modo permanente %s</string>
     <string name="create_exception">Creare un\'eccezione</string>
-    <string name="add_hosts_file">Aggiungi file host</string>
-    <string name="edit_hosts_file">Modifica file host</string>
-    <string name="add_host">Aggiungi host</string>
-    <string name="edit_host">Modifica host</string>
-    <string name="hostname">Nome host</string>
-    <string name="start_title">Configurazione generale di DNSNet</string>
-    <string name="hosts_title">Filtrare gli host con file ed eccezioni</string>
     <string name="open_license">Licenza aperta</string>
     <string name="search">Cerca</string>
     <string name="ascending">Ascendente</string>

@@ -3,7 +3,6 @@
     <string name="app_shortdesc">Hostide blokeerimine ja kohandatud DNS-serverid</string>
     <string name="custom_dns">Kohandatud DNS-serverid</string>
     <string name="start_tab">Algus</string>
-    <string name="hosts_tab">Hostid</string>
     <string name="dns_tab">DNS</string>
     <string name="action_export">Ekspordi seaded</string>
     <string name="action_import">Impordi seaded</string>
@@ -34,22 +33,16 @@
     <!-- Translate with something like <Language> Translation: Your Name -->
     <string name="translator_credits">Eesti keelde tõlkinud Madis0</string>
     <string name="app_version_info">Versioon: %s</string>
-    <string name="missing_hosts_files_message">Mõned sinu konfigureeritud (mitte-ignoreeritud) hostifailidest on puudu.\n\nHostifailide allalaadimiseks kasuta nuppu "värskenda".\n\nKas soovid siiski jätkata?</string>
-    <string name="missing_hosts_files_title">Puuduv hostifail</string>
     <string name="button_no">Ei</string>
     <string name="button_yes">Jah</string>
     <string name="allowlist_tab">Rakendused</string>
     <string name="dns_description">Luba oma eelistatud DNS-serverid</string>
     <string name="location_dns">DNS-serveri IP-aadress (IPv4 või IPv6)</string>
     <string name="state_dns_enabled">Lubatud</string>
-    <string name="host_update_error_item">Viga %1$d: %2$s</string>
     <string name="update_incomplete">Uuendus teostamata</string>
     <string name="update_incomplete_description">Mõndasid hostifaile ei suudetud alla laadida. Kui failid olid eelnevalt alla laaditud, kasutatakse jätkuvalt vanu versioone.</string>
-    <string name="updating_hostfiles">Uuendan hostifaile</string>
     <string name="action_use_file">Kasuta faili</string>
     <string name="persistable_uri_permission_failed">Taotletud faili ei saa kasutada: pole õigust soovitud faili püsivaks kasutamiseks</string>
-    <string name="updating_n_host_files">Uuendan %1$d hostifaili</string>
-    <string name="could_not_update_all_hosts">Kõiki hostifaile ei suudetud uuendada</string>
     <string name="permission_denied">Luba tühistatud</string>
     <string name="invalid_url_s">Sobimatu URL: %1$s</string>
     <string name="file_not_found">Faili ei leitud</string>

@@ -4,7 +4,6 @@
     <string name="app_shortdesc">Pemblokiran host dan server DNS khusus</string>
     <string name="custom_dns">Server DNS khusus</string>
     <string name="start_tab">Mulai</string>
-    <string name="hosts_tab">Hosts</string>
     <string name="dns_tab">DNS</string>
     <string name="action_export">Ekspor pengaturan</string>
     <string name="export_description">Buat salinan cadangan dari konfigurasi Anda</string>
@@ -43,8 +42,6 @@
     <string name="app_version_info">Versi: %s</string>
     <string name="dns66_credit">Berdasarkan pada DNS66 yang dibuat oleh Julian Andres Klode</string>
     <string name="adbuster_credit">Beberapa bagian diperoleh dari AdBuster yang dibuat oleh Daniel Brodie</string>
-    <string name="missing_hosts_files_message">Beberapa berkas host yang Anda konfigurasi (yang tidak diabaikan) hilang.\n\nGunakan tindakan ‘Segarkan’ untuk mengunduh berkas hosts.\n\nApakah Anda masih ingin melanjutkannya?</string>
-    <string name="missing_hosts_files_title">Berkas host hilang</string>
     <string name="button_no">Tidak</string>
     <string name="button_yes">Ya</string>
     <string name="website" translatable="false">https://github.com/t895/DNSNet</string>
@@ -54,14 +51,10 @@
     <string name="allowlist_description">Abaikan DNSNet untuk aplikasi yang ditandai</string>
     <string name="location_dns">Alamat IP server DNS (IPv4 atau IPv6)</string>
     <string name="state_dns_enabled">Diaktifkan</string>
-    <string name="host_update_error_item">Kesalahan %1$d: %2$s</string>
     <string name="update_incomplete">Pembaruan tidak lengkap</string>
     <string name="update_incomplete_description">Beberapa berkas host tidak dapat diunduh. Jika file sebelumnya telah diunduh, versi lama akan terus digunakan.</string>
-    <string name="updating_hostfiles">Memperbarui berkas host</string>
     <string name="action_use_file">Gunakan berkas</string>
     <string name="persistable_uri_permission_failed">Tidak dapat menggunakan berkas yang diminta: Tidak diizinkan untuk tetap menggunakan berkas yang diminta</string>
-    <string name="updating_n_host_files">Memperbarui %1$d berkas host</string>
-    <string name="could_not_update_all_hosts">Tidak dapat memperbarui semua berkas host</string>
     <string name="permission_denied">Izin ditolak</string>
     <string name="invalid_url_s">URL tidak sah: %1$s</string>
     <string name="file_not_found">Berkas tidak ditemukan</string>
@@ -136,13 +129,6 @@
     <string name="reset_settings_warning_description">Ini akan menghapus pengaturan Anda saat ini secara permanen.</string>
     <string name="permanently_delete_warning_description">Ini akan menghapus secara permanen %s</string>
     <string name="create_exception">Buat pengecualian</string>
-    <string name="add_hosts_file">Tambah berkas hosts</string>
-    <string name="edit_hosts_file">Ubah berkas hosts</string>
-    <string name="add_host">Tambah host</string>
-    <string name="edit_host">Ubah host</string>
-    <string name="hostname">Nama host</string>
-    <string name="start_title">Konfigurasi umum DNSNet</string>
-    <string name="hosts_title">Menyaring hosts dengan berkas dan pengecualian</string>
     <string name="credits">Penghargaan</string>
     <string name="open_license">Lisensi terbuka</string>
     <string name="dns66_license_link" translatable="false">https://github.com/julian-klode/dns66/blob/main/COPYING</string>

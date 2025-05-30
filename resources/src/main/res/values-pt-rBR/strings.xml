@@ -3,7 +3,6 @@
     <string name="app_shortdesc">Bloqueio de hosts e servidores personalizados de DNS</string>
     <string name="custom_dns">Servidores personalizados de DNS</string>
     <string name="start_tab">Iniciar</string>
-    <string name="hosts_tab">Hosts</string>
     <string name="dns_tab">DNS</string>
     <string name="action_export">Exportar as configurações</string>
     <string name="action_import">Importar as configurações</string>
@@ -32,22 +31,16 @@
         <item>@string/ignore</item>
     </string-array>
     <string name="app_version_info">Versão: %s</string>
-    <string name="missing_hosts_files_message">Alguns arquivos host configurados (não-ignorados) estão faltando.\n\nUtilize o botão "Atualizar" para baixar os arquivos host.\n\nQuer continuar mesmo assim?</string>
-    <string name="missing_hosts_files_title">Faltando os arquivos host</string>
     <string name="button_no">Não</string>
     <string name="button_yes">Sim</string>
     <string name="allowlist_tab">Apps</string>
     <string name="dns_description">Habilitar seus servidores DNS preferidos</string>
     <string name="location_dns">Endereço IP do servidor DNS (IPv4 or IPv6)</string>
     <string name="state_dns_enabled">Ativado</string>
-    <string name="host_update_error_item">Erro %1$d: %2$s</string>
     <string name="update_incomplete">Atualização incompleta</string>
     <string name="update_incomplete_description">Alguns arquivos do host não puderam ser baixados. Se os arquivos fossem baixados anteriormente, as versões antigas continuarão a ser utilizadas.</string>
-    <string name="updating_hostfiles">Atualizando os arquivos host</string>
     <string name="action_use_file">Usar arquivo</string>
     <string name="persistable_uri_permission_failed">Não foi possível utilizar o arquivo solicitado: Não é permitido utilizar persistentemente o arquivo solicitado</string>
-    <string name="updating_n_host_files">Atualizado %1$d arquivos host</string>
-    <string name="could_not_update_all_hosts">Não foi possível atualizar todos os arquivos host</string>
     <string name="permission_denied">Permissão negada</string>
     <string name="invalid_url_s">URL inválido: %1$s</string>
     <string name="file_not_found">Arquivo não encontrado</string>
@@ -157,13 +150,6 @@
     <string name="reset_settings_warning_description">Isso excluirá permanentemente suas configurações atuais.</string>
     <string name="permanently_delete_warning_description">Isso excluirá permanentemente %s</string>
     <string name="create_exception">Criar exceção</string>
-    <string name="add_hosts_file">Adicionar arquivo de hosts</string>
-    <string name="edit_hosts_file">Editar arquivo de hosts</string>
-    <string name="add_host">Adicionar host</string>
-    <string name="edit_host">Editar host</string>
-    <string name="hostname">Nome do host</string>
-    <string name="start_title">Configuração geral do DNSNet</string>
-    <string name="hosts_title">Filtrar hosts com arquivos e exceções</string>
     <string name="credits">Créditos</string>
     <string name="open_license">Licença aberta</string>
     <string name="search">Pesquisa</string>
