@@ -3,7 +3,6 @@
     <string name="app_shortdesc">Bloqueo de hosts y servidores DNS personalizados</string>
     <string name="custom_dns">Servidores DNS personalizados</string>
     <string name="start_tab">Iniciar</string>
-    <string name="hosts_tab">Hosts</string>
     <string name="dns_tab">DNS</string>
     <string name="action_export">Exportar ajustes</string>
     <string name="action_import">Importar ajustes</string>
@@ -34,22 +33,16 @@
     <!-- Translate with something like <Language> Translation: Your Name -->
     <string name="translator_credits">Traducción al español: David López</string>
     <string name="app_version_info">Versión: %s</string>
-    <string name="missing_hosts_files_message">Faltan algunos de los archivos de hosts configurados (no ignorados). \n\nUtilice la acción \'Actualizar\' para descargar los archivos hosts. \n\n¿Aún desea continuar?</string>
-    <string name="missing_hosts_files_title">Archivos hosts no encontrados</string>
     <string name="button_no">No</string>
     <string name="button_yes">Si</string>
     <string name="allowlist_tab">Aplicaciones</string>
     <string name="dns_description">Habilitar los servidores DNS preferidos</string>
     <string name="location_dns">Dirección IP del servidor DNS (IPv4 o IPv6)</string>
     <string name="state_dns_enabled">Habilitado</string>
-    <string name="host_update_error_item">Error %1$d: %2$s</string>
     <string name="update_incomplete">Actualización incompleta</string>
     <string name="update_incomplete_description">No se pudo descargar algunos archivos de host. Si los archivos se descargaron previamente, las versiones anteriores seguirán siendo utilizadas.</string>
-    <string name="updating_hostfiles">Actualizando archivos host</string>
     <string name="action_use_file">Usar archivo</string>
     <string name="persistable_uri_permission_failed">No se puede usar el archivo solicitado: No se permite el uso persistente del archivo solicitado</string>
-    <string name="updating_n_host_files">Actualizando %1$d archivos host</string>
-    <string name="could_not_update_all_hosts">No se pudo actualizar todos los archivos de host</string>
     <string name="permission_denied">Permiso denegado</string>
     <string name="invalid_url_s">URL invalida: %1$s</string>
     <string name="file_not_found">Archivo no encontrado</string>
@@ -164,13 +157,6 @@
     <string name="reset">Restablecer</string>
     <string name="permanently_delete_warning_description">Esto eliminará permanentemente %s</string>
     <string name="create_exception">Crear excepción</string>
-    <string name="add_hosts_file">Añadir archivo hosts</string>
-    <string name="edit_hosts_file">Editar archivo hosts</string>
-    <string name="add_host">Añadir host</string>
-    <string name="edit_host">Editar host</string>
-    <string name="hostname">Nombre de host</string>
-    <string name="start_title">Configuración general de DNSNet</string>
-    <string name="hosts_title">Filtra hosts con archivos y excepciones</string>
     <string name="credits">Créditos</string>
     <string name="search">Búsqueda</string>
     <string name="ascending">Ascendente</string>

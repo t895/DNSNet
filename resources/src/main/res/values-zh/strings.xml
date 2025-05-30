@@ -27,7 +27,6 @@
     <string name="notification_waiting_for_net">等待网络</string>
     <string name="action_refresh">更新Hosts文件</string>
     <string name="load_defaults">载入初始化设置</string>
-    <string name="hosts_tab">域名过滤器</string>
     <string name="notification_reconnecting_error">重新连接错误</string>
     <string name="info_app_license">This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.</string>
     <string name="translator_credits">简体中文:Kevin Jiang</string>
@@ -40,16 +39,12 @@
     <string name="automatic_refresh_description">当使用不计费的网络且处于空闲和充电状态时会触发自动更新。</string>
     <string name="button_no">否</string>
     <string name="button_yes">是</string>
-    <string name="could_not_update_all_hosts">无法更新所有host文件</string>
     <string name="dns_description">启用你的自定义DNS服务器</string>
     <string name="file_not_found">无法找到文件</string>
-    <string name="host_update_error_item">错误 %1$d: %2$s</string>
     <string name="invalid_url_s">URL 无效: %1$s</string>
     <string name="ipv6_support">IPv6 支持</string>
     <string name="ipv6_support_description">如果你的网络未启用 IPv6 或你无法启动服务时禁用此选项。</string>
     <string name="location_dns">DNS 服务器的 IP 地址 ( IPv4 或 IPv6)</string>
-    <string name="missing_hosts_files_message">某些已被配置 (未忽略) 的 hosts 文件不存在. 使用‘刷新’功能来下载 hosts 文件. 你仍要继续吗？</string>
-    <string name="missing_hosts_files_title">hosts 文件不存在</string>
     <string name="notification_action_pause">暂停</string>
     <string name="permission_denied">拒绝访问</string>
     <string name="persistable_uri_permission_failed">无法使用所选择的文件: 该文件拒绝被长时间访问</string>
@@ -59,8 +54,6 @@
     <string name="unknown_error_s">未知错误r: %1$s</string>
     <string name="update_incomplete">更新未完成</string>
     <string name="update_incomplete_description">某些 hosts 文件未被下载. 如果这些文件曾被下载, 则会继续使用旧版本.</string>
-    <string name="updating_hostfiles">正在更新 hosts 文件</string>
-    <string name="updating_n_host_files">正在更新 %1$d host 文件</string>
     <string name="watchdog">监视连接</string>
     <string name="watchdog_description">使用较长的间隔检查连接并在其停止工作时重连</string>
     <string name="allowlist_tab">程序</string>

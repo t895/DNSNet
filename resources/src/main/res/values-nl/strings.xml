@@ -3,7 +3,6 @@
     <string name="app_shortdesc">Hostblokkering en aangepaste DNS-servers</string>
     <string name="custom_dns">Aangepaste DNS-servers</string>
     <string name="start_tab">Start</string>
-    <string name="hosts_tab">Hosts</string>
     <string name="dns_tab">DNS</string>
     <string name="action_export">Instellingen exporteren</string>
     <string name="action_import">Instellingen importeren</string>
@@ -34,22 +33,16 @@
     <!-- Translate with something like <Language> Translation: Your Name -->
     <string name="translator_credits">Nederlandse vertaling: Roy Schutte</string>
     <string name="app_version_info">Versie: %s</string>
-    <string name="missing_hosts_files_message">Sommige van je geconfigureerde (niet-genegeerde) hosts-bestanden ontbreken.\n\nGebruik de ‘Verversen’ actie om de hosts-bestanden te downloaden.\n\nWil je nog steeds voortzetten?</string>
-    <string name="missing_hosts_files_title">Ontbrekend hosts-bestand</string>
     <string name="button_no">Nee</string>
     <string name="button_yes">Ja</string>
     <string name="allowlist_tab">Apps</string>
     <string name="dns_description">Jouw voorkeurs-DNS-servers inschakelen</string>
     <string name="location_dns">IP-adres van DNS-server (IPv4 of IPv6)</string>
     <string name="state_dns_enabled">Ingeschakeld</string>
-    <string name="host_update_error_item">Fout %1$d: %2$s</string>
     <string name="update_incomplete">Update onvolledig</string>
     <string name="update_incomplete_description">Sommige hosts-bestanden konden niet worden gedownload. Als er eerder gedownloade bestanden waren, worden deze oudere versies gebruikt.</string>
-    <string name="updating_hostfiles">Hosts-bestanden bijwerken</string>
     <string name="action_use_file">Bestand gebruiken</string>
     <string name="persistable_uri_permission_failed">Kan verzochte bestand niet gebruiken: Niet gemachtigd om het verzochte bestand persistent te gebruiken</string>
-    <string name="updating_n_host_files">%1$d hosts-bestanden bijwerken</string>
-    <string name="could_not_update_all_hosts">Kon niet alle hosts-bestanden bijwerken</string>
     <string name="permission_denied">Toestemming niet verleend</string>
     <string name="invalid_url_s">Ongeldige URL: %1$s</string>
     <string name="file_not_found">Bestand niet gevonden</string>

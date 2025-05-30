@@ -3,7 +3,6 @@
     <string name="allow">مجاز</string>
     <string name="about_description">اطلاعات درباره ی DNSNet</string>
     <string name="close">بسته</string>
-    <string name="host_update_error_item">خطا ی %1$d:%2$s</string>
     <string name="welcome_to">خوش آمدید به</string>
     <string name="action_stop">توقف</string>
     <string name="notification_running">فعال</string>
@@ -14,7 +13,6 @@
     <string name="custom_dns">سرور DNS سفارشی</string>
     <string name="dns_tab">DNS</string>
     <string name="action_export">خارج کردن تنظیمات</string>
-    <string name="hosts_tab">Hosts</string>
     <string name="action_about">درباره</string>
     <string name="title">عنوان</string>
     <string name="export_description">ساخت یک نسخه ی پشتیبان از تنظیمات شما</string>
@@ -67,7 +65,5 @@
     <string name="allowlist_description">برکناری DNSNet برای برنامه های علامت گذاری شده</string>
     <string name="update_incomplete">به روز رسانی ناقص</string>
     <string name="update_incomplete_description">برخی فایل های میزبان را نمی توان دانلود کرد. اگر فایل ها قبلا دانلود شده بودند، نسخه های قدیمی همچنان مورد استفاده قرار خواهند گرفت.</string>
-    <string name="updating_hostfiles">به روز رسانی فایل های host</string>
     <string name="action_use_file">استفاده از فایل</string>
-    <string name="updating_n_host_files">به روز رسانی فایل host %1$d</string>
 </resources>
