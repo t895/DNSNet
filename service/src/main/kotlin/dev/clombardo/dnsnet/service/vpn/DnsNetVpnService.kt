@@ -54,7 +54,7 @@ import dev.clombardo.dnsnet.settings.Preferences
 import dev.clombardo.dnsnet.ui.common.FabState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import uniffi.net.AdVpnCallback
+import uniffi.net.VpnCallback
 import uniffi.net.ValidateDnsException
 import uniffi.net.ValidateDnsResult
 import uniffi.net.VpnConfigurationResult
@@ -93,7 +93,7 @@ enum class VpnStatus(val value: Int) {
 
     /**
      * The service is running and some or all of its resources may be loaded, but the VPN configuration
-     * loop is waiting for a network connection in [AdVpnThread.run].
+     * loop is waiting for a network connection in [VpnThread.run].
      *
      * This can transition to [RUNNING] if we lost network connections and then reconnected or to
      * itself if no networks are discovered after a timeout. It can also be transitioned to from
@@ -231,7 +231,7 @@ enum class Command {
     RELOAD_DATABASE,
 }
 
-class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
+class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
     companion object {
         const val SERVICE_RUNNING_NOTIFICATION_ID = 1
         const val SERVICE_PAUSED_NOTIFICATION_ID = 2
@@ -341,21 +341,21 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
             context.startService(getReloadDatabaseIntent(context))
         }
 
-        fun getStartIntent(context: Context): Intent = Intent(context, AdVpnService::class.java)
+        fun getStartIntent(context: Context): Intent = Intent(context, DnsNetVpnService::class.java)
             .putExtra(COMMAND_TAG, Command.START.ordinal)
             .putExtra(
                 NOTIFICATION_INTENT_TAG,
                 getOpenMainActivityPendingIntent(context)
             )
 
-        fun getStopIntent(context: Context): Intent = Intent(context, AdVpnService::class.java)
+        fun getStopIntent(context: Context): Intent = Intent(context, DnsNetVpnService::class.java)
             .putExtra(COMMAND_TAG, Command.STOP.ordinal)
 
-        fun getReconnectIntent(context: Context): Intent = Intent(context, AdVpnService::class.java)
+        fun getReconnectIntent(context: Context): Intent = Intent(context, DnsNetVpnService::class.java)
             .putExtra(COMMAND_TAG, Command.RECONNECT.ordinal)
 
         fun getReloadDatabaseIntent(context: Context): Intent =
-            Intent(context, AdVpnService::class.java)
+            Intent(context, DnsNetVpnService::class.java)
                 .putExtra(COMMAND_TAG, Command.RELOAD_DATABASE.ordinal)
 
         fun getOpenMainActivityPendingIntent(context: Context): PendingIntent =
@@ -370,7 +370,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         private fun getPausePendingIntent(context: Context) = PendingIntent.getService(
             context,
             REQUEST_CODE_PAUSE,
-            Intent(context, AdVpnService::class.java)
+            Intent(context, DnsNetVpnService::class.java)
                 .putExtra(COMMAND_TAG, Command.PAUSE.ordinal),
             PendingIntent.FLAG_IMMUTABLE,
         )
@@ -378,7 +378,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         private fun getStartPendingIntent(context: Context) = PendingIntent.getService(
             context,
             REQUEST_CODE_START,
-            Intent(context, AdVpnService::class.java).apply {
+            Intent(context, DnsNetVpnService::class.java).apply {
                 putExtra(NOTIFICATION_INTENT_TAG, getOpenMainActivityPendingIntent(context))
                 putExtra(COMMAND_TAG, Command.START.ordinal)
             },
@@ -388,7 +388,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
 
     @EntryPoint
     @InstallIn(SingletonComponent::class)
-    interface AdVpnServiceEntryPoint {
+    interface VpnServiceEntryPoint {
         fun configuration(): ConfigurationManager
         fun preferences(): Preferences
         fun blockLogger(): BlockLogger
@@ -404,7 +404,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
 
     private lateinit var ruleDatabaseManager: RuleDatabaseManager
 
-    private lateinit var vpnThread: AdVpnThread
+    private lateinit var vpnThread: VpnThread
 
     private val networkState = NetworkState()
 
@@ -484,7 +484,7 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         // from onCreate because applicationContext is not valid in the constructor
         val accessor = EntryPointAccessors.fromApplication(
             applicationContext,
-            AdVpnServiceEntryPoint::class.java
+            VpnServiceEntryPoint::class.java
         )
         configuration = accessor.configuration()
         preferences = accessor.preferences()
@@ -575,8 +575,8 @@ class AdVpnService : VpnService(), Handler.Callback, AdVpnCallback {
         }
 
         updateVpnStatus(VpnStatus.STARTING)
-        vpnThread = AdVpnThread(
-            adVpnService = this,
+        vpnThread = VpnThread(
+            dnsNetVpnService = this,
             notify = { status -> updateStatus(status.ordinal) },
             blockLoggerCallback = if (configuration.read { blockLogging }) {
                 NativeBlockLoggerWrapper(blockLogger)

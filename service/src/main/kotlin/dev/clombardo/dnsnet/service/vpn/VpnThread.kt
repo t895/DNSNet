@@ -26,8 +26,8 @@ import uniffi.net.VpnException
 import uniffi.net.VpnResult
 import uniffi.net.runVpnNative
 
-class AdVpnThread(
-    private val adVpnService: AdVpnService,
+class VpnThread(
+    private val dnsNetVpnService: DnsNetVpnService,
     private val notify: (VpnStatus) -> Unit,
     private val blockLoggerCallback: BlockLoggerCallback?,
     private val ruleDatabaseManager: RuleDatabaseManager,
@@ -43,7 +43,7 @@ class AdVpnThread(
     }
 
     private val threadLock = Object()
-    private val thread = Thread(this, "AdVpnThread")
+    private val thread = Thread(this, "VpnThread")
     private val vpnController = VpnController()
     private var userStop = false
 
@@ -162,7 +162,7 @@ class AdVpnThread(
     private fun runVpn(): VpnResult {
         // Authenticate and configure the virtual network interface.
         return runVpnNative(
-            adVpnCallback = adVpnService,
+            adVpnCallback = dnsNetVpnService,
             blockLoggerCallback = blockLoggerCallback,
             vpnController = vpnController,
             ruleDatabase = ruleDatabaseManager.ruleDatabase,

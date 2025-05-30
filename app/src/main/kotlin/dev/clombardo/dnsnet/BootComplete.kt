@@ -20,7 +20,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import dagger.hilt.android.AndroidEntryPoint
-import dev.clombardo.dnsnet.service.vpn.AdVpnService
+import dev.clombardo.dnsnet.service.vpn.DnsNetVpnService
 import dev.clombardo.dnsnet.settings.ConfigurationManager
 import dev.clombardo.dnsnet.settings.Preferences
 import javax.inject.Inject
@@ -35,7 +35,7 @@ class BootComplete : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent?) {
         if (intent?.action == Intent.ACTION_BOOT_COMPLETED) {
-            AdVpnService.checkStartVpnOnBoot(context, configuration, preferences)
+            DnsNetVpnService.checkStartVpnOnBoot(context, configuration, preferences)
         }
     }
 }

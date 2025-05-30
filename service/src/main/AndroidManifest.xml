@@ -11,7 +11,7 @@
     <application>
 
         <service
-            android:name=".vpn.AdVpnService"
+            android:name=".vpn.DnsNetVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
             android:exported="true"
             android:foregroundServiceType="systemExempted"

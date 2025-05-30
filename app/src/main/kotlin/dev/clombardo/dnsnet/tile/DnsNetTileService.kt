@@ -14,7 +14,7 @@ import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import dev.clombardo.dnsnet.MainActivity
-import dev.clombardo.dnsnet.service.vpn.AdVpnService
+import dev.clombardo.dnsnet.service.vpn.DnsNetVpnService
 import dev.clombardo.dnsnet.service.vpn.VpnStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -29,7 +29,7 @@ class DnsNetTileService : TileService() {
         super.onStartListening()
         tileCoroutineScope = CoroutineScope(Dispatchers.IO)
         tileCoroutineScope.launch {
-            AdVpnService.status.collectLatest {
+            DnsNetVpnService.status.collectLatest {
                 update(it)
             }
         }
@@ -78,6 +78,6 @@ class DnsNetTileService : TileService() {
             return
         }
 
-        AdVpnService.toggle(applicationContext)
+        DnsNetVpnService.toggle(applicationContext)
     }
 }

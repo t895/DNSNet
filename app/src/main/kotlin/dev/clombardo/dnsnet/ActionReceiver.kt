@@ -15,7 +15,7 @@ import android.content.Context
 import android.content.Intent
 import dev.clombardo.dnsnet.log.logDebug
 import dev.clombardo.dnsnet.log.logWarning
-import dev.clombardo.dnsnet.service.vpn.AdVpnService
+import dev.clombardo.dnsnet.service.vpn.DnsNetVpnService
 
 class ActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
@@ -23,8 +23,8 @@ class ActionReceiver : BroadcastReceiver() {
         val action = intent?.action ?: return
         logDebug("Got broadcast - $intent")
         when (action) {
-            ACTION_START -> AdVpnService.start(context)
-            ACTION_STOP -> AdVpnService.stop(context)
+            ACTION_START -> DnsNetVpnService.start(context)
+            ACTION_STOP -> DnsNetVpnService.stop(context)
             else -> logWarning("Got unknown action: $action")
         }
     }

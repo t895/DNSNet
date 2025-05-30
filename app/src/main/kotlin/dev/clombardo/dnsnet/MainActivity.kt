@@ -62,7 +62,7 @@ import dev.clombardo.dnsnet.log.logDebug
 import dev.clombardo.dnsnet.log.logInfo
 import dev.clombardo.dnsnet.service.FilterUtil
 import dev.clombardo.dnsnet.service.db.RuleDatabaseUpdateWorker
-import dev.clombardo.dnsnet.service.vpn.AdVpnService
+import dev.clombardo.dnsnet.service.vpn.DnsNetVpnService
 import dev.clombardo.dnsnet.ui.app.App
 import dev.clombardo.dnsnet.ui.app.viewmodel.HomeViewModel
 import dev.clombardo.dnsnet.ui.common.theme.DnsNetTheme
@@ -98,7 +98,7 @@ class MainActivity : AppCompatActivity() {
                             ).show()
                         }
                         vm.onReloadSettings()
-                        AdVpnService.reconnect(this)
+                        DnsNetVpnService.reconnect(this)
                         recreate()
                     }
 
@@ -124,7 +124,7 @@ class MainActivity : AppCompatActivity() {
                             vm.onVpnConfigurationFailure()
                         } else if (it.resultCode == Activity.RESULT_OK) {
                             logDebug("onActivityResult: Starting service")
-                            AdVpnService.start(this)
+                            DnsNetVpnService.start(this)
                         }
                     }
 
@@ -141,7 +141,7 @@ class MainActivity : AppCompatActivity() {
                 ) {
                     val hazeState = remember { HazeState() }
 
-                    val status by AdVpnService.status.collectAsState()
+                    val status by DnsNetVpnService.status.collectAsState()
                     val isDatabaseRefreshing by RuleDatabaseUpdateWorker.isRefreshing.collectAsState()
                     App(
                         modifier = Modifier.hazeSource(hazeState),
@@ -159,8 +159,8 @@ class MainActivity : AppCompatActivity() {
                         onShareLogcat = { logcatLauncher.launch("dnsnet-log.txt") },
                         onTryToggleService = { tryToggleService(true, vpnLauncher) },
                         onStartWithoutFiltersCheck = { tryToggleService(false, vpnLauncher) },
-                        onReloadVpn = { AdVpnService.reconnect(this@MainActivity) },
-                        onReloadDatabase = { AdVpnService.reloadDatabase(this@MainActivity) },
+                        onReloadVpn = { DnsNetVpnService.reconnect(this@MainActivity) },
+                        onReloadDatabase = { DnsNetVpnService.reloadDatabase(this@MainActivity) },
                         onUpdateRefreshWork = ::updateRefreshWork,
                         onOpenNetworkSettings = ::openNetworkSettings,
                     )
@@ -210,9 +210,9 @@ class MainActivity : AppCompatActivity() {
         hostsCheck: Boolean,
         launcher: ManagedActivityResultLauncher<Intent, ActivityResult>,
     ) {
-        if (AdVpnService.isActive()) {
+        if (DnsNetVpnService.isActive()) {
             logInfo("Attempting to disconnect")
-            AdVpnService.stop(this)
+            DnsNetVpnService.stop(this)
         } else {
             if (isPrivateDnsEnabled()) {
                 vm.onPrivateDnsEnabledWarning()
@@ -250,7 +250,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Starts the AdVpnService. If the user has not allowed this
+     * Starts the [DnsNetVpnService]. If the user has not allowed this
      * VPN to run before, it will show a dialog and then call
      * onActivityResult with either [Activity.RESULT_CANCELED]
      * or [Activity.RESULT_OK] for deny/allow respectively.
@@ -261,7 +261,7 @@ class MainActivity : AppCompatActivity() {
         if (intent != null) {
             launcher.launch(intent)
         } else {
-            AdVpnService.start(this)
+            DnsNetVpnService.start(this)
         }
     }
 

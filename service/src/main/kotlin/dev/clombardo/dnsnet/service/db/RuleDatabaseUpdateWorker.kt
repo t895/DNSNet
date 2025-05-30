@@ -30,7 +30,7 @@ import dev.clombardo.dnsnet.log.logInfo
 import dev.clombardo.dnsnet.log.logVerbose
 import dev.clombardo.dnsnet.notification.NotificationChannels
 import dev.clombardo.dnsnet.resources.R
-import dev.clombardo.dnsnet.service.vpn.AdVpnService
+import dev.clombardo.dnsnet.service.vpn.DnsNetVpnService
 import dev.clombardo.dnsnet.settings.ConfigurationManager
 import dev.clombardo.dnsnet.settings.Filter
 import kotlinx.atomicfu.atomic
@@ -109,7 +109,7 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
         val end = System.currentTimeMillis()
         logDebug("doWork: end after ${end - start} milliseconds")
 
-        AdVpnService.reloadDatabase(context)
+        DnsNetVpnService.reloadDatabase(context)
 
         postExecute()
 
