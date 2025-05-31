@@ -36,11 +36,6 @@ class RuleDatabaseManager(
     val ruleDatabase = RuleDatabase(ruleDatabaseController)
 
     private suspend fun initialize() = withContext(Dispatchers.IO) {
-        if (destroyed) {
-            logWarning("Tried to initialize destroyed database")
-            return@withContext
-        }
-
         try {
             ruleDatabase.initialize(
                 androidFileHelper = NativeFileHelperWrapper(context),
@@ -65,6 +60,13 @@ class RuleDatabaseManager(
         CoroutineScope(Dispatchers.IO).launch {
             reloadLock.acquire()
             pendingReloadLock.release()
+
+            if (destroyed) {
+                logWarning("Tried to initialize destroyed database")
+                reloadLock.release()
+                return@launch
+            }
+
             if (ruleDatabaseController.isInitialized()) {
                 ruleDatabase.waitOnInit()
             }
