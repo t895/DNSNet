@@ -131,7 +131,13 @@ impl DnsRequester {
                 IpAddr::V4(ipv4_addr) => ipv4_addr.octets().to_vec(),
                 IpAddr::V6(ipv6_addr) => ipv6_addr.octets().to_vec(),
             };
-            output_buffer.push(result_id);
+            output_buffer.insert(0, result_id);
+
+            match result_address {
+                IpAddr::V4(_) => output_buffer.insert(0, 2 + 4),
+                IpAddr::V6(_) => output_buffer.insert(0, 2 + 16),
+            }
+
             if let Ok(mut sender) = pipe.write() {
                 if let Err(error) = sender.write(&output_buffer) {
                     error!(
@@ -304,7 +310,8 @@ pub fn validate_dns_servers(
                 };
                 responses += 1;
 
-                if read == 8 && input_buffer[..read].into_iter().all(|&byte| byte == 0) {
+                let result_slice = &input_buffer[..read];
+                if read == 8 && result_slice.into_iter().all(|&byte| byte == 0) {
                     error!("validate_dns_servers: Got invalid result from pipe");
                     continue 'read;
                 }
@@ -314,21 +321,50 @@ pub fn validate_dns_servers(
                     continue 'read;
                 }
 
-                let result_id = input_buffer[..read].last().unwrap();
-                let dns_requester = match dns_requesters
-                    .iter_mut()
-                    .find(|dns_requester| dns_requester.result_id == *result_id)
-                {
-                    Some(value) => value,
-                    None => {
-                        error!(
-                            "validate_dns_servers: Could not find requester for result id {result_id}"
-                        );
-                        continue 'read;
-                    }
-                };
+                let mut current_index = 0;
+                'process: loop {
+                    let result_size = match result_slice.get(current_index) {
+                        Some(value) => *value as usize,
+                        None => {
+                            error!("validate_dns_servers: Could not get result_size!");
+                            continue 'read;
+                        },
+                    };
 
-                dns_requester.resolved_address = Some(input_buffer[..read - 1].to_vec());
+                    let current_result_slice = match result_slice.get(current_index..current_index + result_size) {
+                        Some(value) => value,
+                        None => {
+                            error!("validate_dns_servers: Could not get current_result_size!");
+                            continue 'read;
+                        },
+                    };
+
+                    let result_id = match current_result_slice.get(1) {
+                        Some(value) => *value,
+                        None => {
+                            error!("validate_dns_servers: Could not get result_id!");
+                            continue 'read;
+                        },
+                    };
+
+                    let dns_requester = match dns_requesters
+                        .iter_mut()
+                        .find(|dns_requester| dns_requester.result_id == result_id) {
+                            Some(value) => value,
+                            None => {
+                                error!(
+                                    "validate_dns_servers: Could not find requester for result id {result_id}"
+                                );
+                                continue 'read;
+                            },
+                    };
+                    dns_requester.resolved_address = Some(current_result_slice[2..].to_vec());
+
+                    current_index += result_size;
+                    if current_index > result_slice.len() - 1 {
+                        break 'process;
+                    }
+                }
             }
         }
     }

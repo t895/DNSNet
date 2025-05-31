@@ -258,10 +258,11 @@ class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
         }
 
         /**
-         * Returns true if the service is running and all of its resources have been loaded
+         * Returns true if the service is [VpnStatus.RUNNING] or will transition to it
          */
         fun isRunning(): Boolean {
-            return status.value == VpnStatus.RUNNING
+            return status.value == VpnStatus.RUNNING || status.value == VpnStatus.RECONNECTING ||
+                    status.value == VpnStatus.STARTING
         }
 
         fun checkStartVpnOnBoot(
@@ -417,13 +418,13 @@ class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
             logDebug(networkState.toString())
 
             // The thread will pause at the start and loop while waiting for a network
-            reconnectVpn()
+            reconnectVpnNetwork()
             return
         }
 
         if (networkState.shouldReconnect(newNetwork, status.value)) {
             logInfo("Default network changed, reconnecting")
-            reconnectVpn()
+            reconnectVpnNetwork()
         }
 
         logDebug("Setting new default network")
@@ -618,11 +619,16 @@ class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
         _status.value = newStatus
     }
 
-    private fun reconnectVpn() {
+    private fun reconnectVpnNetwork() {
         if (status.value != VpnStatus.RUNNING && status.value != VpnStatus.WAITING_FOR_NETWORK) {
+            logDebug("Reconnection rejected. Vpn is either running or waiting for network")
             return
         }
 
+        reconnectVpn()
+    }
+
+    private fun reconnectVpn() {
         logDebug("Reconnecting")
         unregisterConnectivityChangedCallback()
         vpnThread.reconnect()
