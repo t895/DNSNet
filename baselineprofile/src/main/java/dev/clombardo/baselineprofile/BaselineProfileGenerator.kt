@@ -67,31 +67,34 @@ class BaselineProfileGenerator {
 
             val getStarted = By.res(Setup.TEST_TAG_GET_STARTED)
             device.wait(Until.hasObject(getStarted), 5_000)
-            device.findObject(getStarted)?.click()
+            val getStartedObject = device.findObject(getStarted)
+            if (getStartedObject != null) {
+                getStartedObject.click()
 
-            val acknowledgeOne = By.res(Setup.TEST_TAG_ACKNOWLEDGED_ONE)
-            device.wait(Until.hasObject(acknowledgeOne), 5_000)
-            device.findObject(acknowledgeOne)?.click()
+                val acknowledgeOne = By.res(Setup.TEST_TAG_ACKNOWLEDGED_ONE)
+                device.wait(Until.hasObject(acknowledgeOne), 5_000)
+                device.findObject(acknowledgeOne)?.click()
 
-            val acknowledgeTwo = By.res(Setup.TEST_TAG_ACKNOWLEDGED_TWO)
-            device.wait(Until.hasObject(acknowledgeTwo), 5_000)
-            device.findObject(acknowledgeTwo)?.click()
+                val acknowledgeTwo = By.res(Setup.TEST_TAG_ACKNOWLEDGED_TWO)
+                device.wait(Until.hasObject(acknowledgeTwo), 5_000)
+                device.findObject(acknowledgeTwo)?.click()
 
-            val continueButton = By.res(Setup.TEST_TAG_CONTINUE)
-            device.wait(Until.hasObject(continueButton), 5_000)
-            device.findObject(continueButton)?.click()
+                val continueButton = By.res(Setup.TEST_TAG_CONTINUE)
+                device.wait(Until.hasObject(continueButton), 5_000)
+                device.findObject(continueButton)?.click()
 
-            val providerButton = By.res(Presets.TEST_TAG_PROVIDER)
-            device.wait(Until.hasObject(providerButton), 5_000)
-            device.findObject(providerButton)?.click()
+                val providerButton = By.res(Presets.TEST_TAG_PROVIDER)
+                device.wait(Until.hasObject(providerButton), 5_000)
+                device.findObject(providerButton)?.click()
 
-            val providerOptionButton = By.res(Presets.TEST_TAG_PROVIDER_OPTION)
-            device.wait(Until.hasObject(providerOptionButton), 5_000)
-            device.findObject(providerOptionButton)?.click()
+                val providerOptionButton = By.res(Presets.TEST_TAG_PROVIDER_OPTION)
+                device.wait(Until.hasObject(providerOptionButton), 5_000)
+                device.findObject(providerOptionButton)?.click()
 
-            val completeButton = By.res(Presets.TEST_TAG_COMPLETE_BUTTON)
-            device.wait(Until.hasObject(completeButton), 5_000)
-            device.findObject(completeButton)?.click()
+                val completeButton = By.res(Presets.TEST_TAG_COMPLETE_BUTTON)
+                device.wait(Until.hasObject(completeButton), 5_000)
+                device.findObject(completeButton)?.click()
+            }
 
             val startButton = By.res(Start.TEST_TAG_START_BUTTON)
             device.wait(Until.hasObject(startButton), 5_000)
