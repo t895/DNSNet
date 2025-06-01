@@ -60,7 +60,7 @@ jobs:
           ls /dev/kvm
 
       - name: Generate baseline profile
-        run: ./gradlew :app:generateBaselineProfile -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect
+        run: ./gradlew :app:generateBaselineProfile -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect --stacktrace
 
       - name: Commit baseline profile update
         uses: stefanzweifel/git-auto-commit-action@v5
@@ -111,10 +111,10 @@ jobs:
           rustup target add x86_64-linux-android i686-linux-android aarch64-linux-android armv7-linux-androideabi
           export RUSTFLAGS=--remap-path-prefix=$HOME/.cargo=/rust/cargo
           export STORE_TRACK=production
-          ./gradlew :app:assembleRelease
-          ./gradlew :app:buildApksRelease
-          ./gradlew :app:bundleRelease
-          ./gradlew :app:publishReleaseBundle
+          ./gradlew :app:assembleRelease --stacktrace
+          ./gradlew :app:buildApksRelease --stacktrace
+          ./gradlew :app:bundleRelease --stacktrace
+          ./gradlew :app:publishReleaseBundle --stacktrace
 
       - name: Release
         uses: ncipollo/release-action@v1
