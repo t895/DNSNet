@@ -1,0 +1,3 @@
+DNSNet te permite tener un mayor control sobre el tráfico de Internet que entra y sale de tu dispositivo. Puedes descargar archivos host para bloquear un conjunto de dominios maliciosos o publicitarios conocidos y luego crear exenciones cuando lo consideres necesario.
+
+Funciona creando un servicio VPN ligero que filtra tu tráfico de Internet mientras utilizas tu dispositivo. Si alguna vez tienes problemas para conectarte a un sitio o utilizar una aplicación, siempre puedes eximir una aplicación del filtrado o crear una excepción para un dominio específico.
