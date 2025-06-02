@@ -95,7 +95,7 @@ jobs:
           arch: ${{ matrix.arch }}
           profile: Nexus 6
           script: |
-            ./gradlew :app:generateBaselineProfile -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect --stacktrace --info && killall -INT crashpad_handler || true
+            ./gradlew :app:generateBaselineProfile -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect --stacktrace && killall -INT crashpad_handler || true
 
       - name: Commit baseline profile update
         uses: stefanzweifel/git-auto-commit-action@v5
