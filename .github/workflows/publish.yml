@@ -25,9 +25,6 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Gradle cache
-        uses: gradle/actions/setup-gradle@v3
-
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
