@@ -122,12 +122,13 @@ class BaselineProfileGenerator {
                 device.wait(Until.hasObject(saveButton), 5_000)
                 device.findObject(saveButton)!!.click()
 
-                device.waitForIdle()
+                device.wait(Until.gone(saveButton), 5_000)
+                device.pressBack()
                 device.pressBack()
 
                 val tryAgainButton = By.text("Try again")
                 device.wait(Until.hasObject(tryAgainButton), 5_000)
-                device.findObject(tryAgainButton)?.click()
+                device.findObject(tryAgainButton)!!.click()
             }
 
             val vpnOkButton = By.text("OK")
