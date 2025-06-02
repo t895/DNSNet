@@ -8,6 +8,7 @@
 
 package dev.clombardo.baselineprofile
 
+import androidx.benchmark.macro.MacrobenchmarkScope
 import androidx.benchmark.macro.junit4.BaselineProfileRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
@@ -65,85 +66,90 @@ class BaselineProfileGenerator {
             pressHome()
             startActivityAndWait()
 
-            val getStarted = By.res(Setup.TEST_TAG_GET_STARTED)
-            device.wait(Until.hasObject(getStarted), 5_000)
-            val getStartedObject = device.findObject(getStarted)
-            if (getStartedObject != null) {
-                getStartedObject.click()
-
-                val acknowledgeOne = By.res(Setup.TEST_TAG_ACKNOWLEDGED_ONE)
-                device.wait(Until.hasObject(acknowledgeOne), 5_000)
-                device.findObject(acknowledgeOne)?.click()
-
-                val acknowledgeTwo = By.res(Setup.TEST_TAG_ACKNOWLEDGED_TWO)
-                device.wait(Until.hasObject(acknowledgeTwo), 5_000)
-                device.findObject(acknowledgeTwo)?.click()
-
-                val continueButton = By.res(Setup.TEST_TAG_CONTINUE)
-                device.wait(Until.hasObject(continueButton), 5_000)
-                device.findObject(continueButton)?.click()
-
-                val providerButton = By.res(Presets.TEST_TAG_PROVIDER)
-                device.wait(Until.hasObject(providerButton), 5_000)
-                device.findObject(providerButton)?.click()
-
-                val providerOptionButton = By.res(Presets.TEST_TAG_PROVIDER_OPTION)
-                device.wait(Until.hasObject(providerOptionButton), 5_000)
-                device.findObject(providerOptionButton)?.click()
-
-                val completeButton = By.res(Presets.TEST_TAG_COMPLETE_BUTTON)
-                device.wait(Until.hasObject(completeButton), 5_000)
-                device.findObject(completeButton)?.click()
-            }
-
-            val startButton = By.res(Start.TEST_TAG_START_BUTTON)
-            device.wait(Until.hasObject(startButton), 5_000)
-            device.findObject(startButton).clickAndWait(Until.newWindow(), 5_000)
-
-            val missingFiltersButton = By.res(Home.TEST_TAG_IGNORE_MISSING_FILTERS_BUTTON)
-            device.wait(Until.hasObject(missingFiltersButton), 5_000)
-            device.findObject(missingFiltersButton)?.click()
-
-            val openSettingsButton = By.text("Open settings")
-            device.wait(Until.hasObject(openSettingsButton), 5_000)
-            val openSettingsButtonObject = device.findObject(openSettingsButton)
-            if (openSettingsButtonObject != null) {
-                openSettingsButtonObject.click()
-
-                val privateDnsButton = By.text("Private DNS")
-                device.wait(Until.hasObject(privateDnsButton), 5_000)
-                device.findObject(privateDnsButton)!!.click()
-
-                val offButton = By.text("Off")
-                device.wait(Until.hasObject(offButton), 5_000)
-                device.findObject(offButton)!!.click()
-
-                val saveButton = By.text("Save")
-                device.wait(Until.hasObject(saveButton), 5_000)
-                device.findObject(saveButton)!!.click()
-
-                device.wait(Until.gone(saveButton), 5_000)
-                device.pressBack()
-                device.pressBack()
-
-                val tryAgainButton = By.text("Try again")
-                device.wait(Until.hasObject(tryAgainButton), 5_000)
-                device.findObject(tryAgainButton)!!.click()
-            }
-
-            val vpnOkButton = By.text("OK")
-            device.wait(Until.hasObject(vpnOkButton), 5_000)
-            device.findObject(vpnOkButton)?.click()
-
-            val filters = By.res("homeNavigation:Filters")
-            device.wait(Until.hasObject(filters), 5_000)
-            device.findObject(filters).click()
-
-            val apps = By.res("homeNavigation:Apps")
-            device.findObject(apps).click()
-
-            val dns = By.res("homeNavigation:DNS")
-            device.findObject(dns).click()
+            // Full tour disabled due to issues with generation in CI
+            // fullInterfaceTour()
         }
+    }
+
+    fun MacrobenchmarkScope.fullInterfaceTour() {
+        val getStarted = By.res(Setup.TEST_TAG_GET_STARTED)
+        device.wait(Until.hasObject(getStarted), 5_000)
+        val getStartedObject = device.findObject(getStarted)
+        if (getStartedObject != null) {
+            getStartedObject.click()
+
+            val acknowledgeOne = By.res(Setup.TEST_TAG_ACKNOWLEDGED_ONE)
+            device.wait(Until.hasObject(acknowledgeOne), 5_000)
+            device.findObject(acknowledgeOne)?.click()
+
+            val acknowledgeTwo = By.res(Setup.TEST_TAG_ACKNOWLEDGED_TWO)
+            device.wait(Until.hasObject(acknowledgeTwo), 5_000)
+            device.findObject(acknowledgeTwo)?.click()
+
+            val continueButton = By.res(Setup.TEST_TAG_CONTINUE)
+            device.wait(Until.hasObject(continueButton), 5_000)
+            device.findObject(continueButton)?.click()
+
+            val providerButton = By.res(Presets.TEST_TAG_PROVIDER)
+            device.wait(Until.hasObject(providerButton), 5_000)
+            device.findObject(providerButton)?.click()
+
+            val providerOptionButton = By.res(Presets.TEST_TAG_PROVIDER_OPTION)
+            device.wait(Until.hasObject(providerOptionButton), 5_000)
+            device.findObject(providerOptionButton)?.click()
+
+            val completeButton = By.res(Presets.TEST_TAG_COMPLETE_BUTTON)
+            device.wait(Until.hasObject(completeButton), 5_000)
+            device.findObject(completeButton)?.click()
+        }
+
+        val startButton = By.res(Start.TEST_TAG_START_BUTTON)
+        device.wait(Until.hasObject(startButton), 5_000)
+        device.findObject(startButton).clickAndWait(Until.newWindow(), 5_000)
+
+        val missingFiltersButton = By.res(Home.TEST_TAG_IGNORE_MISSING_FILTERS_BUTTON)
+        device.wait(Until.hasObject(missingFiltersButton), 5_000)
+        device.findObject(missingFiltersButton)?.click()
+
+        val openSettingsButton = By.text("Open settings")
+        device.wait(Until.hasObject(openSettingsButton), 5_000)
+        val openSettingsButtonObject = device.findObject(openSettingsButton)
+        if (openSettingsButtonObject != null) {
+            openSettingsButtonObject.click()
+
+            val privateDnsButton = By.text("Private DNS")
+            device.wait(Until.hasObject(privateDnsButton), 5_000)
+            device.findObject(privateDnsButton)!!.click()
+
+            val offButton = By.text("Off")
+            device.wait(Until.hasObject(offButton), 5_000)
+            device.findObject(offButton)!!.click()
+
+            val saveButton = By.text("Save")
+            device.wait(Until.hasObject(saveButton), 5_000)
+            device.findObject(saveButton)!!.click()
+
+            device.wait(Until.gone(saveButton), 5_000)
+            device.pressBack()
+            device.pressBack()
+
+            val tryAgainButton = By.text("Try again")
+            device.wait(Until.hasObject(tryAgainButton), 5_000)
+            device.findObject(tryAgainButton)!!.click()
+        }
+
+        val vpnOkButton = By.text("OK")
+        device.wait(Until.hasObject(vpnOkButton), 5_000)
+        device.findObject(vpnOkButton)?.click()
+
+        val filters = By.res("homeNavigation:Filters")
+        device.wait(Until.hasObject(filters), 5_000)
+        device.findObject(filters).click()
+
+        val apps = By.res("homeNavigation:Apps")
+        device.findObject(apps).click()
+
+        val dns = By.res("homeNavigation:DNS")
+        device.findObject(dns).click()
     }
 }
