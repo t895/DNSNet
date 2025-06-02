@@ -5,14 +5,14 @@ on:
     paths-ignore:
       - '**/baseline-prof.txt'
       - '**/startup-prof.txt'
-      - '/.github/**'
+      - '**/.github/**'
   push:
     branches:
       - a-couple-updates
     paths-ignore:
       - '**/baseline-prof.txt'
       - '**/startup-prof.txt'
-      - '/.github/**'
+      - '**/.github/**'
 
 jobs:
   test:
