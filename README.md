@@ -83,8 +83,15 @@ Here's the related issue - https://github.com/cloudflare/quiche/issues/2020
 
 Add all of the Rust build targets
 ```bash
-rustup target add x86_64-linux-android i686-linux-android aarch64-linux-android armv7-linux-androideabi
+rustup target add x86_64-linux-android aarch64-linux-android armv7-linux-androideabi
 ```
+
+Add a `ANDROID_NDK_HOME` environment variable that points to `.../<Current NDK version>`
+
+Android Studio *will* be picky about where you declare the variable. On Ubuntu I added it to my
+`/etc/environment` file and on macOS I added it to my `~/.zprofile` file.
+
+Install `cmake` and `make`
 
 Then run this in the root of the project to build the app
 ```bash
