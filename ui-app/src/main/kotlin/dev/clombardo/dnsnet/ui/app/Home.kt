@@ -48,6 +48,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -90,6 +91,7 @@ import dev.clombardo.dnsnet.ui.common.plus
 import dev.clombardo.dnsnet.ui.common.theme.DefaultFabSize
 import dev.clombardo.dnsnet.ui.common.theme.FabPadding
 import dev.clombardo.dnsnet.ui.common.theme.ListPadding
+import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 
@@ -221,7 +223,7 @@ fun App(
     state: FabState,
     isDatabaseRefreshing: Boolean,
     onRefreshFilters: () -> Unit,
-    onLoadDefaults: () -> Unit,
+    onSetupComplete: suspend () -> Unit,
     onImport: () -> Unit,
     onExport: () -> Unit,
     onShareLogcat: () -> Unit,
@@ -329,15 +331,19 @@ fun App(
 
     val showResetSettingsWarningDialog by vm.showResetSettingsWarningDialog.collectAsState()
     if (showResetSettingsWarningDialog) {
+        val loadDefaultsCoroutineScope = rememberCoroutineScope()
         BasicDialog(
             title = stringResource(R.string.warning),
             text = stringResource(R.string.reset_settings_warning_description),
             primaryButton = DialogButton(
                 text = stringResource(R.string.reset),
                 onClick = {
-                    onLoadDefaults()
-                    vm.onDismissResetSettingsDialog()
-                    onReloadVpn()
+                    loadDefaultsCoroutineScope.launch {
+                        vm.settings.loadDefaultUserConfiguration {
+                            vm.onDismissResetSettingsDialog()
+                            onReloadVpn()
+                        }
+                    }
                 },
             ),
             secondaryButton = DialogButton(
@@ -379,6 +385,7 @@ fun App(
             }
             composable<TopLevelDestination.Presets> { backstackEntry ->
                 val route = backstackEntry.toRoute<TopLevelDestination.Presets>()
+                val updateCoroutineScope = rememberCoroutineScope()
                 PresetsScreen(
                     canGoBack = route.canGoBack,
                     onNavigateUp = { navController.tryPopBackstack(backstackEntry.id) },
@@ -390,6 +397,9 @@ fun App(
                         } else {
                             vm.preferences.SetupComplete = true
                             navController.popNavigate(TopLevelDestination.Home)
+                            updateCoroutineScope.launch {
+                                onSetupComplete()
+                            }
                         }
                     },
                 )
@@ -588,7 +598,7 @@ fun AppPreview() {
         state = FabState.Inactive,
         isDatabaseRefreshing = false,
         onRefreshFilters = {},
-        onLoadDefaults = {},
+        onSetupComplete = {},
         onImport = {},
         onExport = {},
         onShareLogcat = {},
@@ -676,7 +686,7 @@ fun HomeScreen(
                                 if (currentDestination == HomeDestinations.Filters) {
                                     expanded = it
                                 } else if (currentDestination == HomeDestinations.DNS) {
-                                    when (vm.configuration.read { dnsServers.type }) {
+                                    when (vm.settings.dnsServers.type.get()) {
                                         DnsServerType.Standard -> topLevelNavController.navigate(
                                             DnsServer()
                                         )
@@ -772,12 +782,8 @@ fun HomeScreen(
             popExitTransition = Home.NavigationExitTransition,
         ) {
             composable<HomeDestinations.Start> {
-                var resumeOnStartupToggle by remember {
-                    mutableStateOf(vm.configuration.read { autoStart })
-                }
-                var blockLogToggle by remember {
-                    mutableStateOf(vm.configuration.read { blockLogging })
-                }
+                val resumeOnStartup by vm.settings.autoStart.collectAsState()
+                val blockLog by vm.settings.blockLogging.collectAsState()
 
                 val showDisableBlockLogWarningDialog by vm.showDisableBlockLogWarningDialog.collectAsState()
                 if (showDisableBlockLogWarningDialog) {
@@ -787,11 +793,7 @@ fun HomeScreen(
                         primaryButton = DialogButton(
                             text = stringResource(R.string.disable),
                             onClick = {
-                                vm.onClearBlockLog()
-                                vm.configuration.edit {
-                                    blockLogging = false
-                                }
-                                blockLogToggle = false
+                                vm.onDisableBlockLog()
                                 onReloadVpn()
                                 vm.onDismissDisableBlockLogWarning()
                             },
@@ -808,22 +810,16 @@ fun HomeScreen(
                 StartScreen(
                     contentPadding = contentPadding,
                     listState = startListState,
-                    resumeOnStartup = resumeOnStartupToggle,
+                    resumeOnStartup = resumeOnStartup,
                     onResumeOnStartupClick = {
-                        vm.configuration.edit {
-                            autoStart = !autoStart
-                            resumeOnStartupToggle = autoStart
-                        }
+                        vm.settings.autoStart.set(!resumeOnStartup)
                     },
-                    blockLog = blockLogToggle,
+                    blockLog = blockLog,
                     onToggleBlockLog = {
-                        if (blockLogToggle) {
+                        if (blockLog) {
                             vm.onDisableBlockLogWarning()
                         } else {
-                            vm.configuration.edit {
-                                blockLogging = !blockLogging
-                                blockLogToggle = blockLogging
-                            }
+                            vm.settings.blockLogging.set(true)
                             onReloadVpn()
                         }
                     },
@@ -841,21 +837,19 @@ fun HomeScreen(
                 )
             }
             composable<HomeDestinations.Filters> {
-                var refreshDaily by remember {
-                    mutableStateOf(vm.configuration.read { filters.automaticRefresh })
-                }
+                val refreshDaily by vm.settings.filters.automaticRefresh.collectAsState()
+                val filterFiles = vm.settings.filters.files.asList()
+                val singleFilters = vm.settings.filters.singles.asList()
                 FiltersScreen(
                     contentPadding = contentPadding,
                     listState = filterListState,
                     refreshDaily = refreshDaily,
                     onRefreshDailyClick = {
-                        vm.configuration.edit {
-                            filters.automaticRefresh = !filters.automaticRefresh
-                            refreshDaily = filters.automaticRefresh
-                        }
+                        vm.settings.filters.automaticRefresh.set(!refreshDaily)
                         onUpdateRefreshWork()
                     },
-                    filters = vm.filters,
+                    filterFiles = filterFiles,
+                    singleFilters = singleFilters,
                     onFilterClick = { filter ->
                         topLevelNavController.navigate(filter)
                     },
@@ -875,9 +869,8 @@ fun HomeScreen(
 
             composable<HomeDestinations.Apps> {
                 val isRefreshing by vm.appListRefreshing.collectAsState()
-                var allowlistDefault by remember {
-                    mutableStateOf(vm.configuration.read { appList.defaultMode })
-                }
+                val allowlistDefault by vm.settings.appList.defaultMode.collectAsState()
+                val appList by vm.appList.collectAsState()
                 AppsScreen(
                     contentPadding = contentPadding + PaddingValues(ListPadding),
                     listState = appListState,
@@ -886,60 +879,46 @@ fun HomeScreen(
                     onRefresh = { vm.populateAppList() },
                     bypassSelection = allowlistDefault,
                     onBypassSelection = { selection ->
-                        vm.configuration.edit {
-                            appList.defaultMode = selection
-                        }
-                        allowlistDefault = selection
+                        vm.settings.appList.defaultMode.set(selection)
                         onReloadVpn()
                         vm.populateAppList()
                     },
-                    apps = vm.appList,
+                    apps = appList,
                     onAppClick = { app, enabled ->
                         vm.onToggleApp(app, enabled)
                         onReloadVpn()
                     },
                 )
             }
+
             composable<HomeDestinations.DNS> {
-                var customDnsServers by remember {
-                    mutableStateOf(vm.configuration.read { dnsServers.enabled })
-                }
-                var type by remember {
-                    mutableStateOf(vm.configuration.read { dnsServers.type })
-                }
-                var useNetworkDnsServers by remember {
-                    mutableStateOf(vm.configuration.read { useNetworkDnsServers })
-                }
+                val customDnsServers by vm.settings.dnsServers.enabled.collectAsState()
+                val dnsServers = vm.settings.dnsServers.items.asList()
+                val type by vm.settings.dnsServers.type.collectAsState()
+                val useNetworkDnsServers by vm.settings.useNetworkDnsServers.collectAsState()
                 DnsScreen(
                     contentPadding = contentPadding + PaddingValues(ListPadding) +
                             PaddingValues(bottom = DefaultFabSize + FabPadding),
                     listState = dnsListState,
-                    servers = vm.dnsServers,
+                    servers = dnsServers,
                     customDnsServers = customDnsServers,
                     onCustomDnsServersClick = {
-                        vm.configuration.edit {
-                            dnsServers.enabled = !dnsServers.enabled
-                            customDnsServers = dnsServers.enabled
-                        }
+                        vm.settings.dnsServers.enabled.set(!customDnsServers)
                         onReloadVpn()
                     },
                     useNetworkDnsServers = useNetworkDnsServers,
                     onUseNetworkDnsServersClick = {
-                        vm.configuration.edit {
-                            this.useNetworkDnsServers = !useNetworkDnsServers
-                            useNetworkDnsServers = this.useNetworkDnsServers
-                        }
+                        vm.settings.useNetworkDnsServers.set(!useNetworkDnsServers)
                         onReloadVpn()
                     },
                     doh3Support = type == DnsServerType.DoH3,
                     onDoh3SupportClick = {
-                        vm.configuration.edit {
-                            this.dnsServers.type = when (this.dnsServers.type) {
+                        vm.settings.dnsServers.type.set(
+                            when (type) {
                                 DnsServerType.Standard -> DnsServerType.DoH3
                                 DnsServerType.DoH3 -> DnsServerType.Standard
                             }
-                            type = this.dnsServers.type
-                        }
+                        )
                         onReloadVpn()
                     },
                     onItemClick = { item ->

@@ -9,6 +9,7 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlinx.atomicfu)
@@ -29,6 +30,10 @@ android {
     buildTypes {
         create("benchmark")
     }
+
+    buildFeatures {
+        compose = true
+    }
 }
 
 kotlin {
@@ -43,6 +48,7 @@ dependencies {
     implementation(libs.atomicfu)
 
     implementation(libs.hilt)
+    implementation(libs.androidx.runtime.android)
     ksp(libs.hilt.compiler)
 
     implementation(project(":log"))

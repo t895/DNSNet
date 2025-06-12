@@ -10,6 +10,7 @@ package dev.clombardo.dnsnet
 
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
+import androidx.work.Configuration
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
@@ -17,27 +18,16 @@ import coil3.disk.directory
 import coil3.memory.MemoryCache
 import dagger.hilt.android.HiltAndroidApp
 import dev.clombardo.dnsnet.notification.NotificationChannels
-import dev.clombardo.dnsnet.service.FilterUtil
-import dev.clombardo.dnsnet.service.db.RuleDatabaseUpdateWorker
-import dev.clombardo.dnsnet.settings.Configuration
-import dev.clombardo.dnsnet.settings.ConfigurationManager
 import dev.clombardo.dnsnet.settings.Preferences
 import dev.clombardo.dnsnet.ui.app.coil.AppImageFetcher
 import dev.clombardo.dnsnet.ui.app.coil.AppImageKeyer
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import uniffi.net.rustInit
-import java.io.File
 import javax.inject.Inject
 
 @HiltAndroidApp
-class DnsNetApplication : Application(), androidx.work.Configuration.Provider {
+class DnsNetApplication : Application(), Configuration.Provider {
     @Inject
     lateinit var preferences: Preferences
-
-    @Inject
-    lateinit var configuration: ConfigurationManager
 
     override fun onCreate() {
         super.onCreate()
@@ -70,19 +60,13 @@ class DnsNetApplication : Application(), androidx.work.Configuration.Provider {
         if (preferences.NotificationPermissionActedUpon) {
             preferences.SetupComplete = true
         }
-
-        CoroutineScope(Dispatchers.IO).launch {
-            if (!FilterUtil.areFilterFilesExistent(this@DnsNetApplication, configuration)) {
-                RuleDatabaseUpdateWorker.runNow(this@DnsNetApplication)
-            }
-        }
     }
 
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 
-    override val workManagerConfiguration: androidx.work.Configuration
-        get() = androidx.work.Configuration.Builder()
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
             .build()
 }

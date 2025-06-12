@@ -40,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -66,6 +67,7 @@ import dev.clombardo.dnsnet.service.vpn.DnsNetVpnService
 import dev.clombardo.dnsnet.ui.app.App
 import dev.clombardo.dnsnet.ui.app.viewmodel.HomeViewModel
 import dev.clombardo.dnsnet.ui.common.theme.DnsNetTheme
+import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
 @AndroidEntryPoint
@@ -84,37 +86,22 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
             DnsNetTheme {
+                val saveSettingsCoroutineScope = rememberCoroutineScope()
                 val importLauncher =
                     rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
                         it ?: return@rememberLauncherForActivityResult
-                        try {
-                            vm.configuration.replaceInstance(contentResolver.openInputStream(it)!!)
-                        } catch (e: Exception) {
-                            logDebug("Cannot read file", e)
-                            Toast.makeText(
-                                this,
-                                "Cannot read file: ${e.message}",
-                                Toast.LENGTH_SHORT,
-                            ).show()
+                        saveSettingsCoroutineScope.launch {
+                            vm.settings.replaceUserConfiguration(this@MainActivity, it) {
+                                DnsNetVpnService.reconnect(this@MainActivity)
+                            }
                         }
-                        vm.onReloadSettings()
-                        DnsNetVpnService.reconnect(this)
-                        recreate()
                     }
 
                 val exportLauncher =
                     rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("*/*")) { uri ->
                         uri ?: return@rememberLauncherForActivityResult
-                        try {
-                            contentResolver.openOutputStream(uri).use {
-                                vm.configuration.saveOut(it!!)
-                            }
-                        } catch (e: Exception) {
-                            Toast.makeText(
-                                this,
-                                "Cannot write file: ${e.message}",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                        saveSettingsCoroutineScope.launch {
+                            vm.settings.saveOutUserConfiguration(this@MainActivity, uri)
                         }
                     }
 
@@ -149,10 +136,10 @@ class MainActivity : AppCompatActivity() {
                         state = status.toFabState(),
                         isDatabaseRefreshing = isDatabaseRefreshing,
                         onRefreshFilters = { RuleDatabaseUpdateWorker.runNow(this@MainActivity) },
-                        onLoadDefaults = {
-                            vm.configuration.resetInstance()
-                            vm.onReloadSettings()
-                            recreate()
+                        onSetupComplete = {
+                            if (!FilterUtil.areFilterFilesExistent(this@MainActivity, vm.settings)) {
+                                RuleDatabaseUpdateWorker.runNow(this@MainActivity)
+                            }
                         },
                         onImport = { importLauncher.launch(arrayOf("*/*")) },
                         onExport = { exportLauncher.launch("dnsnet.json") },
@@ -218,7 +205,7 @@ class MainActivity : AppCompatActivity() {
                 vm.onPrivateDnsEnabledWarning()
                 return
             }
-            if (!FilterUtil.areFilterFilesExistent(this, vm.configuration) && hostsCheck) {
+            if (!FilterUtil.areFilterFilesExistent(this, vm.settings) && hostsCheck) {
                 vm.onFilterFilesNotFound()
                 return
             }
@@ -267,7 +254,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateRefreshWork() {
         val workManager = WorkManager.getInstance(this)
-        if (vm.configuration.read { filters.automaticRefresh }) {
+        if (vm.settings.filters.automaticRefresh.get()) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.UNMETERED)
                 .setRequiresDeviceIdle(true)

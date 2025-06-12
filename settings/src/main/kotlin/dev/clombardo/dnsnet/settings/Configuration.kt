@@ -91,9 +91,9 @@ class ConfigurationManager(
         saveAsync()
     }
 
-    fun <T> read(block: ImmutableConfiguration.() -> T): T =
+    fun <T> read(block: Configuration.() -> T): T =
         synchronized(configLock) {
-            block(ImmutableConfiguration(configuration))
+            block(configuration.copy())
         }
 
     fun saveOut(writer: OutputStream): Result<Unit> =
@@ -241,28 +241,12 @@ data class Configuration(
     }
 }
 
-@JvmInline
-value class ImmutableConfiguration(private val config: Configuration) {
-    val version get() = config.version
-    val minorVersion get() = config.minorVersion
-    val autoStart get() = config.autoStart
-    val filters get() = config.filters.asImmutable()
-    val dnsServers get() = config.dnsServers.asImmutable()
-    val appList get() = config.appList.asImmutable()
-    val showNotification get() = config.showNotification
-    val nightMode get() = config.nightMode
-    val watchDog get() = config.watchDog
-    val ipV6Support get() = config.ipV6Support
-    val blockLogging get() = config.blockLogging
-    val useNetworkDnsServers get() = config.useNetworkDnsServers
-}
-
 @Serializable
 data class AppList(
     var showSystemApps: Boolean = false,
     var defaultMode: AllowListMode = AllowListMode.ON_VPN,
-    var onVpn: MutableList<String> = mutableListOf(),
-    var notOnVpn: MutableList<String> = mutableListOf(),
+    var onVpn: MutableSet<String> = mutableSetOf(),
+    var notOnVpn: MutableSet<String> = mutableSetOf(),
 ) {
     /**
      * Categorizes all packages in the system into an allowlist
@@ -325,28 +309,6 @@ data class AppList(
      */
     fun newBrowserIntent(): Intent =
         Intent(Intent.ACTION_VIEW).setData("https://isabrowser.dnsnet.t895.com/".toUri())
-
-    fun asImmutable(): ImmutableAppList = ImmutableAppList(this)
-}
-
-@JvmInline
-value class ImmutableAppList(private val appList: AppList) {
-    val showSystemApps get() = appList.showSystemApps
-    val defaultMode get() = appList.defaultMode
-    val onVpn get() = appList.onVpn.toList()
-    val notOnVpn get() = appList.notOnVpn.toList()
-
-    fun resolve(
-        selfPackageName: String,
-        pm: PackageManager,
-        totalOnVpn: MutableSet<String>,
-        totalNotOnVpn: MutableSet<String>,
-    ) = appList.resolve(
-        selfPackageName,
-        pm,
-        totalOnVpn,
-        totalNotOnVpn,
-    )
 }
 
 // DO NOT change the order of these states. They correspond to UI functionality.
@@ -421,19 +383,7 @@ data class Filters(
     @SerialName("items") var files: MutableList<FilterFile> = mutableListOf(),
     @SerialName("exceptions") var singleFilters: MutableList<SingleFilter> = mutableListOf(),
 ) {
-    fun getAllFilters(): List<Filter> = files + singleFilters
-
-    fun asImmutable(): ImmutableFilters = ImmutableFilters(this)
-}
-
-@JvmInline
-value class ImmutableFilters(private val filters: Filters) {
-    val enabled get() = this@ImmutableFilters.filters.enabled
-    val automaticRefresh get() = this@ImmutableFilters.filters.automaticRefresh
-    val files get() = this@ImmutableFilters.filters.files.toList()
-    val singleFilters get() = this@ImmutableFilters.filters.singleFilters.toList()
-
-    fun getAllFilters(): List<Filter> = this@ImmutableFilters.filters.getAllFilters()
+    fun getAllFilters(): MutableList<Filter> = (files + singleFilters).toMutableList()
 }
 
 @Serializable
@@ -442,8 +392,6 @@ data class DnsServers(
     var type: DnsServerType = DnsServerType.Standard,
     var items: MutableList<DnsServer> = defaultServers.toMutableList(),
 ) {
-    fun asImmutable(): ImmutableDnsServers = ImmutableDnsServers(this)
-
     companion object {
         val defaultServers = listOf(
             DnsServer(
@@ -478,13 +426,6 @@ data class DnsServers(
             ),
         )
     }
-}
-
-@JvmInline
-value class ImmutableDnsServers(private val dnsServers: DnsServers) {
-    val enabled get() = dnsServers.enabled
-    val type get() = dnsServers.type
-    val items get() = dnsServers.items.toList()
 }
 
 // DO NOT change the order of these states. They correspond to UI functionality.
