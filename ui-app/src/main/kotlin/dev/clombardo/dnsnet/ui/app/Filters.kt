@@ -52,6 +52,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -119,7 +120,8 @@ fun FiltersScreen(
     listState: LazyListState = rememberLazyListState(),
     refreshDaily: Boolean,
     onRefreshDailyClick: () -> Unit,
-    filters: List<Filter>,
+    filterFiles: List<FilterFile>,
+    singleFilters: List<SingleFilter>,
     onFilterClick: (Filter) -> Unit,
     onFilterStateChanged: (Filter) -> Unit,
     isRefreshingFilters: Boolean,
@@ -134,6 +136,13 @@ fun FiltersScreen(
             FilterState.ALLOW -> itemStateStrings[1]
         }
     }
+
+    val filters by remember(filterFiles, singleFilters) {
+        derivedStateOf {
+            filterFiles + singleFilters
+        }
+    }
+
     LazyColumn(
         modifier = modifier,
         contentPadding = contentPadding + PaddingValues(ListPadding) +
@@ -281,7 +290,7 @@ fun FiltersScreen(
 @Preview
 @Composable
 private fun FiltersScreenPreview() {
-    val items = buildList {
+    val filterFiles = buildList {
         val item1 = FilterFile()
         item1.title = "StevenBlack's hosts file"
         item1.data = "https://url.to.hosts.file.com/"
@@ -301,13 +310,34 @@ private fun FiltersScreenPreview() {
         add(item3)
     }
 
+    val singleFilters = buildList {
+        val item1 = SingleFilter()
+        item1.title = "StevenBlack's hosts file"
+        item1.data = "https://url.to.hosts.file.com/"
+        item1.state = FilterState.IGNORE
+        add(item1)
+
+        val item2 = SingleFilter()
+        item2.title = "StevenBlack's hosts file"
+        item2.data = "https://url.to.hosts.file.com/"
+        item2.state = FilterState.DENY
+        add(item2)
+
+        val item3 = SingleFilter()
+        item3.title = "StevenBlack's hosts file"
+        item3.data = "https://url.to.hosts.file.com/"
+        item3.state = FilterState.ALLOW
+        add(item3)
+    }
+
     var isRefreshingFilters by remember { mutableStateOf(false) }
     DnsNetTheme {
         FiltersScreen(
             modifier = Modifier.background(MaterialTheme.colorScheme.surface),
             refreshDaily = false,
             onRefreshDailyClick = {},
-            filters = items,
+            filterFiles = filterFiles,
+            singleFilters = singleFilters,
             onFilterClick = {},
             onFilterStateChanged = {},
             isRefreshingFilters = isRefreshingFilters,
@@ -326,7 +356,8 @@ private fun FiltersScreenNoBlockItemsPreview() {
             modifier = Modifier.background(MaterialTheme.colorScheme.surface),
             refreshDaily = false,
             onRefreshDailyClick = {},
-            filters = listOf(),
+            filterFiles = listOf(),
+            singleFilters = listOf(),
             onFilterClick = {},
             onFilterStateChanged = {},
             isRefreshingFilters = isRefreshingFilterFiles,

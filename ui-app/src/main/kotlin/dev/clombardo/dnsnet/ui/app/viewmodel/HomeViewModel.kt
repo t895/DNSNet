@@ -13,7 +13,6 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.net.Uri
 import android.widget.Toast
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -23,25 +22,25 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.clombardo.dnsnet.blocklogger.BlockLogger
 import dev.clombardo.dnsnet.blocklogger.LoggedConnection
 import dev.clombardo.dnsnet.log.logDebug
-import dev.clombardo.dnsnet.log.logWarning
 import dev.clombardo.dnsnet.settings.BlockList
-import dev.clombardo.dnsnet.settings.Configuration
-import dev.clombardo.dnsnet.settings.ConfigurationManager
 import dev.clombardo.dnsnet.settings.DnsServer
 import dev.clombardo.dnsnet.settings.Filter
-import dev.clombardo.dnsnet.settings.SingleFilter
 import dev.clombardo.dnsnet.settings.FilterFile
 import dev.clombardo.dnsnet.settings.FilterState
 import dev.clombardo.dnsnet.settings.Preferences
+import dev.clombardo.dnsnet.settings.Settings
+import dev.clombardo.dnsnet.settings.SingleFilter
 import dev.clombardo.dnsnet.ui.app.R
 import dev.clombardo.dnsnet.ui.app.model.AppData
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.BufferedReader
-import java.io.File
 import java.io.InputStreamReader
 import javax.inject.Inject
 
@@ -50,7 +49,7 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     @ApplicationContext val context: Context,
-    val configuration: ConfigurationManager,
+    val settings: Settings,
     val preferences: Preferences,
     val blockLogger: BlockLogger,
 ) : ViewModel() {
@@ -64,14 +63,36 @@ class HomeViewModel @Inject constructor(
     private val _appListRefreshing = MutableStateFlow(false)
     val appListRefreshing = _appListRefreshing.asStateFlow()
 
-    private val _appList = mutableStateListOf<AppData>()
-    val appList: List<AppData> = _appList
+    private val applicationInfoList = MutableStateFlow<List<ApplicationInfo>>(emptyList())
 
-    private val _filters = mutableStateListOf<Filter>()
-    val filters: List<Filter> = _filters
-
-    private val _dnsServers = mutableStateListOf<DnsServer>()
-    val dnsServers: List<DnsServer> = _dnsServers
+    val appList = combine(
+        flow = settings.appList.onVpn.asStateFlow(),
+        flow2 = settings.appList.notOnVpn.asStateFlow(),
+        flow3 = applicationInfoList
+    ) { onVpn, notOnVpn, applicationInfoList ->
+        println(onVpn)
+        println(notOnVpn)
+        val notOnVpn = HashSet<String>()
+        val pm = context.packageManager
+        settings.appList.resolve(context.packageName, pm, HashSet(), notOnVpn)
+        val newList = mutableListOf<AppData>()
+        applicationInfoList.forEach {
+            newList.add(
+                AppData(
+                    packageManager = pm,
+                    info = it,
+                    label = it.loadLabel(pm).toString(),
+                    enabled = notOnVpn.contains(it.packageName),
+                    isSystem = (it.flags and ApplicationInfo.FLAG_SYSTEM) != 0,
+                )
+            )
+        }
+        return@combine newList.toList()
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = emptyList()
+    )
 
     private val _showFilterFilesNotFoundDialog = MutableStateFlow(false)
     val showFilterFilesNotFoundDialog = _showFilterFilesNotFoundDialog.asStateFlow()
@@ -117,9 +138,6 @@ class HomeViewModel @Inject constructor(
             _connectionsLog[name] = connection
         }
         populateAppList()
-
-        _filters.addAll(configuration.read { filters.getAllFilters() })
-        _dnsServers.addAll(configuration.read { dnsServers.items })
     }
 
     override fun onCleared() {
@@ -148,25 +166,14 @@ class HomeViewModel @Inject constructor(
 
         val pm = context.packageManager
         viewModelScope.launch(Dispatchers.IO) {
-            val entries = ArrayList<AppData>()
-            val notOnVpn = HashSet<String>()
-            configuration.read { appList.resolve(context.packageName, pm, HashSet(), notOnVpn) }
+            val entries = ArrayList<ApplicationInfo>()
             pm.getInstalledApplications(0).forEach {
                 if (it.packageName != context.packageName) {
-                    entries.add(
-                        AppData(
-                            packageManager = pm,
-                            info = it,
-                            label = it.loadLabel(pm).toString(),
-                            enabled = notOnVpn.contains(it.packageName),
-                            isSystem = (it.flags and ApplicationInfo.FLAG_SYSTEM) != 0,
-                        )
-                    )
+                    entries.add(it)
                 }
             }
 
-            _appList.clear()
-            _appList.addAll(entries)
+            applicationInfoList.value = entries
             _appListRefreshing.value = false
             refreshingLock = false
             Runtime.getRuntime().gc()
@@ -182,17 +189,11 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun addFilterFile(filter: FilterFile) {
-        configuration.edit {
-            filters.files.add(filter)
-        }
-        _filters.add(filter)
+        settings.filters.files.add(filter)
     }
 
     private fun addSingleFilter(filter: SingleFilter) {
-        configuration.edit {
-            filters.singleFilters.add(filter)
-        }
-        _filters.add(filter)
+        settings.filters.singles.add(filter)
     }
 
     fun addFilter(filter: Filter) {
@@ -203,27 +204,11 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun removeFilterFile(filter: FilterFile) {
-        if (configuration.read { !this.filters.files.contains(filter) }) {
-            logWarning("Tried to remove filter that does not exist in config! - $filter")
-            return
-        }
-
-        configuration.edit {
-            filters.files.remove(filter)
-        }
-        _filters.remove(filter)
+        settings.filters.files.remove(filter)
     }
 
     private fun removeSingleFilter(filter: SingleFilter) {
-        if (configuration.read { !filters.singleFilters.contains(filter) }) {
-            logWarning("Tried to remove filter that does not exist in config! - $filter")
-            return
-        }
-
-        configuration.edit {
-            filters.singleFilters.remove(filter)
-        }
-        _filters.remove(filter)
+        settings.filters.singles.remove(filter)
     }
 
     fun removeFilter(filter: Filter) {
@@ -234,31 +219,11 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun replaceFilterFile(oldFilter: FilterFile, newFilter: FilterFile) {
-        if (configuration.read { !this.filters.files.contains(oldFilter) }) {
-            logWarning("Tried to replace filter that does not exist in config! - $oldFilter")
-            return
-        }
-
-        configuration.edit {
-            val oldIndex = filters.files.indexOf(oldFilter)
-            filters.files[oldIndex] = newFilter
-        }
-        val oldStateIndex = _filters.indexOf(oldFilter)
-        _filters[oldStateIndex] = newFilter
+        settings.filters.files.replace(oldFilter, newFilter)
     }
 
     private fun replaceSingleFilter(oldFilter: SingleFilter, newFilter: SingleFilter) {
-        if (configuration.read { !filters.singleFilters.contains(oldFilter) }) {
-            logWarning("Tried to replace filter that does not exist in config! - $oldFilter")
-            return
-        }
-
-        configuration.edit {
-            val oldIndex = filters.singleFilters.indexOf(oldFilter)
-            filters.singleFilters[oldIndex] = newFilter
-        }
-        val oldStateIndex = _filters.indexOf(oldFilter)
-        _filters[oldStateIndex] = newFilter
+        settings.filters.singles.replace(oldFilter, newFilter)
     }
 
     fun replaceFilter(oldFilter: Filter, newFilter: Filter) {
@@ -302,76 +267,38 @@ class HomeViewModel @Inject constructor(
     }
 
     fun addDnsServer(server: DnsServer) {
-        configuration.edit {
-            dnsServers.items.add(server)
-        }
-        _dnsServers.add(server)
+        settings.dnsServers.items.add(server)
     }
 
     fun removeDnsServer(server: DnsServer) {
-        if (configuration.read { !dnsServers.items.contains(server) }) {
-            logWarning("Tried to remove DnsServer that does not exist in config! - $server")
-            return
-        }
-
-        configuration.edit {
-            dnsServers.items.remove(server)
-        }
-        _dnsServers.remove(server)
+        settings.dnsServers.items.remove(server)
     }
 
     fun replaceDnsServer(
         oldServer: DnsServer,
         newDnsServer: DnsServer
     ) {
-        if (configuration.read { !dnsServers.items.contains(oldServer) }) {
-            logWarning("Tried to replace DNS server that does not exist in config! - $oldServer")
-            return
-        }
-
-        configuration.edit {
-            val oldIndex = dnsServers.items.indexOf(oldServer)
-            dnsServers.items[oldIndex] = newDnsServer
-        }
-        val oldStateIndex = _dnsServers.indexOf(oldServer)
-        _dnsServers[oldStateIndex] = newDnsServer
+        settings.dnsServers.items.replace(oldServer, newDnsServer)
     }
 
     fun toggleDnsServer(server: DnsServer) {
-        val newServer = server.copy()
-        newServer.enabled = !newServer.enabled
+        val newServer = server.copy(enabled = !server.enabled)
         replaceDnsServer(server, newServer)
     }
 
-    fun onReloadSettings() {
-        populateAppList()
-        _filters.clear()
-        _dnsServers.clear()
-        configuration.read {
-            _filters.addAll(filters.getAllFilters())
-            _dnsServers.addAll(dnsServers.items)
-            if (!blockLogging) {
-                blockLogger.clear(context)
-            }
-        }
-    }
-
     fun onToggleApp(app: AppData, enabled: Boolean) {
-        if (!appList.contains(app)) {
-            logWarning("Tried to toggle app that does not exist in list! - $app")
-            return
-        }
         app.enabled = enabled
-
-        configuration.edit {
-            if (enabled) {
-                appList.notOnVpn.add(app.info.packageName)
-                appList.onVpn.remove(app.info.packageName)
-            } else {
-                appList.notOnVpn.remove(app.info.packageName)
-                appList.onVpn.add(app.info.packageName)
-            }
+        val notOnVpn = settings.appList.notOnVpn.get().toMutableSet()
+        val onVpn = settings.appList.onVpn.get().toMutableSet()
+        if (enabled) {
+            notOnVpn.add(app.info.packageName)
+            onVpn.remove(app.info.packageName)
+        } else {
+            notOnVpn.remove(app.info.packageName)
+            onVpn.add(app.info.packageName)
         }
+        settings.appList.notOnVpn.set(notOnVpn)
+        settings.appList.onVpn.set(onVpn)
     }
 
     fun onFilePermissionDenied() {
@@ -430,7 +357,8 @@ class HomeViewModel @Inject constructor(
         _showDeleteFilterWarningDialog.value = false
     }
 
-    fun onClearBlockLog() {
+    fun onDisableBlockLog() {
+        settings.blockLogging.set(false)
         _connectionsLog.clear()
         blockLogger.clear(context)
     }
@@ -477,22 +405,18 @@ class HomeViewModel @Inject constructor(
     }
 
     fun addBlockLists(lists: List<BlockList>) {
-        configuration.edit {
-            lists.forEach { blockList ->
-                val listUrl = context.getString(blockList.urlResId)
-                if (this.filters.files.firstOrNull { it.data == listUrl } == null) {
-                    this.filters.files.add(
-                        FilterFile(
-                            title = context.getString(blockList.titleResId),
-                            data = listUrl,
-                            state = FilterState.DENY,
-                        )
+        lists.forEach { blockList ->
+            val listUrl = context.getString(blockList.urlResId)
+            if (settings.filters.files.get().firstOrNull { it.data == listUrl } == null) {
+                settings.filters.files.add(
+                    FilterFile(
+                        title = context.getString(blockList.titleResId),
+                        data = listUrl,
+                        state = FilterState.DENY,
                     )
-                }
+                )
             }
         }
-        _filters.clear()
-        _filters.addAll(configuration.read { filters.getAllFilters() })
     }
 
     fun hasCompletedEmptyConfigMigration(): Boolean {

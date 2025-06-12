@@ -11,9 +11,9 @@ package dev.clombardo.dnsnet.service
 import android.content.Context
 import dev.clombardo.dnsnet.file.FileHelper
 import dev.clombardo.dnsnet.log.logInfo
-import dev.clombardo.dnsnet.settings.ConfigurationManager
 import dev.clombardo.dnsnet.settings.Filter
 import dev.clombardo.dnsnet.settings.FilterState
+import dev.clombardo.dnsnet.settings.Settings
 import uniffi.net.NativeFilter
 import uniffi.net.NativeFilterState
 import java.io.IOException
@@ -24,22 +24,20 @@ object FilterUtil {
      *
      * @return true if all filter files exist or no filter files were configured.
      */
-    fun areFilterFilesExistent(context: Context, configuration: ConfigurationManager): Boolean {
-        return configuration.read {
-            for (item in this.filters.files) {
-                if (item.state != FilterState.IGNORE) {
-                    try {
-                        val reader =
-                            FileHelper.openPath(context, item.data) ?: return@read false
-                        reader.close()
-                    } catch (e: IOException) {
-                        logInfo("areFilterFilesExistent: Failed to open file {$item}", e)
-                        return@read false
-                    }
+    fun areFilterFilesExistent(context: Context, settings: Settings): Boolean {
+        for (item in settings.filters.files.get()) {
+            if (item.state != FilterState.IGNORE) {
+                try {
+                    val reader =
+                        FileHelper.openPath(context, item.data) ?: return false
+                    reader.close()
+                } catch (e: IOException) {
+                    logInfo("areFilterFilesExistent: Failed to open file {$item}", e)
+                    return false
                 }
             }
-            return@read true
         }
+        return true
     }
 }
 

@@ -89,7 +89,7 @@ fun AppsScreen(
 ) {
     val pullToRefreshState = rememberPullToRefreshState()
 
-    val adjustedList by remember {
+    val adjustedList by remember(apps) {
         derivedStateOf { listViewModel.getList(apps) }
     }
 
