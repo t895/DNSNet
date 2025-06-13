@@ -72,8 +72,6 @@
     <string name="action_start">Start</string>
     <string name="automatic_refresh">Refresh daily</string>
     <string name="automatic_refresh_description">Daily updates occur when charging, idle, and on an unmetered network.</string>
-    <string name="watchdog">Watch connection</string>
-    <string name="watchdog_description">Check the connection in increasingly longer intervals and reconnect if it stopped working</string>
     <string name="legend_host_intro">Blocked entries are added first. Then the allowed entries create exceptions. You can control this with the following options:</string>
     <string name="switch_onboot_description">Start DNSNet when the device is turned on if it was active when the device was turned off.</string>
     <string name="activity_edit_dns_server">Edit DNS server</string>
