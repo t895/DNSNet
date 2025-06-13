@@ -90,7 +90,6 @@
     <string name="notifications_group_service">Service control</string>
     <string name="notifications_group_updates">Updates</string>
     <string name="unstable_feature">Unstable feature</string>
-    <string name="unstable_watchdog_message">Watching the connection may cause reconnects and the connection to get stuck</string>
     <string name="button_cancel">Cancel</string>
     <string name="allowlist_defaults_title">Allowlist defaults</string>
     <string-array name="allowlist_defaults">
