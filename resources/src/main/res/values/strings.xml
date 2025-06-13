@@ -17,6 +17,7 @@
     <string name="info_app_copyright" translatable="false">©2025 Charles Lombardo</string>
     <string name="switch_onboot">Resume on system start-up</string>
     <string name="title">Title</string>
+    <string name="filter_field_hint">Filter</string>
     <string name="location">Location</string>
     <string name="action">Action</string>
     <string name="cannot_read_config">Cannot read configuration</string>

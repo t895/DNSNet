@@ -373,7 +373,7 @@ fun EditFilter(
         OutlinedTextField(
             modifier = Modifier.fillMaxWidth(),
             label = {
-                Text(text = stringResource(id = if (singleFilter) R.string.filter else R.string.location))
+                Text(text = stringResource(id = if (singleFilter) R.string.filter_field_hint else R.string.location))
             },
             value = dataText,
             onValueChange = onDataTextChanged,
