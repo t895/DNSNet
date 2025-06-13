@@ -79,8 +79,6 @@
     <string name="add_address">Add address</string>
     <string name="notification_paused_title">DNSNet paused</string>
     <string name="notification_action_pause">Pause</string>
-    <string name="ipv6_support_description">Disable this if your network does not use IPv6 or you cannot start the service.</string>
-    <string name="ipv6_support">IPv6 support</string>
     <string name="action_logcat">Logcat</string>
     <string name="logcat_description">Share the app log when you need to report an issue</string>
     <string name="notifications_running">Running service</string>
