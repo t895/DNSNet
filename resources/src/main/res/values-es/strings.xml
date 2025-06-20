@@ -158,7 +158,7 @@
     <string name="ascending">Ascendente</string>
     <string name="descending">Descendente</string>
     <string name="system_apps">Aplicaciones del sistema</string>
-    <string name="filter">Filtro</string>
+    <string name="filter">Filtrar</string>
     <string name="sort">Ordenar</string>
     <string name="welcome_to">Bienvenido a</string>
     <string name="get_started">Iniciemos</string>
@@ -196,4 +196,5 @@
     <string name="doh3_description">Envía tus peticiones DNS de forma segura. Utiliza URLs \"https://ejemplo.com/dns-query\".</string>
     <string name="hagezi_dns_blocklists">hagezi\'s DNS-Blocklists</string>
     <string name="doh3">DNS mediante HTTP/3</string>
+    <string name="filter_field_hint">Filtro</string>
 </resources>
