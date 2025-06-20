@@ -11,7 +11,7 @@
     <string name="info_app_license">Questo programma è un software libero: lo puoi redistribuire e/o modificare nei termini della GNU General Public License, come pubblicato dalla Free Software Foundation, nella versione 3 oppure (a discrezione) in ogni versione successiva.</string>
     <string name="switch_onboot">Avvia automaticamente al riavvio del sistema</string>
     <string name="title">Titolo</string>
-    <string name="location">Posizione (URL o host)</string>
+    <string name="location">Posizione</string>
     <string name="action">Azione</string>
     <string name="cannot_write_config">Impossibile scrivere la configurazione: %s</string>
     <string name="action_refresh">Ricarica file hosts</string>

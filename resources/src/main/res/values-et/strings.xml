@@ -11,7 +11,7 @@
     <string name="info_app_license">See programm on vaba tarkvara: sa võid seda edasi levitada ja/või muuta litsensi GNU General Public License tingimuste alusel, nagu on postitanud Free Software Foundation, kas litsensi 3. versioon või (omal valikul) mõni hilisem versioon.</string>
     <string name="switch_onboot">Jätka süsteemi käivitusel</string>
     <string name="title">Pealkiri</string>
-    <string name="location">Asukoht (URL või host)</string>
+    <string name="location">Asukoht</string>
     <string name="action">Tegevus</string>
     <string name="cannot_write_config">Konfiguratsiooni ei saa kirjutada: %s</string>
     <string name="action_refresh">Värskenda hostifaile</string>

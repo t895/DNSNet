@@ -11,7 +11,7 @@
     <string name="switch_onboot">Beim Systemstart fortsetzen</string>
     <string name="start_tab">Start</string>
     <string name="action">Regel</string>
-    <string name="location">Ort (URL oder Host)</string>
+    <string name="location">Ort</string>
     <string name="title">Titel</string>
     <string name="deny">Verbieten</string>
     <string name="allow">Erlauben</string>
@@ -21,7 +21,7 @@
         <item>@string/allow</item>
         <item>@string/ignore</item>
     </string-array>
-    <string name="action_refresh">Hosts-Dateien aktualisieren</string>
+    <string name="action_refresh">Filterdateien aktualisieren</string>
     <string name="cannot_write_config">Kann Einstellungen nicht speichern: %s</string>
     <string name="notification_reconnecting">Verbindung wird wiederhergestellt</string>
     <string name="notification_reconnecting_error">Verbindung konnte nicht wiederhergestellt werden</string>
@@ -58,12 +58,12 @@
         <item>Alle Apps umgehen standardmäßig</item>
         <item>System Apps umgehen standardmäßig</item>
     </string-array>
-    <string name="update_incomplete_description">Einige Hosts-Dateien konnten nicht heruntergeladen werden. Falls Dateien früher bereits heruntergeladen wurden, werden die alten Versionen weiter verwendet.</string>
+    <string name="update_incomplete_description">Einige Filter-Dateien konnten nicht heruntergeladen werden. Falls Dateien früher bereits heruntergeladen wurden, werden die alten Versionen weiter verwendet.</string>
     <string name="action_logcat">Logcat erstellen</string>
     <string name="notifications_running">Aktiver Dienst</string>
     <string name="notifications_running_desc">Benachrichtigungen zur Interaktion mit dem laufendem Dienst</string>
     <string name="notifications_update">Status</string>
-    <string name="notifications_update_desc">Informationen über Aktualisierung von Hosts-Dateien</string>
+    <string name="notifications_update_desc">Informationen über Aktualisierung von Filter-Dateien</string>
     <string name="notifications_paused">Unterbrochener Dienst</string>
     <string name="notifications_paused_desc">Benachrichtigung zum Fortsetzen nach Unterbrechung</string>
     <string name="notifications_group_service">Dienstkontrolle</string>
