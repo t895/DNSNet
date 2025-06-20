@@ -53,12 +53,8 @@
     <string name="action_start">Begin</string>
     <string name="automatic_refresh">Dagelijks verversen</string>
     <string name="automatic_refresh_description">Dagelijkse updates gebeuren tijdens opladen, sluimeren, en op een ongelimiteerd netwerk.</string>
-    <string name="watchdog">Verbinding bewaken</string>
-    <string name="watchdog_description">Controleer de verbinding in toenemende tussenpozen en verbind opnieuw als het stopt met werken</string>
     <string name="activity_edit_dns_server">DNS-server bewerken</string>
     <string name="notification_action_pause">Pauzeren</string>
-    <string name="ipv6_support_description">Uitschakelen als je netwerk geen IPv6 gebruikt, of je de service niet kunt starten.</string>
-    <string name="ipv6_support">IPv6-ondersteuning</string>
     <string name="action_logcat">Logcat</string>
     <string-array name="allowlist_defaults">
         <item>Standaard geen apps omzeilen</item>

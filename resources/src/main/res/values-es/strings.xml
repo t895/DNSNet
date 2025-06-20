@@ -53,12 +53,8 @@
     <string name="action_start">Iniciar</string>
     <string name="automatic_refresh">Actualización diaria</string>
     <string name="automatic_refresh_description">Las actualizaciones diarias se producen al cargar el dispositivo, en reposo y con una red wifi.</string>
-    <string name="watchdog">Ver conexión</string>
-    <string name="watchdog_description">Comprueba la conexión en intervalos cada vez más largos y vuelve a conectarlo si deja de funcionar</string>
     <string name="activity_edit_dns_server">Editar servidor DNS</string>
     <string name="notification_action_pause">Pausar</string>
-    <string name="ipv6_support_description">Deshabilítalo si tu red no utiliza IPv6 o si no puedes iniciar el servicio.</string>
-    <string name="ipv6_support">Soporte para IPv6</string>
     <string name="action_logcat">Logcat</string>
     <string-array name="allowlist_defaults">
         <item>Ninguna aplicación con bypass por defecto</item>
@@ -200,5 +196,4 @@
     <string name="doh3_description">Envía tus peticiones DNS de forma segura. Utiliza URLs \"https://ejemplo.com/dns-query\".</string>
     <string name="hagezi_dns_blocklists">hagezi\'s DNS-Blocklists</string>
     <string name="doh3">DNS mediante HTTP/3</string>
-    <string name="unstable_watchdog_message">Ver la conexión puede provocar reconexiones y que la conexión se bloquee</string>
 </resources>

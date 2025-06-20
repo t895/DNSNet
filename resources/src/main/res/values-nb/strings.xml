@@ -51,12 +51,8 @@
     <string name="action_start">Start</string>
     <string name="automatic_refresh">Oppfrisk daglig</string>
     <string name="automatic_refresh_description">Daglige oppdateringer skjer når enheten lader, ikke brukes, og er på et ikke-datamengdebegrenset nettverk.</string>
-    <string name="watchdog">Overvåk tilkoblingen</string>
-    <string name="watchdog_description">Sjekk tilkoblingen med stadig lengre intervaller, og koble til på nytt dersom den sluttet å fungere</string>
     <string name="activity_edit_dns_server">Rediger DNS-tjeneren</string>
     <string name="notification_action_pause">Pause</string>
-    <string name="ipv6_support_description">Skru av dette dersom nettverket ditt ikke bruker IPv6, eller hvis du ikke får startet tjenesten.</string>
-    <string name="ipv6_support">IPv6-støtte</string>
     <string name="action_logcat">Logcat</string>
     <string-array name="allowlist_defaults">
         <item>Ingen apper slipper gjennom som standard</item>

@@ -53,12 +53,8 @@
     <string name="action_start">Avvia</string>
     <string name="automatic_refresh">Aggiorna quotidianamente</string>
     <string name="automatic_refresh_description">L\'aggiornamento quotidiano avviene quando il terminale è in carica, inattivo e connesso ad una rete a traffico illimitato.</string>
-    <string name="watchdog">Verifica la connessione</string>
-    <string name="watchdog_description">Controllare la connessione a intervalli sempre più lunghi e riconnettersi se ha smesso di funzionare</string>
     <string name="activity_edit_dns_server">Modifica server DNS</string>
     <string name="notification_action_pause">Pause</string>
-    <string name="ipv6_support_description">Disabilita questa voce, se la tua rete non utilizza IPv6 o non è possibile avviare il servizio.</string>
-    <string name="ipv6_support">Supporto IPv6</string>
     <string name="action_logcat">Logcat</string>
     <string-array name="allowlist_defaults">
         <item>Nessuna app esclusa per default</item>
@@ -181,5 +177,4 @@
     <string name="use_dns_servers_from_active_network">Utilizzare i server della rete attiva</string>
     <string name="use_dns_servers_from_active_network_description">Applica i server della rete a cui si è connessi, oltre ai propri</string>
     <string name="hagezi_dns_blocklists_description">Liste di blocco aggregate con dimensioni variabili. Bloccano pubblicità, tracciamento, metriche e malware.</string>
-    <string name="unstable_watchdog_message">Monitorare la connessione potrebbe causare riconnessioni e il blocco della connessione.</string>
 </resources>

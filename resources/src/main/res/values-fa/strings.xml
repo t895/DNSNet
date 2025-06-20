@@ -36,7 +36,6 @@
     <string name="action_start">شروع</string>
     <string name="add_dns_server">اضافه کردن سرور DNS</string>
     <string name="add_address">اضافه کردن ادرس</string>
-    <string name="ipv6_support">پشتیبانی از IPv6</string>
     <string name="try_again">تلاش مجدد</string>
     <string name="modify_list">ویرایش فهرست</string>
     <string name="search">جست و جو</string>

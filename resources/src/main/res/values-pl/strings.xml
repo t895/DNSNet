@@ -53,12 +53,8 @@
     <string name="action_start">Uruchom</string>
     <string name="automatic_refresh">Odśwież codziennie</string>
     <string name="automatic_refresh_description">Codzienne aktualizuje pliki hosts.</string>
-    <string name="watchdog">Monitoruj połączenie</string>
-    <string name="watchdog_description">Sprawdza połączenie z internetem w określonych odstępach czasu i ponownie je podłącza jeśli przestanie działać</string>
     <string name="activity_edit_dns_server">Edytuj serwer DNS</string>
     <string name="notification_action_pause">Pauza</string>
-    <string name="ipv6_support_description">Wyłącz tę opcję jeśli twoja sieć nie korzysta z protokołu IPv6 lub nie można uruchomić tej usługi.</string>
-    <string name="ipv6_support">Obsługa protokołu IPv6</string>
     <string-array name="allowlist_defaults">
         <item>Brak domyślnie wykluczonych aplikacji</item>
         <item>Wszystkie aplikacje wykluczone domyślnie</item>

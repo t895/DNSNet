@@ -53,12 +53,8 @@
     <string name="action_start">開始</string>
     <string name="automatic_refresh">日次更新</string>
     <string name="automatic_refresh_description">日次の更新は、充電中、アイドル、およびネットワークが従量課金ではない場合に行います。</string>
-    <string name="watchdog">接続を監視</string>
-    <string name="watchdog_description">より長い間隔で接続を確認し、動作が停止した場合は再接続します</string>
     <string name="activity_edit_dns_server">DNS サーバーを編集</string>
     <string name="notification_action_pause">一時停止</string>
-    <string name="ipv6_support_description">ネットワークが IPv6 を使用していない場合や、サービスを開始できない場合は、これを無効にしてください。</string>
-    <string name="ipv6_support">IPv6 サポート</string>
     <string-array name="allowlist_defaults">
         <item>デフォルトでアプリをバイパスしません</item>
         <item>デフォルトですべてのアプリをバイパスします</item>
