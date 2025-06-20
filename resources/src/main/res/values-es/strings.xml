@@ -2,7 +2,7 @@
 <resources>
     <string name="app_shortdesc">Bloqueo de hosts y servidores DNS personalizados</string>
     <string name="custom_dns">Servidores DNS personalizados</string>
-    <string name="start_tab">Iniciar</string>
+    <string name="start_tab">Inicio</string>
     <string name="dns_tab">DNS</string>
     <string name="action_export">Exportar ajustes</string>
     <string name="action_import">Importar ajustes</string>
@@ -14,8 +14,8 @@
     <string name="location">Ubicación</string>
     <string name="action">Acción</string>
     <string name="cannot_write_config">No se puede escribir la configuración: %s</string>
-    <string name="action_refresh">Actualizar listas de filtros</string>
-    <string name="notification_starting">Empezando</string>
+    <string name="action_refresh">Actualizar archivos de filtros</string>
+    <string name="notification_starting">Iniciando</string>
     <string name="notification_running">Activo</string>
     <string name="notification_stopping">Deteniendo</string>
     <string name="notification_waiting_for_net">Esperando a conectar con la red</string>
@@ -40,9 +40,9 @@
     <string name="location_dns">Dirección IP del servidor DNS (IPv4 o IPv6)</string>
     <string name="state_dns_enabled">Habilitado</string>
     <string name="update_incomplete">Actualización incompleta</string>
-    <string name="update_incomplete_description">No se pudieron descargar algunas listas de filtros. Si los archivos se descargaron previamente, se seguirán utilizando las versiones antiguas.</string>
-    <string name="action_use_file">Usar archivo</string>
-    <string name="persistable_uri_permission_failed">No se puede usar el archivo solicitado: No se permite el uso persistente del archivo solicitado</string>
+    <string name="update_incomplete_description">No se pudieron descargar algunos archivos de filtros. Si los archivos se descargaron previamente, se seguirán utilizando las versiones antiguas.</string>
+    <string name="action_use_file">Utilizar archivo</string>
+    <string name="persistable_uri_permission_failed">No se puede utilizar el archivo solicitado: No se permite el uso persistente del archivo solicitado</string>
     <string name="permission_denied">Permiso denegado</string>
     <string name="invalid_url_s">URL no válida: %1$s</string>
     <string name="file_not_found">Archivo no encontrado</string>
@@ -58,7 +58,7 @@
     <string name="activity_edit_dns_server">Editar servidor DNS</string>
     <string name="notification_action_pause">Pausar</string>
     <string name="ipv6_support_description">Deshabilítalo si tu red no utiliza IPv6 o si no puedes iniciar el servicio.</string>
-    <string name="ipv6_support">IPv6 soportado</string>
+    <string name="ipv6_support">Soporte para IPv6</string>
     <string name="action_logcat">Logcat</string>
     <string-array name="allowlist_defaults">
         <item>Ninguna aplicación con bypass por defecto</item>
@@ -70,7 +70,7 @@
     <string name="allowlist_description">Bypass DNSNet para aplicaciones marcadas</string>
     <string name="notifications_update">Estado</string>
     <string name="view_source_code">Ver código fuente</string>
-    <string name="export_description">Crear un respaldo de tu configuración</string>
+    <string name="export_description">Crea un respaldo de tu configuración</string>
     <string name="logcat_description">Comparte el registro de la aplicación cuando necesites informar de un problema</string>
     <string name="allowlist_defaults_title">Lista de permitido por defecto</string>
     <string name="input_blank_error">La entrada no debe estar en blanco</string>
@@ -89,7 +89,7 @@
     <string name="oisd_big">oisd - big</string>
     <string name="presets_description">Selecciona el tipo de contenido que quieres bloquear de las listas de bloqueo conocidas y actualizadas periódicamente</string>
     <string name="select_an_option_to_continue">Selecciona una opción para continuar</string>
-    <string name="presets">Preajustes</string>
+    <string name="presets">Predefinidos</string>
     <string name="hagezi_dns_blocklists_ultimate">hagezi - Ultimate</string>
     <string name="confirm">Confirmar</string>
     <string name="hagezi_dns_blocklists_description">Listas de bloqueo unificadas de distintos tamaños. Bloquea anuncios, rastreo, métricas y malware.</string>
@@ -108,7 +108,7 @@
     <string name="oisd">oisd</string>
     <string name="oisd_small">oisd - small</string>
     <string name="oisd_small_description">Versión más pequeña de la lista big que ocupa menos memoria del sistema.</string>
-    <string name="import_description">Cargar un archivo de ajustes de respaldo</string>
+    <string name="import_description">Carga un archivo de ajustes de respaldo</string>
     <string name="load_defaults_description">Restablece todos los ajustes a sus valores por defecto</string>
     <string name="about_description">Información sobre DNSNet</string>
     <string name="cannot_read_config">No se puede leer la configuración</string>
@@ -121,7 +121,7 @@
     <string name="notification_paused_title">DNSNet pausado</string>
     <string name="notifications_running">Servicio en ejecución</string>
     <string name="notifications_running_desc">Notificaciones para interactuar con el servicio en ejecución</string>
-    <string name="notifications_update_desc">Notificaciones sobre la actualización de las listas de filtros</string>
+    <string name="notifications_update_desc">Notificaciones sobre la actualización de los archivos de filtros</string>
     <string name="notifications_paused">Servicio pausado</string>
     <string name="notifications_paused_desc">Notificaciones para reanudar después de una pausa</string>
     <string name="notifications_group_service">Control del servicio</string>
@@ -130,7 +130,7 @@
     <string name="button_cancel">Cancelar</string>
     <string name="resume">Reanudar</string>
     <string name="notification_permission">Permiso de notificación necesario</string>
-    <string name="notification_permission_description">Necesitamos el permiso de notificación para mostrar el estado del bloqueador y sus actualizaciones.</string>
+    <string name="notification_permission_description">Necesitamos el permiso de notificación para mostrar el estado del bloqueador de hosts y sus actualizaciones.</string>
     <string name="could_not_start_vpn">No se pudo iniciar la VPN</string>
     <string name="add">Añadir</string>
     <string name="navigate_up">Navegar hacia arriba</string>
@@ -177,23 +177,23 @@
     <string name="grant">Conceder</string>
     <string name="acknowledge">Reconocer</string>
     <string name="learn_more">Más información</string>
-    <string name="complete">Completa</string>
+    <string name="complete">Completo</string>
     <string name="button_continue">Continuar</string>
     <string name="use_dns_servers_from_active_network">Utilizar servidores de la red activa</string>
     <string name="use_dns_servers_from_active_network_description">Aplica servidores de la red a la que estás conectado, además de los tuyos propios</string>
-    <string name="missing_filter_files_title">Lista de filtros faltante</string>
-    <string name="could_not_update_all_filter_files">No se pudieron actualizar todas las listas de filtros</string>
+    <string name="missing_filter_files_title">Archivo de filtros faltante</string>
+    <string name="could_not_update_all_filter_files">No se pudieron actualizar todos los archivos de filtros</string>
     <string name="filter_update_error_item">Error %1$d: %2$s</string>
     <string name="add_filter">Añadir filtro</string>
     <string name="edit_filter">Editar filtro</string>
     <string name="supported_formats">Formatos soportados</string>
-    <string name="supported_formats_adblock_plus">Adblock Plus (por ejemplo, ||example.com^)</string>
-    <string name="updating_filter_files">Actualizando listas de filtros</string>
-    <string name="missing_filter_files_message">Faltan algunas de tus listas de filtros configuradas (no ignorado).\n\nUtiliza el botón de actualización de la pestaña de filtros para descargarlos.\n\n¿Aún quieres continuar?</string>
+    <string name="supported_formats_adblock_plus">Adblock Plus (por ejemplo, ||ejemplo.com^)</string>
+    <string name="updating_filter_files">Actualizando archivos de filtros</string>
+    <string name="missing_filter_files_message">Faltan algunos de tus archivos de filtros configurados (no ignorado).\n\nUtiliza el botón de actualización de la pestaña filtros para descargarlos.\n\n¿Aún quieres continuar?</string>
     <string name="filters_tab">Filtros</string>
-    <string name="add_filter_file">Añadir lista de filtros</string>
-    <string name="edit_filter_file">Editar lista de filtros</string>
-    <string name="updating_n_filter_files">Actualizando %1$d listas de filtros</string>
+    <string name="add_filter_file">Añadir archivo de filtros</string>
+    <string name="edit_filter_file">Editar archivo de filtros</string>
+    <string name="updating_n_filter_files">Actualizando %1$d archivos de filtros</string>
     <string name="supported_formats_host_name">Dominios (por ejemplo, ejemplo.com)</string>
     <string name="supported_formats_wildcard">Comodín (por ejemplo, *.ejemplo.com)</string>
     <string name="doh3_warning">Es necesario seleccionar al menos un servidor</string>
