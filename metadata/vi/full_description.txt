@@ -1,0 +1,3 @@
+DNSNet giúp bạn tự kiểm soát nhiều hơn lưu lượng internet đi qua thiết bị của bạn. Bạn có thể tải xuống các tập tin host để chặn một số đường link quảng cáo phổ biến hoặc link độc hại và tạo những ngoại lệ phù hợp với bản thân.
+
+Phần mềm hoạt động bằng cách tạo ra một dịch vụ VPN nhằm lọc lưu lượng internet khi bạn sử dụng thiết bị. Nếu bạn gặp phải vấn đề khi kết nối đến một trang web hay ứng dụng nào đó, bạn hoàn toàn có thể thêm ứng dụng đó vào danh sách trắng hoặc tạo một ngoại lệ cho tên miền nhất định.
