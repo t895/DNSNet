@@ -15,13 +15,13 @@
     <string name="about_description">Informasi tentang DNSNet</string>
     <string name="info_app_license">Program ini merupakan perangkat lunak gratis: Anda dapat mendistribusikan ulang dan/atau memodifikasinya di bawah persyaratan Lisensi Publik Umum GNU seperti yang diterbitkan oleh Free Software Foundation, baik versi 3 dari Lisensi, atau (sesuai pilihan Anda) versi yang lebih baru.</string>
     <string name="info_app_copyright" translatable="false">©2025 Charles Lombardo</string>
-    <string name="switch_onboot">Melanjutkan saat sistem dimulai</string>
+    <string name="switch_onboot">Lanjutkan saat sistem dimulai</string>
     <string name="title">Judul</string>
-    <string name="location">Lokasi (URL atau host)</string>
+    <string name="location">Lokasi</string>
     <string name="action">Tindakan</string>
     <string name="cannot_read_config">Tidak dapat membaca konfigurasi</string>
     <string name="cannot_write_config">Tidak dapat menulis konfigurasi: %s</string>
-    <string name="action_refresh">Segarkan berkas host</string>
+    <string name="action_refresh">Segarkan berkas penyaring</string>
     <string name="notification_starting">Memulai</string>
     <string name="notification_running">Aktif</string>
     <string name="notification_stopping">Menghentikan</string>
@@ -52,7 +52,7 @@
     <string name="location_dns">Alamat IP server DNS (IPv4 atau IPv6)</string>
     <string name="state_dns_enabled">Diaktifkan</string>
     <string name="update_incomplete">Pembaruan tidak lengkap</string>
-    <string name="update_incomplete_description">Beberapa berkas host tidak dapat diunduh. Jika file sebelumnya telah diunduh, versi lama akan terus digunakan.</string>
+    <string name="update_incomplete_description">Beberapa berkas penyaring tidak dapat diunduh. Jika berkas tersebut sebelumnya telah diunduh, versi lama akan tetap digunakan.</string>
     <string name="action_use_file">Gunakan berkas</string>
     <string name="persistable_uri_permission_failed">Tidak dapat menggunakan berkas yang diminta: Tidak diizinkan untuk tetap menggunakan berkas yang diminta</string>
     <string name="permission_denied">Izin ditolak</string>
@@ -79,17 +79,17 @@
     <string name="action_logcat">Logcat</string>
     <string name="logcat_description">Bagikan catatan aplikasi saat Anda perlu melaporkan masalah</string>
     <string name="notifications_running">Layanan yang sedang berjalan</string>
-    <string name="notifications_running_desc">Notifikasi untuk berinteraksi dengan layanan yang sedang berjalan</string>
+    <string name="notifications_running_desc">Pemberitahuan untuk berinteraksi dengan layanan yang sedang berjalan</string>
     <string name="notifications_update">Status</string>
-    <string name="notifications_update_desc">Notifikasi tentang memperbarui berkas host</string>
+    <string name="notifications_update_desc">Pemberitahuan tentang pembaruan berkas penyaring</string>
     <string name="notifications_paused">Layanan yang dijeda</string>
-    <string name="notifications_paused_desc">Notifikasi untuk melanjutkan setelah menjeda</string>
+    <string name="notifications_paused_desc">Pemberitahuan untuk melanjutkan setelah menjeda</string>
     <string name="notifications_group_service">Kontrol layanan</string>
     <string name="notifications_group_updates">Pembaruan</string>
     <string name="unstable_feature">Fitur yang tidak stabil</string>
     <string name="unstable_watchdog_message">Memantau sambungan dapat menyebabkan penyambungan ulang dan sambungan macet</string>
     <string name="button_cancel">Batalkan</string>
-    <string name="allowlist_defaults_title">Default daftar yang diijinkan</string>
+    <string name="allowlist_defaults_title">Daftar yang diijinkan secara default</string>
     <string-array name="allowlist_defaults">
         <item>Tidak ada aplikasi yang dilewati secara default</item>
         <item>Semua aplikasi dilewati secara default</item>
@@ -159,7 +159,7 @@
     <string name="hagezi_dns_blocklists_normal">hagezi - Normal</string>
     <string name="hagezi_dns_blocklists_pro">hagezi - Pro</string>
     <string name="hagezi_dns_blocklists_pro_description">Seharusnya sangat jarang menyebabkan pembatasan. Anda mungkin harus membuka blokir domain tertentu.</string>
-    <string name="hagezi_dns_blocklists_light">hagezi - Light</string>
+    <string name="hagezi_dns_blocklists_light">hagezi - Ringan</string>
     <string name="hagezi_dns_blocklists_pro_plus_plus">hagezi - Pro++</string>
     <string name="hagezi_dns_blocklists_pro_plus_plus_description">Mungkin mengandung beberapa hasil positif palsu. Sebaiknya hanya digunakan oleh pengguna berpengalaman yang dapat membuka blokir domain sesuai kebutuhan.</string>
     <string name="hagezi_dns_blocklists_ultimate">hagezi - Ultimate</string>
@@ -183,13 +183,29 @@
     <string name="notifications">Notifikasi</string>
     <string name="notice_application">Kami memblokir konten berdasarkan nama host (mis. google.com) yang digunakan untuk menyambung ke layanan. Jika sebuah layanan memuat konten utamanya dan konten yang tidak diinginkan menggunakan nama host yang sama, kami tidak akan dapat memblokir konten yang tidak diinginkan.</string>
     <string name="grant">Izinkan</string>
-    <string name="acknowledge">Memahami</string>
+    <string name="acknowledge">Paham</string>
     <string name="learn_more">Pelajari selengkapnya</string>
-    <string name="complete">Rampung</string>
+    <string name="complete">Selesai</string>
     <string name="button_continue">Lanjutkan</string>
     <string name="use_dns_servers_from_active_network">Gunakan server dari jaringan yang aktif</string>
     <string name="use_dns_servers_from_active_network_description">Menerapkan server dari jaringan yang Anda sambungkan selain server Anda sendiri</string>
     <string name="doh3_description">Mengirimkan permintaan DNS Anda dengan aman. Menggunakan URL \"https://example.com/dns-query\" .</string>
     <string name="doh3">DNS melalui HTTP/3</string>
     <string name="doh3_warning">Setidaknya satu server harus dipilih</string>
+    <string name="filters_tab">Penyaring</string>
+    <string name="missing_filter_files_message">Beberapa berkas penyaring yang telah Anda atur (tidak diabaikan) telah hilang.\n\nGunakan tombol segarkan di bilah penyaring untuk mengunduhnya.\n\nApakah Anda tetap ingin melanjutkan?</string>
+    <string name="missing_filter_files_title">Berkas penyaring hilang</string>
+    <string name="filter_update_error_item">Kesalahan %1$d: %2$s</string>
+    <string name="updating_filter_files">Memperbarui berkas penyaring</string>
+    <string name="could_not_update_all_filter_files">Tidak dapat memperbarui semua berkas penyaring</string>
+    <string name="updating_n_filter_files">Memperbarui %1$d berkas penyaring</string>
+    <string name="add_filter_file">Tambah berkas penyaring</string>
+    <string name="edit_filter_file">Sunting berkas penyaring</string>
+    <string name="add_filter">Tambah penyaring</string>
+    <string name="edit_filter">Sunting penyaring</string>
+    <string name="supported_formats">Format yang didukung</string>
+    <string name="supported_formats_host_name">Nama host (mis. contoh.com)</string>
+    <string name="supported_formats_wildcard">Wildcard (mis. *.contoh.com)</string>
+    <string name="supported_formats_adblock_plus">Adblock Plus (mis. ||contoh.com^)</string>
+    <string name="filter_field_hint">Penyaring</string>
 </resources>
