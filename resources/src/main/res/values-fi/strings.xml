@@ -53,12 +53,8 @@
     <string name="action_start">Aloita</string>
     <string name="automatic_refresh">Virkistä päivittäin</string>
     <string name="automatic_refresh_description">Päivitykset tehdään kun laite on latauksessa, jouten ja rajoittamattomassa verkossa.</string>
-    <string name="watchdog">Vahdi yhteyttä</string>
-    <string name="watchdog_description">Tarkkaile yhteyttä kasvavin väliajoin ja yhdistä uudelleen, jos yhteys lakkaa toimimasta</string>
     <string name="activity_edit_dns_server">Muokkaa DNS-palvelinta</string>
     <string name="notification_action_pause">Tauota</string>
-    <string name="ipv6_support_description">Kytke pois päältä jos verkkosi ei käytä IPv6:ta tai palvelun käynnistäminen ei onnistu.</string>
-    <string name="ipv6_support">IPv6-tuki</string>
     <string name="action_logcat">Logcat</string>
     <string name="notifications_running">Palvelu käynnissä</string>
     <string name="notifications_update">Tila</string>
@@ -68,7 +64,6 @@
     <string name="notifications_group_service">Palvelun hallinta</string>
     <string name="notifications_group_updates">Päivitykset</string>
     <string name="unstable_feature">Epävakaa ominaisuus</string>
-    <string name="unstable_watchdog_message">Yhteyden tarkkailu saattaa aiheuttaa ongelmia yhteydessä</string>
     <string name="button_cancel">Peruuta</string>
     <string name="button_continue">Jatka</string>
     <string-array name="allowlist_defaults">

@@ -53,12 +53,8 @@
     <string name="action_start">Käivita</string>
     <string name="automatic_refresh">Värskenda igapäevaselt</string>
     <string name="automatic_refresh_description">Igapäevased uuendused toimuvad siis, kui seade laeb, on ebaaktiivne ja ühendatud mahupiiranguta võrku.</string>
-    <string name="watchdog">Jälgi ühendust</string>
-    <string name="watchdog_description">Kontrolli ühendust pidevalt pikenevate intervallidega ja taasühenda, kui see lakkas töötamast</string>
     <string name="activity_edit_dns_server">Muuda DNS-serverit</string>
     <string name="notification_action_pause">Paus</string>
-    <string name="ipv6_support_description">Keela see, kui su võrk ei kasuta IPv6-te või sa ei saa teenust käivitada.</string>
-    <string name="ipv6_support">IPv6-tugi</string>
     <string name="action_logcat">Logcat</string>
     <string-array name="allowlist_defaults">
         <item>Ära ignoreeri vaikimisi ühtegi rakendust</item>

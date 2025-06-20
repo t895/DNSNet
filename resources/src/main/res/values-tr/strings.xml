@@ -63,16 +63,12 @@
     <string name="action_start">Başlat</string>
     <string name="automatic_refresh">Günlük yenile</string>
     <string name="automatic_refresh_description">Günlük güncellemeler şarj olurken, boştayken ve ölçülü olmayan bir ağdayken gerçekleşir.</string>
-    <string name="watchdog">Bağlantıyı izle</string>
-    <string name="watchdog_description">Bağlantıyı giderek artan aralıklarla kontrol et ve çalışmayı durdurduysa yeniden bağlan</string>
     <string name="legend_host_intro">Engellenen girişler önce eklenir. Ardından izin verilen girişler istisnalar oluşturur. Bunu aşağıdaki seçeneklerle kontrol edebilirsiniz:</string>
     <string name="switch_onboot_description">Cihaz kapatıldığında etkinse, cihaz açıldığında DNSNet\'i başlat.</string>
     <string name="activity_edit_dns_server">DNS sunucusunu düzenle</string>
     <string name="add_dns_server">DNS sunucusu ekle</string>
     <string name="notification_paused_title">DNSNet duraklatıldı</string>
     <string name="notification_action_pause">Duraklat</string>
-    <string name="ipv6_support_description">Ağınız IPv6 kullanmıyorsa veya servisi başlatamıyorsanız bunu devre dışı bırakın.</string>
-    <string name="ipv6_support">IPv6 desteği</string>
     <string name="action_logcat">Logcat</string>
     <string name="logcat_description">Bir sorunu bildirmeniz gerektiğinde uygulama günlüğünü paylaşın</string>
     <string name="notifications_running">Çalışan servis</string>
@@ -84,7 +80,6 @@
     <string name="notifications_group_service">Servis kontrolü</string>
     <string name="notifications_group_updates">Güncellemeler</string>
     <string name="unstable_feature">Kararsız özellik</string>
-    <string name="unstable_watchdog_message">Bağlantıyı izlemek, yeniden bağlantılara ve bağlantının takılmasına neden olabilir</string>
     <string name="button_cancel">İptal</string>
     <string name="allowlist_defaults_title">İzin listesi varsayılanları</string>
     <string-array name="allowlist_defaults">

@@ -53,12 +53,8 @@
     <string name="action_start">Démarrer</string>
     <string name="automatic_refresh">Rafraîchir quotidiennement</string>
     <string name="automatic_refresh_description">Les mises à jour quotidiennes ont lieu lorsque le téléphone se recharge, est inactif et sur un réseau illimité.</string>
-    <string name="watchdog">Surveiller la connexion</string>
-    <string name="watchdog_description">Surveille la connexion à intervalles de plus en plus grands et se reconnecte si elle a cessé de fonctionner</string>
     <string name="activity_edit_dns_server">Modifier le serveur DNS</string>
     <string name="notification_action_pause">Pause</string>
-    <string name="ipv6_support_description">Désactivez ceci si votre réseau n\'utilise pas IPv6 ou si ne parvenez pas à démarrer le service.</string>
-    <string name="ipv6_support">Support de l\'IPv6</string>
     <string name="action_logcat">Logcat</string>
     <string name="notifications_running">Service lancé</string>
     <string name="notifications_running_desc">Notifications pour interagir avec un service lancé</string>
@@ -137,7 +133,6 @@
     <string name="notification_paused_title">DNSNet en pause</string>
     <string name="logcat_description">Partagez le journal de l\'application lorsque vous devez signaler un problème</string>
     <string name="unstable_feature">Fonctionnalité instable</string>
-    <string name="unstable_watchdog_message">La surveillance de la connexion peut entraîner des reconnexions et le blocage de la connexion</string>
     <string name="button_cancel">Annuler</string>
     <string name="allowlist_defaults_title">Valeurs par défaut de la liste d\'autorisations</string>
     <string name="input_blank_error">L\'entrée ne doit pas être vide</string>

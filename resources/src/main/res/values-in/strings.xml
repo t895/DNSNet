@@ -65,8 +65,6 @@
     <string name="action_start">Mulai</string>
     <string name="automatic_refresh">Segarkan setiap hari</string>
     <string name="automatic_refresh_description">Pembaruan harian dilakukan saat mengisi daya, siaga, dan pada jaringan yang tidak terukur.</string>
-    <string name="watchdog">Lihat sambungan</string>
-    <string name="watchdog_description">Periksa sambungan dalam interval yang semakin lama dan sambungkan kembali jika berhenti berfungsi</string>
     <string name="legend_host_intro">Entri yang diblokir ditambahkan terlebih dahulu. Kemudian entri yang diizinkan membuat pengecualian. Anda dapat mengontrol hal ini dengan pilihan berikut:</string>
     <string name="switch_onboot_description">Mulai DNSNet saat perangkat dihidupkan jika aktif saat perangkat dimatikan.</string>
     <string name="activity_edit_dns_server">Ubah server DNS</string>
@@ -74,8 +72,6 @@
     <string name="add_address">Tambah alamat</string>
     <string name="notification_paused_title">DNSNet dijeda</string>
     <string name="notification_action_pause">Jeda</string>
-    <string name="ipv6_support_description">Nonaktifkan ini jika jaringan Anda tidak menggunakan IPv6 atau Anda tidak dapat memulai layanan.</string>
-    <string name="ipv6_support">Dukungan IPv6</string>
     <string name="action_logcat">Logcat</string>
     <string name="logcat_description">Bagikan catatan aplikasi saat Anda perlu melaporkan masalah</string>
     <string name="notifications_running">Layanan yang sedang berjalan</string>
@@ -87,7 +83,6 @@
     <string name="notifications_group_service">Kontrol layanan</string>
     <string name="notifications_group_updates">Pembaruan</string>
     <string name="unstable_feature">Fitur yang tidak stabil</string>
-    <string name="unstable_watchdog_message">Memantau sambungan dapat menyebabkan penyambungan ulang dan sambungan macet</string>
     <string name="button_cancel">Batalkan</string>
     <string name="allowlist_defaults_title">Daftar yang diijinkan secara default</string>
     <string-array name="allowlist_defaults">

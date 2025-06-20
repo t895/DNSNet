@@ -80,7 +80,6 @@
     <string name="edit_filter_file">تحرير ملف التصفية</string>
     <string name="supported_formats">التنسيقات المدعومة</string>
     <string name="supported_formats_wildcard">حرف البدل (على سبيل المثال example.com.*)</string>
-    <string name="ipv6_support_description">قم بتعطيل هذا إذا كانت شبكتك لا تستخدم IPv6 أو لا يمكنك بدء تشغيل الخدمة.</string>
     <string name="could_not_start_vpn">تعذر بدء تشغيل VPN</string>
     <string name="disable_block_log_warning_description">بمجرد تعطيله، سيتم حذف سجل الحظر الموجود بشكل دائم.</string>
     <string name="get_started">البدء</string>
