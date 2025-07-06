@@ -709,6 +709,19 @@ class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
         }
         logInfo("configure: Got local DNS servers = $localDnsServers")
 
+        // The VPN's DNS configuration is sensitive to the order of servers that are added.
+        // The servers that are added first will be prioritized so we want to add the user-configured
+        // servers first. See issue DNSNet/#91.
+        configuration.read {
+            if (this.dnsServers.enabled) {
+                this.dnsServers.items.forEach {
+                    if (it.enabled && it.type == this.dnsServers.type) {
+                        unvalidatedDnsServers.addAll(it.getAddresses())
+                    }
+                }
+            }
+        }
+
         // Add all known DNS servers from local network
         val addLocalDnsServers = configuration.read {
             val noConfigServersEnabled = this.dnsServers.items.none { it.enabled } || !this.dnsServers.enabled
@@ -720,16 +733,6 @@ class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
         }
         if (addLocalDnsServers) {
             localDnsServers.forEach { unvalidatedDnsServers.add(it.hostAddress!!) }
-        }
-
-        configuration.read {
-            if (this.dnsServers.enabled) {
-                this.dnsServers.items.forEach {
-                    if (it.enabled && it.type == this.dnsServers.type) {
-                        unvalidatedDnsServers.addAll(it.getAddresses())
-                    }
-                }
-            }
         }
 
         // Check if the local network has IPv6 DNS servers. If so, this implies that the network
