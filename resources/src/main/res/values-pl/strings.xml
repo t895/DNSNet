@@ -85,7 +85,7 @@
     <string name="load_defaults_description">Zresetuj wszystkie ustawienia do wartości domyślnych</string>
     <string name="about_description">Informacje o DNSNet</string>
     <string name="cannot_read_config">Nie można odczytać konfiguracji</string>
-    <string name="dns66_credit">Na podstawie aplikacji DNS66 stworzonej przez Julian Andres Klode</string>
+    <string name="dns66_credit">Na podstawie projektu DNS66 stworzonego przez Juliana Andresa Klode’a</string>
     <string name="missing_filter_files_message">Brakuje niektórych skonfigurowanych (nieignorowanych) plików filtrów. \n\nAby je pobrać, użyj przycisku odświeżania w karcie filtrów.\n\nCzy nadal chcesz kontynuować?</string>
     <string name="view_source_code">Zobacz kod źródłowy</string>
     <string name="filter_update_error_item">Błąd %1$d: %2$s</string>
