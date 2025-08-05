@@ -1,0 +1,3 @@
+DNSNet pozwala na uzyskanie większej kontroli nad tym, jak ruch sieciowy przemieszcza się z i do Twojego urządzenia. Możesz pobierać pliki hostów celem zablokowania zbiorów znanych reklamowych lub złośliwych nazw hostów, aby następnie tworzyć wykluczenia, jeżeli uznasz to za odpowiednie.
+
+Aplikacja działa za pomocą tworzenia lekkiej usługi VPN, która filtruje Twój ruch sieciowy, kiedy korzystasz z urządzenia. Jeżeli kiedykolwiek będziesz miał problem z połączeniem sieciowym podczas przeglądania stron internetowych lub użytkowania aplikacji, zawsze możesz stworzyć wykluczenie dla konkretnej nazwy hosta.
