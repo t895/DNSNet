@@ -181,4 +181,6 @@
     <string name="doh3">DNS über HTTP/3</string>
     <string name="doh3_description">Senden Sie Ihre DNS-Anfragen sicher. Verwenden Sie die URLs \"https://example.com/dns-query\".</string>
     <string name="doh3_warning">Mindestens ein Server muss ausgewählt werden</string>
+    <string name="filters_tab">Filter</string>
+    <string name="filter_field_hint">Filter</string>
 </resources>
