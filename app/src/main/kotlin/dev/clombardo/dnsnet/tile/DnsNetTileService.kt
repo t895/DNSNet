@@ -66,6 +66,7 @@ class DnsNetTileService : TileService() {
         }
     }
 
+    @Suppress("DEPRECATION")
     @SuppressLint("StartActivityAndCollapseDeprecated")
     private fun toggleService() {
         val prepareIntent = VpnService.prepare(applicationContext)
