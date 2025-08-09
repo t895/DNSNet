@@ -52,7 +52,7 @@
     <string name="allowlist_tab">Apps</string>
     <string name="dns_description">Enable your preferred DNS servers</string>
     <string name="allowlist_description">Bypass DNSNet for marked apps</string>
-    <string name="location_dns">IP address of DNS server (IPv4 or IPv6)</string>
+    <string name="address">Address</string>
     <string name="state_dns_enabled">Enabled</string>
     <string name="filter_update_error_item">Error %1$d: %2$s</string>
     <string name="update_incomplete">Update incomplete</string>

@@ -323,7 +323,7 @@ fun EditDnsScreen(
                         .animateItem()
                         .fillMaxWidth(),
                     label = {
-                        Text(text = stringResource(id = R.string.location_dns))
+                        Text(text = stringResource(id = R.string.address))
                     },
                     value = state.address,
                     onValueChange = {
