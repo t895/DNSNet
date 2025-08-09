@@ -19,11 +19,7 @@ import android.os.Parcelable
 import androidx.annotation.Keep
 import androidx.annotation.StringRes
 import androidx.core.net.toUri
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
-import dagger.hilt.components.SingletonComponent
 import dev.clombardo.dnsnet.file.FileHelper
 import dev.clombardo.dnsnet.log.logDebug
 import dev.clombardo.dnsnet.log.logError
@@ -42,23 +38,10 @@ import kotlinx.serialization.json.encodeToStream
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
-import javax.inject.Singleton
+import javax.inject.Inject
 
-@Module
-@InstallIn(SingletonComponent::class)
-class ConfigurationModule {
-    @Provides
-    @Singleton
-    fun provideConfigurationManager(
-        @ApplicationContext context: Context,
-        preferences: Preferences,
-    ): ConfigurationManager {
-        return ConfigurationManager(context, preferences)
-    }
-}
-
-class ConfigurationManager(
-    private val context: Context,
+class ConfigurationManager @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val preferences: Preferences,
 ) {
     private val configLock = Object()

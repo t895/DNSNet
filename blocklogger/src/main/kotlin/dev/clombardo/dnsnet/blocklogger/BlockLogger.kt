@@ -9,11 +9,6 @@
 package dev.clombardo.dnsnet.blocklogger
 
 import android.content.Context
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
-import dagger.hilt.components.SingletonComponent
 import dev.clombardo.dnsnet.file.FileHelper
 import dev.clombardo.dnsnet.log.logError
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -22,17 +17,6 @@ import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
-import javax.inject.Singleton
-
-@Module
-@InstallIn(SingletonComponent::class)
-class BlockLoggerModule {
-    @Provides
-    @Singleton
-    fun provideBlockLogger(@ApplicationContext context: Context): BlockLogger {
-        return BlockLogger.load(context)
-    }
-}
 
 @Serializable
 data class BlockLogger(val connections: MutableMap<String, LoggedConnection> = HashMap()) {

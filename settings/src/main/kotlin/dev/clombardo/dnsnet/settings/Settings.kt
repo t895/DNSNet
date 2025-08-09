@@ -9,10 +9,6 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
 import dev.clombardo.dnsnet.log.logDebug
 import dev.clombardo.dnsnet.log.logError
 import dev.clombardo.dnsnet.log.logWarning
@@ -21,21 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
-import javax.inject.Singleton
-import kotlin.getValue
-
-@Module
-@InstallIn(SingletonComponent::class)
-class SettingsModule {
-    @Provides
-    @Singleton
-    fun provideSettings(
-        configurationManager: ConfigurationManager,
-        preferences: Preferences,
-    ): Settings {
-        return Settings(configurationManager, preferences)
-    }
-}
+import javax.inject.Inject
 
 sealed interface ResettableSetting {
     fun resetState()
@@ -129,7 +111,7 @@ abstract class SettingStateList<T>(settingList: MutableList<ResettableSetting>) 
     }
 }
 
-class Settings(
+class Settings @Inject constructor(
     private val configuration: ConfigurationManager,
     private val preferences: Preferences,
 ) {
