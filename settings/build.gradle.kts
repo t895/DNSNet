@@ -38,6 +38,9 @@ android {
 
 kotlin {
     jvmToolchain(libs.versions.java.get().toInt())
+    compilerOptions {
+        freeCompilerArgs.add("-Xannotation-default-target=param-property")
+    }
 }
 
 dependencies {
