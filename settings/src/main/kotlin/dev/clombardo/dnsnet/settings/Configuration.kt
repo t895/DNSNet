@@ -189,13 +189,6 @@ data class Configuration(
                 logInfo("Updated to config v1.1 successfully")
             }
 
-            2 -> {
-                if (!replaced && filters.files.isEmpty()) {
-                    preferences.ShouldShowPresetsWhenNoBlockLists = true
-                }
-                logInfo("Updated to config v1.2 successfully")
-            }
-
             3 -> {
                 if (dnsServers.items.none { it.type == DnsServerType.DoH3 }) {
                     dnsServers.items.apply {

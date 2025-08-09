@@ -419,12 +419,6 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun hasCompletedEmptyConfigMigration(): Boolean {
-        val shouldShowPresets = preferences.ShouldShowPresetsWhenNoBlockLists
-        preferences.ShouldShowPresetsWhenNoBlockLists = false
-        return !shouldShowPresets
-    }
-
     companion object {
         const val KEY_SETUP_SHOWN = "setupShown"
     }
