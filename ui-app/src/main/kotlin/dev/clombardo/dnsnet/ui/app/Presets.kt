@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FabPosition
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -52,8 +53,10 @@ import dev.clombardo.dnsnet.settings.BlockList
 import dev.clombardo.dnsnet.settings.BlockListDefaults
 import dev.clombardo.dnsnet.settings.BlockListUrlProvider
 import dev.clombardo.dnsnet.settings.BlockListVariantProvider
+import dev.clombardo.dnsnet.ui.common.BasicDialog
 import dev.clombardo.dnsnet.ui.common.BasicTooltipButton
 import dev.clombardo.dnsnet.ui.common.CheckboxListItem
+import dev.clombardo.dnsnet.ui.common.DialogButton
 import dev.clombardo.dnsnet.ui.common.ExpandableOptionsItem
 import dev.clombardo.dnsnet.ui.common.FloatingTopActions
 import dev.clombardo.dnsnet.ui.common.InsetScaffold
@@ -325,6 +328,36 @@ fun PresetsScreen(
                                     )
                                 }
                             }
+                        }
+                    }
+                }
+            }
+
+            if (!canGoBack) {
+                item {
+                    var showSkipThisStepDialog by rememberSaveable { mutableStateOf(false) }
+                    if (showSkipThisStepDialog) {
+                        BasicDialog(
+                            title = stringResource(R.string.warning),
+                            text = stringResource(R.string.skip_presets_description),
+                            primaryButton = DialogButton(
+                                text = stringResource(android.R.string.ok),
+                                onClick = { onComplete(emptyList()) }
+                            ),
+                            secondaryButton = DialogButton(
+                                text = stringResource(android.R.string.cancel),
+                                onClick = { showSkipThisStepDialog = false }
+                            ),
+                            onDismissRequest = {}
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        FilledTonalButton(onClick = { showSkipThisStepDialog = true }) {
+                            Text(stringResource(R.string.skip_this_step))
                         }
                     }
                 }

@@ -180,6 +180,8 @@
     <string name="doh3">DNS over HTTP/3</string>
     <string name="doh3_description">Securely send your DNS requests. Uses \"https://example.com/dns-query\" URLs.</string>
     <string name="doh3_warning">At least one server must be selected</string>
+    <string name="skip_this_step">Skip this step</string>
+    <string name="skip_presets_description">If you skip this step, you will need to manually set up content blocking later.</string>
 
     <!-- Block list defaults -->
     <string name="hagezi_dns_blocklists">hagezi\'s DNS-Blocklists</string>
