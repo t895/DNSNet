@@ -70,8 +70,6 @@ class HomeViewModel @Inject constructor(
         flow2 = settings.appList.notOnVpn.asStateFlow(),
         flow3 = applicationInfoList
     ) { onVpn, notOnVpn, applicationInfoList ->
-        println(onVpn)
-        println(notOnVpn)
         val notOnVpn = HashSet<String>()
         val pm = context.packageManager
         settings.appList.resolve(context.packageName, pm, HashSet(), notOnVpn)
