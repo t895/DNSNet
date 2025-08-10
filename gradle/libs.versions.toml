@@ -30,7 +30,6 @@ junit = "4.13.2"
 espressoCore = "3.7.0"
 uiautomator = "2.3.0"
 benchmark = "1.4.0"
-rustPlugin = "0.9.6"
 runner = "1.7.0"
 rules = "1.7.0"
 testCore = "1.7.0"
@@ -105,7 +104,6 @@ androidx-baselineprofile = { id = "androidx.baselineprofile", version.ref = "ben
 accrescent-bundletool = { id = "app.accrescent.tools.bundletool", version.ref = "bundletool" }
 aboutLibraries = { id = "com.mikepenz.aboutlibraries.plugin", version.ref = "aboutLibraries" }
 arturbosch-detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
-rust-android-gradle = { id = "org.mozilla.rust-android-gradle.rust-android", version.ref = "rustPlugin" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 gradle-play-publisher = { id = "com.github.triplet.play", version.ref = "playPublisher" }

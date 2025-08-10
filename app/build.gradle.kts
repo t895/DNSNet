@@ -56,10 +56,10 @@ android {
 
         bundletool {
             signingConfig {
-                this.keyAlias = keyAlias
-                this.keyPassword = keyPassword
-                this.storeFile = storeFile
-                this.storePassword = storePassword
+                this.keyAlias.set(keyAlias)
+                this.keyPassword.set(keyPassword)
+                this.storeFile.set(storeFile)
+                this.storePassword.set(storePassword)
             }
         }
     }

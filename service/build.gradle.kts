@@ -8,11 +8,12 @@
 
 import com.android.build.gradle.tasks.MergeSourceSetFolders
 import com.nishtahir.CargoBuildTask
+import org.gradle.kotlin.dsl.support.delegates.ProjectDelegate
 
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.rust.android.gradle)
+    id("org.mozilla.rust-android-gradle.rust-android")
     alias(libs.plugins.kotlinx.atomicfu)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
@@ -43,8 +44,7 @@ cargo {
 }
 
 val uniffiBindgen = tasks.register<Exec>("uniffiBindgen") {
-    val s = File.separatorChar
-    workingDir = file("${projectDir}${s}$libnet")
+    workingDir = layout.projectDirectory.file(libnet).asFile
     commandLine(
         "cargo",
         "run",
@@ -52,11 +52,12 @@ val uniffiBindgen = tasks.register<Exec>("uniffiBindgen") {
         "uniffi-bindgen",
         "generate",
         "--library",
-        "${projectDir}${s}build${s}rustJniLibs${s}android${s}arm64-v8a${s}$libnet.so",
+        layout.projectDirectory.dir("build").dir("rustJniLibs").dir("android")
+            .dir("arm64-v8a").file("libnet.so").asFile.path,
         "--language",
         "kotlin",
         "--out-dir",
-        layout.buildDirectory.dir("generated${s}kotlin").get().asFile.path
+        layout.buildDirectory.get().dir("generated").dir("kotlin").asFile.path
     )
 }
 
@@ -69,7 +70,10 @@ project.afterEvaluate {
         .forEach { buildTask ->
             tasks.withType(MergeSourceSetFolders::class)
                 .configureEach {
-                    inputs.dir(layout.buildDirectory.dir("rustJniLibs" + File.separatorChar + buildTask.toolchain!!.folder))
+                    inputs.dir(
+                        layout.buildDirectory.get().dir("rustJniLibs")
+                            .dir(buildTask.toolchain!!.folder)
+                    )
                     dependsOn(buildTask)
                 }
         }
@@ -80,10 +84,18 @@ tasks.preBuild.configure {
     dependsOn.add(uniffiBindgen)
 }
 
-tasks.getByName("clean") {
-    doFirst {
-        delete(layout.projectDirectory.dir(libnet + File.separatorChar + "target"))
+abstract class CleanRustTarget @Inject constructor(private val projectLayout: ProjectLayout) :
+    DefaultTask() {
+    @TaskAction
+    fun clean() {
+        projectLayout.projectDirectory.dir("libnet").dir("target").asFile.deleteRecursively()
     }
+}
+
+tasks.register("cleanRustTarget", CleanRustTarget::class)
+
+tasks.getByName("clean") {
+    dependsOn("cleanRustTarget")
 }
 
 android {

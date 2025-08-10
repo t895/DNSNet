@@ -1,0 +1,3 @@
+[submodule "rust-android-gradle"]
+	path = rust-android-gradle
+	url = https://github.com/t895/rust-android-gradle.git

@@ -14,6 +14,7 @@ pluginManagement {
             url = uri("https://plugins.gradle.org/m2/")
         }
     }
+    includeBuild("./rust-android-gradle")
 }
 
 dependencyResolutionManagement {
