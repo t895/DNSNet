@@ -8,7 +8,6 @@
 
 import com.android.build.gradle.tasks.MergeSourceSetFolders
 import com.nishtahir.CargoBuildTask
-import org.gradle.kotlin.dsl.support.delegates.ProjectDelegate
 
 plugins {
     alias(libs.plugins.android.library)
@@ -43,21 +42,54 @@ cargo {
     }
 }
 
+//abstract class UniffiBindgen @Inject constructor(
+//    private val providerFactory: ProviderFactory,
+//    private val projectLayout: ProjectLayout
+//) : Exec() {
+//    @TaskAction
+//    fun bindgen() {
+//        val resultOutput = providerFactory.exec {
+//            workingDir = projectLayout.projectDirectory.file("libnet").asFile
+//            commandLine = listOf(
+//                "cargo",
+//                "run",
+//                "--bin",
+//                "uniffi-bindgen",
+//                "generate",
+//                "--library",
+//                projectLayout.projectDirectory.dir("build").dir("rustJniLibs").dir("android")
+//                    .dir("arm64-v8a").file("libnet.so").asFile.path,
+//                "--language",
+//                "kotlin",
+//                "--out-dir",
+//                projectLayout.buildDirectory.get().dir("generated").dir("kotlin").asFile.path
+//            )
+//        }
+//        resultOutput.result.get()
+//        logger.info(resultOutput.standardOutput.toString())
+//    }
+//
+//    companion object {
+//        const val NAME = "uniffiBindgen"
+//    }
+//}
+
+//val uniffiBindgen = tasks.register(UniffiBindgen.NAME, UniffiBindgen::class)
 val uniffiBindgen = tasks.register<Exec>("uniffiBindgen") {
-    workingDir = layout.projectDirectory.file(libnet).asFile
-    commandLine(
+    workingDir = project.layout.projectDirectory.file("libnet").asFile
+    commandLine = listOf(
         "cargo",
         "run",
         "--bin",
         "uniffi-bindgen",
         "generate",
         "--library",
-        layout.projectDirectory.dir("build").dir("rustJniLibs").dir("android")
+        project.layout.projectDirectory.dir("build").dir("rustJniLibs").dir("android")
             .dir("arm64-v8a").file("libnet.so").asFile.path,
         "--language",
         "kotlin",
         "--out-dir",
-        layout.buildDirectory.get().dir("generated").dir("kotlin").asFile.path
+        project.layout.buildDirectory.get().dir("generated").dir("kotlin").asFile.path
     )
 }
 
@@ -81,21 +113,30 @@ project.afterEvaluate {
 
 tasks.preBuild.configure {
     dependsOn.add(tasks.withType(CargoBuildTask::class.java))
-    dependsOn.add(uniffiBindgen)
+//    dependsOn.add(UniffiBindgen.NAME)
+    dependsOn.add("uniffiBindgen")
 }
 
-abstract class CleanRustTarget @Inject constructor(private val projectLayout: ProjectLayout) :
-    DefaultTask() {
+abstract class CleanRustTarget @Inject constructor(
+    private val projectLayout: ProjectLayout,
+    private val fileSystemOperations: FileSystemOperations
+) : DefaultTask() {
     @TaskAction
     fun clean() {
-        projectLayout.projectDirectory.dir("libnet").dir("target").asFile.deleteRecursively()
+        fileSystemOperations.delete {
+            delete(projectLayout.projectDirectory.dir("libnet").dir("target"))
+        }
+    }
+
+    companion object {
+        const val NAME = "cleanRustTarget"
     }
 }
 
-tasks.register("cleanRustTarget", CleanRustTarget::class)
+tasks.register(CleanRustTarget.NAME, CleanRustTarget::class)
 
 tasks.getByName("clean") {
-    dependsOn("cleanRustTarget")
+    dependsOn(CleanRustTarget.NAME)
 }
 
 android {
