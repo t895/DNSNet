@@ -64,6 +64,20 @@ uniffiBindgen.configure {
     dependsOn.add(tasks.withType(CargoBuildTask::class.java))
 }
 
+project.afterEvaluate {
+    tasks.withType(CargoBuildTask::class)
+        .forEach { buildTask ->
+            tasks.withType(MergeSourceSetFolders::class)
+                .configureEach {
+                    inputs.dir(
+                        layout.buildDirectory.get().dir("rustJniLibs")
+                            .dir(buildTask.toolchain!!.folder)
+                    )
+                    dependsOn(buildTask)
+                }
+        }
+}
+
 tasks.preBuild.configure {
     dependsOn.add("uniffiBindgen")
 }
