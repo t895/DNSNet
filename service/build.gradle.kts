@@ -42,39 +42,6 @@ cargo {
     }
 }
 
-//abstract class UniffiBindgen @Inject constructor(
-//    private val providerFactory: ProviderFactory,
-//    private val projectLayout: ProjectLayout
-//) : Exec() {
-//    @TaskAction
-//    fun bindgen() {
-//        val resultOutput = providerFactory.exec {
-//            workingDir = projectLayout.projectDirectory.file("libnet").asFile
-//            commandLine = listOf(
-//                "cargo",
-//                "run",
-//                "--bin",
-//                "uniffi-bindgen",
-//                "generate",
-//                "--library",
-//                projectLayout.projectDirectory.dir("build").dir("rustJniLibs").dir("android")
-//                    .dir("arm64-v8a").file("libnet.so").asFile.path,
-//                "--language",
-//                "kotlin",
-//                "--out-dir",
-//                projectLayout.buildDirectory.get().dir("generated").dir("kotlin").asFile.path
-//            )
-//        }
-//        resultOutput.result.get()
-//        logger.info(resultOutput.standardOutput.toString())
-//    }
-//
-//    companion object {
-//        const val NAME = "uniffiBindgen"
-//    }
-//}
-
-//val uniffiBindgen = tasks.register(UniffiBindgen.NAME, UniffiBindgen::class)
 val uniffiBindgen = tasks.register<Exec>("uniffiBindgen") {
     workingDir = project.layout.projectDirectory.file("libnet").asFile
     commandLine = listOf(
@@ -97,23 +64,7 @@ uniffiBindgen.configure {
     dependsOn.add(tasks.withType(CargoBuildTask::class.java))
 }
 
-project.afterEvaluate {
-    tasks.withType(CargoBuildTask::class)
-        .forEach { buildTask ->
-            tasks.withType(MergeSourceSetFolders::class)
-                .configureEach {
-                    inputs.dir(
-                        layout.buildDirectory.get().dir("rustJniLibs")
-                            .dir(buildTask.toolchain!!.folder)
-                    )
-                    dependsOn(buildTask)
-                }
-        }
-}
-
 tasks.preBuild.configure {
-    dependsOn.add(tasks.withType(CargoBuildTask::class.java))
-//    dependsOn.add(UniffiBindgen.NAME)
     dependsOn.add("uniffiBindgen")
 }
 
