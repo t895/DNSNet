@@ -1,0 +1,3 @@
+O DNSNet permite que você tome controle sobre que tráfego de internet entra e sai do seu dispositivo. Você pode baixar arquivos hosts para bloquear um conjunto conhecido de nomes de servidores maliciosos ou de propaganda e então criar exceções onde achar melhor.
+
+Ele funciona criando um serviço leve de VPN que filtra seu tráfego de internet ao usar seu dispositivo. Se você tiver algum problema ao se conectar a um site ou usando um app, você sempre pode isentar um app da filtragem ou criar uma exceção para um nome de servidor específico.
