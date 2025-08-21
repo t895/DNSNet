@@ -37,7 +37,6 @@
     <string name="button_yes">Kyllä</string>
     <string name="allowlist_tab">Apps</string>
     <string name="dns_description">Aktivoi haluamasi DNS-palvelimet</string>
-    <string name="location_dns">DNS-palvelimen IP-osoite (IPv4 tai IPv6)</string>
     <string name="state_dns_enabled">Käytössä</string>
     <string name="update_incomplete">Päivitys puutteellinen</string>
     <string name="update_incomplete_description">Joitakin hosts-tiedostoista ei pystytty lataamaan. Jatketaan käyttämällä vanhoja tiedostoja, mikäli ne ladattiin aiemmin.</string>

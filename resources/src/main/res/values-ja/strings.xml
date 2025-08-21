@@ -37,7 +37,6 @@
     <string name="button_yes">はい</string>
     <string name="allowlist_tab">アプリ</string>
     <string name="dns_description">優先の DNS サーバーを有効にする</string>
-    <string name="location_dns">DNS サーバーの IP アドレス (IPv4 または IPv6)</string>
     <string name="state_dns_enabled">有効</string>
     <string name="update_incomplete">更新が未完了</string>
     <string name="update_incomplete_description">一部のホストファイルがダウンロードできませんでした。 ファイルを以前ダウンロードしている場合は、古いバージョンが引き続き使用されます。</string>

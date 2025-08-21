@@ -31,7 +31,6 @@
     <string name="allowlist_tab">برنامه ها</string>
     <string name="state_dns_enabled">فعال</string>
     <string name="dns66_credit">بر پایه ی DN66 ساخته شده توسط Julian Andres Klode</string>
-    <string name="location_dns">ادرس IP سرور DNS (IPv4 یا IPv6)</string>
     <string name="file_not_found">فایل پیدا نشد</string>
     <string name="action_start">شروع</string>
     <string name="add_dns_server">اضافه کردن سرور DNS</string>

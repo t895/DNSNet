@@ -41,7 +41,6 @@
     <string name="button_yes">نعم هذا صحيح</string>
     <string name="view_source_code">عرض التعليمات البرمجية المصدرية</string>
     <string name="allowlist_tab">التطبيقات</string>
-    <string name="location_dns">عنوان IP لخادم DNS (IPv4 أو IPv6)</string>
     <string name="state_dns_enabled">ممكّن</string>
     <string name="update_incomplete">تحديث غير مكتمل</string>
     <string name="updating_filter_files">تحديث ملفات التصفية</string>

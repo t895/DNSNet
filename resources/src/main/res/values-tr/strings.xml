@@ -47,7 +47,6 @@
     <string name="allowlist_tab">Uygulamalar</string>
     <string name="dns_description">Tercih ettiğiniz DNS sunucularını etkinleştirin</string>
     <string name="allowlist_description">İşaretli uygulamalar için DNSNet\'i atla</string>
-    <string name="location_dns">DNS sunucusunun IP adresi (IPv4 veya IPv6)</string>
     <string name="state_dns_enabled">Etkinleştirildi</string>
     <string name="update_incomplete">Güncelleme tamamlanmadı</string>
     <string name="update_incomplete_description">Bazı host dosyaları indirilemedi. Dosyalar daha önce indirilmişse, eski sürümler kullanılmaya devam edilecek.</string>

@@ -49,7 +49,6 @@
     <string name="allowlist_tab">Aplikasi</string>
     <string name="dns_description">Aktifkan server DNS pilihan Anda</string>
     <string name="allowlist_description">Abaikan DNSNet untuk aplikasi yang ditandai</string>
-    <string name="location_dns">Alamat IP server DNS (IPv4 atau IPv6)</string>
     <string name="state_dns_enabled">Diaktifkan</string>
     <string name="update_incomplete">Pembaruan tidak lengkap</string>
     <string name="update_incomplete_description">Beberapa berkas penyaring tidak dapat diunduh. Jika berkas tersebut sebelumnya telah diunduh, versi lama akan tetap digunakan.</string>

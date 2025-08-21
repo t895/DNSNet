@@ -37,7 +37,6 @@
     <string name="button_yes">Jah</string>
     <string name="allowlist_tab">Rakendused</string>
     <string name="dns_description">Luba oma eelistatud DNS-serverid</string>
-    <string name="location_dns">DNS-serveri IP-aadress (IPv4 või IPv6)</string>
     <string name="state_dns_enabled">Lubatud</string>
     <string name="update_incomplete">Uuendus teostamata</string>
     <string name="update_incomplete_description">Mõndasid hostifaile ei suudetud alla laadida. Kui failid olid eelnevalt alla laaditud, kasutatakse jätkuvalt vanu versioone.</string>

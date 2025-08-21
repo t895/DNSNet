@@ -35,7 +35,6 @@
     <string name="button_yes">Sim</string>
     <string name="allowlist_tab">Apps</string>
     <string name="dns_description">Habilitar seus servidores DNS preferidos</string>
-    <string name="location_dns">Endereço IP do servidor DNS (IPv4 or IPv6)</string>
     <string name="state_dns_enabled">Ativado</string>
     <string name="update_incomplete">Atualização incompleta</string>
     <string name="update_incomplete_description">Alguns arquivos do host não puderam ser baixados. Se os arquivos fossem baixados anteriormente, as versões antigas continuarão a ser utilizadas.</string>
