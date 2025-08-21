@@ -16,8 +16,8 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.LoadingIndicatorDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.IndicatorBox
-import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.PositionalThreshold
 import androidx.compose.material3.pulltorefresh.PullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -47,14 +47,14 @@ fun LoadingIndicatorBox(
     modifier: Modifier = Modifier,
     containerColor: Color = MaterialTheme.colorScheme.secondaryContainer,
     color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    threshold: Dp = PositionalThreshold,
+    indicatorMaxDistance: Dp = PullToRefreshDefaults.IndicatorMaxDistance,
 ) {
     IndicatorBox(
         modifier = modifier,
         state = state,
         isRefreshing = isRefreshing,
         containerColor = containerColor,
-        threshold = threshold,
+        maxDistance = indicatorMaxDistance,
     ) {
         val preloadingIndicatorAlpha by animateFloatAsState(
             targetValue = if (isRefreshing) {

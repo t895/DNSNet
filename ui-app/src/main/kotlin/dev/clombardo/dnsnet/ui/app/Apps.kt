@@ -103,7 +103,7 @@ fun AppsScreen(
                 state = pullToRefreshState,
                 isRefreshing = isRefreshing,
                 modifier = Modifier.align(Alignment.TopCenter),
-                threshold = PullToRefreshDefaults.PositionalThreshold + contentPadding.calculateTopPadding(),
+                indicatorMaxDistance = PullToRefreshDefaults.PositionalThreshold + contentPadding.calculateTopPadding(),
             )
         },
     ) {
