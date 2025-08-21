@@ -27,5 +27,5 @@ plugins {
     alias(libs.plugins.gradle.play.publisher) apply false
 }
 
-val versionCode by extra { 61 }
-val versionName by extra { "1.3.2" }
+val versionCode by extra { 62 }
+val versionName by extra { "1.3.3" }
