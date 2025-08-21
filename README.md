@@ -19,7 +19,7 @@ Screenshots
 -----------
 
 <div align="center">
-<img src="metadata/en-US/images/phoneScreenshots/start-p9p.png" width="20%" /> <img src="metadata/en-US/images/phoneScreenshots/hosts-p9p.png" width="20%" /> <img src="metadata/en-US/images/phoneScreenshots/apps-p9p.png" width="20%" /> <img src="metadata/en-US/images/phoneScreenshots/dns-p9p.png" width="20%" />
+<img src="metadata/en-US/images/phoneScreenshots/start.png" width="20%" /> <img src="metadata/en-US/images/phoneScreenshots/filters.png" width="20%" /> <img src="metadata/en-US/images/phoneScreenshots/apps.png" width="20%" /> <img src="metadata/en-US/images/phoneScreenshots/dns.png" width="20%" />
 </div>
 
 Installing
