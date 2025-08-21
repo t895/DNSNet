@@ -138,7 +138,7 @@
     <string name="notifications">Уведомления</string>
     <string name="notice_application">Мы блокируем соединения на основе имени хоста (например, google.com) используемого для подключения к сервису. Если сервис загружает свои основные данные и что-либо нежелательное используя одно и то же имя хоста, мы не сможем отделить их и блокировать только дрянь.</string>
     <string name="grant">Предоставить разрешение</string>
-    <string name="acknowledge">Благодарности</string>
+    <string name="acknowledge"></string>
     <string name="learn_more">Узнать больше</string>
     <string name="button_continue">Далее</string>
     <string name="use_dns_servers_from_active_network">Использовать серверы из активной сети</string>
@@ -181,4 +181,5 @@
     <string name="doh3">DNS через HTTP/3</string>
     <string name="doh3_description">Безопасная отправка DNS-запросов. Использует URL-адреса как \"https://example.com/dns-query\".</string>
     <string name="doh3_warning">По крайней мере один сервер должен быть выбран</string>
+    <string name="acknowledge">Подтвердить</string>
 </resources>
