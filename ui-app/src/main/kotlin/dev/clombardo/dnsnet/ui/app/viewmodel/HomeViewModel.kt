@@ -22,6 +22,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.clombardo.dnsnet.blocklogger.BlockLogger
 import dev.clombardo.dnsnet.blocklogger.LoggedConnection
 import dev.clombardo.dnsnet.log.logDebug
+import dev.clombardo.dnsnet.log.logInfo
 import dev.clombardo.dnsnet.settings.BlockList
 import dev.clombardo.dnsnet.settings.DnsServer
 import dev.clombardo.dnsnet.settings.Filter
@@ -63,27 +64,19 @@ class HomeViewModel @Inject constructor(
     private val _appListRefreshing = MutableStateFlow(false)
     val appListRefreshing = _appListRefreshing.asStateFlow()
 
-    private val applicationInfoList = MutableStateFlow<List<ApplicationInfo>>(emptyList())
+    private val appData = MutableStateFlow<List<AppData>>(emptyList())
 
     val appList = combine(
         flow = settings.appList.onVpn.asStateFlow(),
         flow2 = settings.appList.notOnVpn.asStateFlow(),
-        flow3 = applicationInfoList
-    ) { onVpn, notOnVpn, applicationInfoList ->
+        flow3 = appData
+    ) { onVpn, notOnVpn, appData ->
         val notOnVpn = HashSet<String>()
         val pm = context.packageManager
         settings.appList.resolve(context.packageName, pm, HashSet(), notOnVpn)
         val newList = mutableListOf<AppData>()
-        applicationInfoList.forEach {
-            newList.add(
-                AppData(
-                    packageManager = pm,
-                    info = it,
-                    label = it.loadLabel(pm).toString(),
-                    enabled = notOnVpn.contains(it.packageName),
-                    isSystem = (it.flags and ApplicationInfo.FLAG_SYSTEM) != 0,
-                )
-            )
+        appData.forEach {
+            newList.add(it.copy(enabled = notOnVpn.contains(it.info.packageName)))
         }
         return@combine newList.toList()
     }.stateIn(
@@ -164,14 +157,23 @@ class HomeViewModel @Inject constructor(
 
         val pm = context.packageManager
         viewModelScope.launch(Dispatchers.IO) {
-            val entries = ArrayList<ApplicationInfo>()
+            val entries = ArrayList<AppData>()
             pm.getInstalledApplications(0).forEach {
+                it.loadLabel(pm)
                 if (it.packageName != context.packageName) {
-                    entries.add(it)
+                    entries.add(
+                        AppData(
+                            packageManager = pm,
+                            info = it,
+                            label = it.loadLabel(pm).toString(),
+                            enabled = false,
+                            isSystem = (it.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+                        )
+                    )
                 }
             }
 
-            applicationInfoList.value = entries
+            appData.value = entries
             _appListRefreshing.value = false
             refreshingLock = false
             Runtime.getRuntime().gc()
