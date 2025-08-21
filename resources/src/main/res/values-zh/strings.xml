@@ -42,7 +42,6 @@
     <string name="dns_description">启用你的自定义DNS服务器</string>
     <string name="file_not_found">无法找到文件</string>
     <string name="invalid_url_s">URL 无效: %1$s</string>
-    <string name="location_dns">DNS 服务器的 IP 地址 ( IPv4 或 IPv6)</string>
     <string name="notification_action_pause">暂停</string>
     <string name="permission_denied">拒绝访问</string>
     <string name="persistable_uri_permission_failed">无法使用所选择的文件: 该文件拒绝被长时间访问</string>

@@ -35,7 +35,6 @@
     <string name="button_yes">Ja</string>
     <string name="allowlist_tab">Apper</string>
     <string name="dns_description">Aktiver dine foretrukkede DNS-tjenere</string>
-    <string name="location_dns">IP-adressen til DNS-tjeneren (IPv6 eller IPv4)</string>
     <string name="state_dns_enabled">Aktivert</string>
     <string name="update_incomplete">Oppdateringen ble ikke fullført</string>
     <string name="update_incomplete_description">Noen vertsfiler kunne ikke bli lastet ned. Dersom filene ble lastet ned tidligere, vil de gamle versjonene fortsatt bli brukt.</string>

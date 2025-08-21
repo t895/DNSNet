@@ -36,7 +36,6 @@
     <string name="button_no">Nein</string>
     <string name="allowlist_tab">Apps</string>
     <string name="dns_description">Aktiviere deine bevorzugten DNS-Server</string>
-    <string name="location_dns">IP-Adresse des DNS-Servers (IPv4 oder IPv6)</string>
     <string name="state_dns_enabled">Diesen DNS-Server verwenden</string>
     <string name="update_incomplete">Aktualisierung unvollständig</string>
     <string name="action_use_file">Datei verwenden</string>

@@ -37,7 +37,6 @@
     <string name="button_yes">Tak</string>
     <string name="allowlist_tab">Aplikacje</string>
     <string name="dns_description">Włącz preferowane serwery DNS</string>
-    <string name="location_dns">Adres IP serwera DNS (IPv4 oder IPv6)</string>
     <string name="state_dns_enabled">Włączone</string>
     <string name="update_incomplete">Aktualizacja niekompletna</string>
     <string name="update_incomplete_description">Niektóre pliki filtrów nie mogą zostać pobrane. Jeśli pliki zostały wcześniej pobrane, stare wersje będą nadal używane.</string>

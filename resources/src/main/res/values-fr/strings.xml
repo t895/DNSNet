@@ -37,7 +37,6 @@
     <string name="button_yes">Oui</string>
     <string name="allowlist_tab">Apps</string>
     <string name="dns_description">Active vos serveurs DNS préférés</string>
-    <string name="location_dns">Adresse IP du serveur DNS (IPv4 ou IPv6)</string>
     <string name="state_dns_enabled">Activé</string>
     <string name="update_incomplete">Mise à jour incomplète</string>
     <string name="update_incomplete_description">Certains fichiers d\'hôtes n\'ont pas pu être téléchargés. Si les fichiers ont déjà été téléchargés, les anciennes versions seront utilisées.</string>

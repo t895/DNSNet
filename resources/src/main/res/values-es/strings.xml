@@ -37,7 +37,6 @@
     <string name="button_yes">Sí</string>
     <string name="allowlist_tab">Aplicaciones</string>
     <string name="dns_description">Habilita tus servidores DNS preferidos</string>
-    <string name="location_dns">Dirección IP del servidor DNS (IPv4 o IPv6)</string>
     <string name="state_dns_enabled">Habilitado</string>
     <string name="update_incomplete">Actualización incompleta</string>
     <string name="update_incomplete_description">No se pudieron descargar algunos archivos de filtros. Si los archivos se descargaron previamente, se seguirán utilizando las versiones antiguas.</string>

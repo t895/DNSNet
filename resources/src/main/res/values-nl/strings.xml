@@ -37,7 +37,6 @@
     <string name="button_yes">Ja</string>
     <string name="allowlist_tab">Apps</string>
     <string name="dns_description">Jouw voorkeurs-DNS-servers inschakelen</string>
-    <string name="location_dns">IP-adres van DNS-server (IPv4 of IPv6)</string>
     <string name="state_dns_enabled">Ingeschakeld</string>
     <string name="update_incomplete">Update onvolledig</string>
     <string name="update_incomplete_description">Sommige hosts-bestanden konden niet worden gedownload. Als er eerder gedownloade bestanden waren, worden deze oudere versies gebruikt.</string>
