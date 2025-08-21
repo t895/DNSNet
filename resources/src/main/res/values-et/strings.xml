@@ -14,7 +14,7 @@
     <string name="location">Asukoht</string>
     <string name="action">Tegevus</string>
     <string name="cannot_write_config">Konfiguratsiooni ei saa kirjutada: %s</string>
-    <string name="action_refresh">Värskenda hostifaile</string>
+    <string name="action_refresh">Filtri failide uuendamine</string>
     <string name="notification_starting">Käivitun</string>
     <string name="notification_running">Aktiivne</string>
     <string name="notification_stopping">Peatan</string>
@@ -39,7 +39,7 @@
     <string name="dns_description">Luba oma eelistatud DNS-serverid</string>
     <string name="state_dns_enabled">Lubatud</string>
     <string name="update_incomplete">Uuendus teostamata</string>
-    <string name="update_incomplete_description">Mõndasid hostifaile ei suudetud alla laadida. Kui failid olid eelnevalt alla laaditud, kasutatakse jätkuvalt vanu versioone.</string>
+    <string name="update_incomplete_description">Mõnda filtrifaili ei saanud alla laadida. Kui failid on varem alla laaditud, kasutatakse jätkuvalt vanu versioone.</string>
     <string name="action_use_file">Kasuta faili</string>
     <string name="persistable_uri_permission_failed">Taotletud faili ei saa kasutada: pole õigust soovitud faili püsivaks kasutamiseks</string>
     <string name="permission_denied">Luba tühistatud</string>
@@ -60,4 +60,7 @@
         <item>Ignoreeri vaikimisi kõiki rakendusi</item>
         <item>Ignoreeri vaikimisi süsteemirakendusi</item>
     </string-array>
+    <string name="notification_permission_description">Me vajame teavitamisõigust, et näidata hostide blokeerija staatust ja selle uuendusi.</string>
+    <string name="notice_application">Blokeerime sisu, mis põhineb teenuse ühendamiseks kasutataval hostinimel (nt google.com). Kui teenus laadib oma põhisisu ja midagi soovimatut, kasutades sama hostinime, ei saa me soovimatut sisu blokeerida.</string>
+    <string name="stevenblack_hosts">StevenBlacki hostid</string>
 </resources>

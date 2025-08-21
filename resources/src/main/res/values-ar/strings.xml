@@ -115,7 +115,7 @@
     <string name="open_settings">فتح الإعدادات</string>
     <string name="close">إغلاق</string>
     <string name="blocked">مقفلة</string>
-    <string name="blocked_connections_percent">%d%% Blocked</string>
+    <string name="blocked_connections_percent">%d%% محظور</string>
     <string name="block_log_description">تسجيل كل اتصال لعرضه وتحليله</string>
     <string name="warning">تحذير</string>
     <string name="alphabetical">أبجدياً</string>

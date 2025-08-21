@@ -11,10 +11,10 @@
     <string name="info_app_license">Dette programmet er fri programvare: du kan distribuere det rundt og/eller modifisere den under betingelsene til GNU General Public License som publisert av Free Software Foundation, enten versjon 3 av den lisensen eller (Valgfritt) enhver senere versjon.</string>
     <string name="switch_onboot">Fortsett ved systemoppstart</string>
     <string name="title">Tittel</string>
-    <string name="location">Plassering (Nettadresse eller vert)</string>
+    <string name="location">Plassering</string>
     <string name="action">Handling</string>
     <string name="cannot_write_config">Klarte ikke å lagre oppsettet: %s</string>
-    <string name="action_refresh">Oppfrisk vertsfilene</string>
+    <string name="action_refresh">Oppdatering av filterfiler</string>
     <string name="notification_starting">Starter opp</string>
     <string name="notification_running">Aktiv</string>
     <string name="notification_stopping">Stopper</string>
@@ -37,7 +37,7 @@
     <string name="dns_description">Aktiver dine foretrukkede DNS-tjenere</string>
     <string name="state_dns_enabled">Aktivert</string>
     <string name="update_incomplete">Oppdateringen ble ikke fullført</string>
-    <string name="update_incomplete_description">Noen vertsfiler kunne ikke bli lastet ned. Dersom filene ble lastet ned tidligere, vil de gamle versjonene fortsatt bli brukt.</string>
+    <string name="update_incomplete_description">Noen filterfiler kunne ikke lastes ned. Hvis filene ble lastet ned tidligere, vil gamle versjoner fortsette å bli brukt.</string>
     <string name="action_use_file">Bruk fil</string>
     <string name="persistable_uri_permission_failed">Kan ikke bruke den ønskede filen: Har ikke tillatelse til å kontinuerlig bruke den ønskede filen</string>
     <string name="permission_denied">Tillatelse avslåttPermission denied</string>

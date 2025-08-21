@@ -11,10 +11,10 @@
     <string name="info_app_license">Ce programme est un logiciel libre : vous pouvez le redistribuer et le modifier suivant les termes de la Licence Public Générale GNU telle que publiée par la Free Software Foundation, soit la version 3 de la licence, soit (à votre gré) toute version ultérieure.</string>
     <string name="switch_onboot">Lancer l\'application automatiquement au démarrage</string>
     <string name="title">Titre</string>
-    <string name="location">Localisation (URL ou hôte)</string>
+    <string name="location">Localisation</string>
     <string name="action">Action</string>
     <string name="cannot_write_config">Impossible d\'écrire la configuration : %s</string>
-    <string name="action_refresh">Rafraîchir les fichiers d\'hôtes</string>
+    <string name="action_refresh">Fichiers de filtrage de rafraîchissement</string>
     <string name="notification_starting">Démarrage</string>
     <string name="notification_running">Active</string>
     <string name="notification_stopping">Arrêt</string>
@@ -39,7 +39,7 @@
     <string name="dns_description">Active vos serveurs DNS préférés</string>
     <string name="state_dns_enabled">Activé</string>
     <string name="update_incomplete">Mise à jour incomplète</string>
-    <string name="update_incomplete_description">Certains fichiers d\'hôtes n\'ont pas pu être téléchargés. Si les fichiers ont déjà été téléchargés, les anciennes versions seront utilisées.</string>
+    <string name="update_incomplete_description">Certains fichiers de filtrage n\'ont pas pu être téléchargés. Si les fichiers ont été téléchargés précédemment, les anciennes versions continueront à être utilisées.</string>
     <string name="action_use_file">Utiliser le fichier</string>
     <string name="persistable_uri_permission_failed">Impossible d\'utiliser le fichier demandé : utilisation persistante du fichier demandé non permise</string>
     <string name="permission_denied">Permission refusée</string>
@@ -58,7 +58,7 @@
     <string name="notifications_running">Service lancé</string>
     <string name="notifications_running_desc">Notifications pour interagir avec un service lancé</string>
     <string name="notifications_update">Status</string>
-    <string name="notifications_update_desc">Notifications à propos de la mise à jour des fichiers d\'hôtes</string>
+    <string name="notifications_update_desc">Notifications de mise à jour des fichiers de filtrage</string>
     <string name="notifications_paused">Service suspendu</string>
     <string name="notifications_paused_desc">Notifications pour reprendre après une pause</string>
     <string name="notifications_group_service">Contrôle du service</string>

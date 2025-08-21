@@ -24,10 +24,10 @@
     <string name="info_app_license">Эта программа является свободным программным обеспечением: вы можете распространять и/или модифицировать ее согласно условиям стандартной общественной лицензии GNU, опубликованной Фондом свободного программного обеспечения, либо версии 3 лицензии, либо (по вашему выбору) любой более поздней версии.</string>
     <string name="switch_onboot">Автоматический запуск при загрузке</string>
     <string name="title">Заголовок</string>
-    <string name="location">Местоположение (URL-адрес или хост)</string>
+    <string name="location">Местоположение</string>
     <string name="action">Действие</string>
     <string name="cannot_write_config">Не удаётся записать конфигурацию: %s</string>
-    <string name="action_refresh">Обновить хост файл</string>
+    <string name="action_refresh">Обновление файлов фильтров</string>
     <string name="notification_starting">Запуск</string>
     <string name="notification_running">Запущен</string>
     <string name="notification_stopping">Остановка</string>
@@ -52,7 +52,7 @@
     <string name="state_dns_enabled">Включён</string>
     <string name="allowlist_tab">Приложения</string>
     <string name="notification_action_pause">Пауза</string>
-    <string name="update_incomplete_description">Некоторые хост-файлы не могут быть загружены. Если файлы были загружены ранее, старые версии будут по-прежнему использоваться.</string>
+    <string name="update_incomplete_description">Некоторые файлы фильтров не удалось загрузить. Если файлы были загружены ранее, старые версии будут продолжать использоваться.</string>
     <string-array name="allowlist_defaults">
         <item>Нет приложений для обхода блокировки по умолчанию</item>
         <item>Все приложения для обхода блокировки по умолчанию</item>
@@ -73,7 +73,7 @@
     <string name="notifications_running">Запуск службы</string>
     <string name="notifications_running_desc">Уведомления о взаимодействии с текущими службами</string>
     <string name="notifications_update">Состояние</string>
-    <string name="notifications_update_desc">Уведомления об обновлении хост-файлов</string>
+    <string name="notifications_update_desc">Уведомления об обновлении файлов фильтров</string>
     <string name="notifications_paused">Приостановленная служба</string>
     <string name="notifications_paused_desc">Уведомления возобновляются после перерыва</string>
     <string name="notifications_group_service">Управление службой</string>
