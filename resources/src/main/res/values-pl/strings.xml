@@ -51,7 +51,7 @@
     <string name="action_stop">Zatrzymaj</string>
     <string name="action_start">Uruchom</string>
     <string name="automatic_refresh">Odśwież codziennie</string>
-    <string name="automatic_refresh_description">Codzienne aktualizuje pliki hosts.</string>
+    <string name="automatic_refresh_description">Codzienne aktualizacje mają miejsce podczas ładowania, bezczynności i w sieci niezmierzonej.</string>
     <string name="activity_edit_dns_server">Edytuj serwer DNS</string>
     <string name="notification_action_pause">Pauza</string>
     <string-array name="allowlist_defaults">

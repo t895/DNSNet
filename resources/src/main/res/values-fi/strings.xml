@@ -11,10 +11,10 @@
     <string name="info_app_license">Tämä sovellus on vapaa ohjelmisto: voit jakaa ja/tai muokata sitä GNU General Public License -lisenssin ehtojen mukaisesti, niin kuin se on julkaistu Free Software Foundationin toimesta, käyttäen 3. versiota, tai halutessasi mitä vain myöhempää versiota.</string>
     <string name="switch_onboot">Jatka järjestelmän käynnistyessä</string>
     <string name="title">Nimi</string>
-    <string name="location">Sijainti (URL tai verkkotunnus)</string>
+    <string name="location">Sijainti</string>
     <string name="action">Toiminto</string>
     <string name="cannot_write_config">Ei voida kirjoittaa asetuksia: %s</string>
-    <string name="action_refresh">Päivitä hosts-tiedostot</string>
+    <string name="action_refresh">Suodatintiedostojen päivittäminen</string>
     <string name="notification_starting">Käynnistyy</string>
     <string name="notification_running">Aktiivinen</string>
     <string name="notification_stopping">Suljetaan</string>
@@ -39,7 +39,7 @@
     <string name="dns_description">Aktivoi haluamasi DNS-palvelimet</string>
     <string name="state_dns_enabled">Käytössä</string>
     <string name="update_incomplete">Päivitys puutteellinen</string>
-    <string name="update_incomplete_description">Joitakin hosts-tiedostoista ei pystytty lataamaan. Jatketaan käyttämällä vanhoja tiedostoja, mikäli ne ladattiin aiemmin.</string>
+    <string name="update_incomplete_description">Joitakin suodatintiedostoja ei voitu ladata. Jos tiedostot on ladattu aiemmin, vanhoja versioita käytetään edelleen.</string>
     <string name="action_use_file">Käytä tiedostoa</string>
     <string name="persistable_uri_permission_failed">Ei voida käyttää pyydettyä tiedostoa: Ei sallittu käyttää pyydettyä tiedostoa pysyvästi</string>
     <string name="permission_denied">Pääsy estetty</string>
@@ -57,7 +57,7 @@
     <string name="action_logcat">Logcat</string>
     <string name="notifications_running">Palvelu käynnissä</string>
     <string name="notifications_update">Tila</string>
-    <string name="notifications_update_desc">Ilmoitukset hosts-tiedostojen päivittämisestä</string>
+    <string name="notifications_update_desc">Ilmoitukset suodatintiedostojen päivittämisestä</string>
     <string name="notifications_paused">Palvelu tauolla</string>
     <string name="notifications_paused_desc">Ilmoituksia jatketaan tauon jälkeen</string>
     <string name="notifications_group_service">Palvelun hallinta</string>

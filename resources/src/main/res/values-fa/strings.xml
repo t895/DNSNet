@@ -19,9 +19,9 @@
     <string name="import_description">بارگذاری یک فایل تنظیمات</string>
     <string name="load_defaults">بارگذاری تنظیمات پیش فرض</string>
     <string name="switch_onboot">ادامه در هنگام بالا امدن سیستم</string>
-    <string name="location">مکان (URL یا host)</string>
+    <string name="location">مکان</string>
     <string name="notification_waiting_for_net">در انتظار برای شبکه</string>
-    <string name="action_refresh">تازه سازی فایل های host</string>
+    <string name="action_refresh">فایل های فیلتر جدید</string>
     <string name="notification_stopping">در حال توقف</string>
     <string name="notification_reconnecting">اتصال مجدد</string>
     <string name="notification_reconnecting_error">خطا در هنگام اتصال مجدد</string>

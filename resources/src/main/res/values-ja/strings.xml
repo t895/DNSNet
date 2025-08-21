@@ -11,10 +11,10 @@
     <string name="info_app_license">このプログラムはフリーソフトウェアです: フリーソフトウェア財団が発行した GNU 一般公衆利用許諾契約書、バージョン 3 のライセンス、または（オプションで）それ以降のバージョンのいずれかの条件で、再配布および/または変更することができます。</string>
     <string name="switch_onboot">起動時に自動的に開始する</string>
     <string name="title">タイトル</string>
-    <string name="location">ロケーション (URL またはホスト)</string>
+    <string name="location">ロケーション</string>
     <string name="action">操作</string>
     <string name="cannot_write_config">設定を書き込みできません: %s</string>
-    <string name="action_refresh">ホストファイルを更新</string>
+    <string name="action_refresh">フィルターファイルのリフレッシュ</string>
     <string name="notification_starting">開始中</string>
     <string name="notification_running">実行中</string>
     <string name="notification_stopping">停止中</string>
@@ -39,7 +39,7 @@
     <string name="dns_description">優先の DNS サーバーを有効にする</string>
     <string name="state_dns_enabled">有効</string>
     <string name="update_incomplete">更新が未完了</string>
-    <string name="update_incomplete_description">一部のホストファイルがダウンロードできませんでした。 ファイルを以前ダウンロードしている場合は、古いバージョンが引き続き使用されます。</string>
+    <string name="update_incomplete_description">一部のフィルターファイルがダウンロードできませんでした。ファイルが以前にダウンロードされた場合は、古いバージョンが引き続き使用されます。</string>
     <string name="action_use_file">ファイルを使用</string>
     <string name="persistable_uri_permission_failed">要求したファイルを使用できません: 要求したファイルを永続的に使用できません</string>
     <string name="permission_denied">アクセスが拒否されました</string>

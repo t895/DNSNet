@@ -16,11 +16,11 @@
     <string name="info_app_license">Bu program özgür yazılımdır: Free Software Foundation tarafından yayınlanan GNU Genel Kamu Lisansı şartları altında, Lisans sürüm 3 veya (isteğinize bağlı olarak) daha sonraki sürümleri kapsamında yeniden dağıtabilir ve/veya değiştirebilirsiniz.</string>
     <string name="switch_onboot">Sistem başlangıcında devam et</string>
     <string name="title">Başlık</string>
-    <string name="location">Konum (URL veya host)</string>
+    <string name="location">Konum</string>
     <string name="action">Eylem</string>
     <string name="cannot_read_config">Yapılandırma okunamıyor</string>
     <string name="cannot_write_config">Yapılandırma yazılamıyor: %s</string>
-    <string name="action_refresh">Host dosyalarını yenile</string>
+    <string name="action_refresh">Filtre dosyalarını yenileyin</string>
     <string name="notification_starting">Başlatılıyor</string>
     <string name="notification_running">Aktif</string>
     <string name="notification_stopping">Durduruluyor</string>
@@ -49,7 +49,7 @@
     <string name="allowlist_description">İşaretli uygulamalar için DNSNet\'i atla</string>
     <string name="state_dns_enabled">Etkinleştirildi</string>
     <string name="update_incomplete">Güncelleme tamamlanmadı</string>
-    <string name="update_incomplete_description">Bazı host dosyaları indirilemedi. Dosyalar daha önce indirilmişse, eski sürümler kullanılmaya devam edilecek.</string>
+    <string name="update_incomplete_description">Bazı filtre dosyaları indirilemedi. Dosyalar daha önce indirilmişse, eski sürümler kullanılmaya devam edecektir.</string>
     <string name="action_use_file">Dosyayı kullan</string>
     <string name="persistable_uri_permission_failed">İstenen dosya kullanılamıyor: İstenen dosyayı kalıcı olarak kullanma izni yok</string>
     <string name="permission_denied">İzin reddedildi</string>
@@ -73,7 +73,7 @@
     <string name="notifications_running">Çalışan servis</string>
     <string name="notifications_running_desc">Çalışan servis ile etkileşim için bildirimler</string>
     <string name="notifications_update">Durum</string>
-    <string name="notifications_update_desc">Host dosyalarının güncellenmesi hakkında bildirimler</string>
+    <string name="notifications_update_desc">Filtre dosyalarının güncellenmesiyle ilgili bildirimler</string>
     <string name="notifications_paused">Duraklatılmış servis</string>
     <string name="notifications_paused_desc">Duraklatma sonrası devam etmek için bildirimler</string>
     <string name="notifications_group_service">Servis kontrolü</string>

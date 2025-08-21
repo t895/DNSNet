@@ -8,7 +8,7 @@
     <string name="dns_tab">DNS</string>
     <string name="start_tab">启动/停止</string>
     <string name="action">行为</string>
-    <string name="location">位置 (URL 或 Host)</string>
+    <string name="location">位置</string>
     <string name="title">标题</string>
     <string name="deny">拒绝</string>
     <string name="allow">允许</string>
@@ -25,7 +25,7 @@
     <string name="notification_stopped">已停止</string>
     <string name="notification_stopping">正在停止</string>
     <string name="notification_waiting_for_net">等待网络</string>
-    <string name="action_refresh">更新Hosts文件</string>
+    <string name="action_refresh">刷新过滤文件</string>
     <string name="load_defaults">载入初始化设置</string>
     <string name="notification_reconnecting_error">重新连接错误</string>
     <string name="info_app_license">This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.</string>
@@ -50,7 +50,7 @@
     <string name="switch_onboot">系统启动时继续</string>
     <string name="unknown_error_s">未知错误r: %1$s</string>
     <string name="update_incomplete">更新未完成</string>
-    <string name="update_incomplete_description">某些 hosts 文件未被下载. 如果这些文件曾被下载, 则会继续使用旧版本.</string>
+    <string name="update_incomplete_description">某些过滤文件无法下载。如果以前下载过文件，旧版本将继续使用。</string>
     <string name="allowlist_tab">程序</string>
     <string name="action_use_file">使用文件</string>
 </resources>

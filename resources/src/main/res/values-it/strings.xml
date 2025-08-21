@@ -39,7 +39,7 @@
     <string name="dns_description">Abilita i tuoi server DNS preferiti</string>
     <string name="state_dns_enabled">Abilitato</string>
     <string name="update_incomplete">Aggiornamento incompleto</string>
-    <string name="update_incomplete_description">Alcuni file hosts non possono essere scaricati. Di quelli già scaricati precedentemente, verrà utilizzata la vecchia versione.</string>
+    <string name="update_incomplete_description">Alcuni file filtro non possono essere scaricati. Di quelli già scaricati precedentemente, verrà utilizzata la vecchia versione.</string>
     <string name="action_use_file">Usa il file</string>
     <string name="persistable_uri_permission_failed">Impossibile utilizzare il file richiesto: Uso persistente del file richiesto non consentito</string>
     <string name="permission_denied">Permesso negato</string>
@@ -110,7 +110,7 @@
     <string name="notifications_running">Servizio in esecuzione</string>
     <string name="notifications_running_desc">Notifiche per interagire con il servizio in esecuzione</string>
     <string name="notifications_update">Stato</string>
-    <string name="notifications_update_desc">Notifiche sull\'aggiornamento dei file host</string>
+    <string name="notifications_update_desc">Notifiche sull\'aggiornamento dei file di filtro</string>
     <string name="notifications_paused">Servizio in pausa</string>
     <string name="notifications_paused_desc">Notifiche di ripresa dopo la pausa</string>
     <string name="notifications_group_service">Controllo del servizio</string>
