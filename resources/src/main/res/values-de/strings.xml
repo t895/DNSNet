@@ -198,4 +198,5 @@
     <string name="missing_filter_files_message">Einige Ihrer konfigurierten (nicht ignorierten) Filterdateien fehlen.\n\nVerwenden Sie die Auffrischen-Schaltfläche auf der Filter-Registerkarte, um sie herunterzuladen.\n\nMöchten Sie trotzdem fortfahren?</string>
     <string name="supported_formats_wildcard">Platzhalter (z. B. *.example.com)</string>
     <string name="supported_formats_adblock_plus">Adblock Plus (z. B. ||example.com^)</string>
+    <string name="filter_update_error_item">Fehler %1$d: %2$s</string>
 </resources>
