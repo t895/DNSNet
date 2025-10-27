@@ -198,4 +198,6 @@
     <string name="supported_formats_adblock_plus">Adblock Plus (например, ||example.com)</string>
     <string name="skip_this_step">Пропустите этот шаг</string>
     <string name="skip_presets_description">Если вы пропустите этот шаг, вам нужно будет вручную настроить блокировку контента позже.</string>
+    <string name="filter_field_hint">Фильтр</string>
+    <string name="filter_update_error_item">Ошибка %1$d: %2$s</string>
 </resources>
