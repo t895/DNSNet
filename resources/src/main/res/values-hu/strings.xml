@@ -1,3 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="app_shortdesc">Le blokkolja a hostokat és a egyéni DNS szervereket</string>
+    <string name="custom_dns">Egyéni DNS szerverek</string>
+    <string name="start_tab">Kezdés</string>
+    <string name="filters_tab">Szűrők</string>
+    <string name="dns_tab">DNS</string>
+    <string name="action_export">Exportálja a beállításokat</string>
+    <string name="export_description">Hozzon létre egy biztonsági mentést a configurációval</string>
+    <string name="action_import">Importálja a beállításokat</string>
+    <string name="import_description">Töltsön be egy biztonságos mentést fájlt a beállitásokról</string>
+    <string name="load_defaults">Alapbeállitások visszaálitása</string>
+    <string name="load_defaults_description">Visszaállitja az összes beállitás értéket az alapra</string>
+    <string name="action_about">Rólunk</string>
+    <string name="about_description">Információ a DNSNetről</string>
+    <string name="switch_onboot">Automatikus inditás a rendszerrel</string>
+    <string name="title">Cím</string>
+    <string name="filter_field_hint">Szürő</string>
+    <string name="location">Hely</string>
+    <string name="action">Akció</string>
+    <string name="cannot_read_config">Nem lehet be olvasni a configurációt</string>
+    <string name="cannot_write_config">Nem lehet megirni a configurációt: %s</string>
+    <string name="action_refresh">Töltse be újra a szűrő fájlokat</string>
+    <string name="notification_starting">Inditás</string>
+    <string name="notification_running">Aktív</string>
+    <string name="notification_stopping">Leállitás</string>
+    <string name="notification_waiting_for_net">Várakozás a hállozatra</string>
+    <string name="notification_reconnecting">Úrja csatlakozás</string>
+    <string name="notification_reconnecting_error">Újracsatlakozási hiba</string>
+    <string name="notification_stopped">Leálitva</string>
+    <string name="deny">Megtagadni</string>
+    <string name="allow">Engedélyezni</string>
+    <string name="ignore">figyelmen kívül hagyni</string>
+    <string name="app_version_info">Verzió: %s</string>
+    <string name="dns66_credit">A Julian Andres Klode által készített DNS66 alapjaira építve</string>
+    <string name="adbuster_credit">Az AdBusterből származó részek, amelyeket Daniel Brodie készített</string>
+    <string name="missing_filter_files_message">Néhány configurált (nem figyelmen kívül hagyott) szürő fájl hiányzik.\n\nHasználd az úrja töltés gombot hogy letőltsd őket.\n\nBiztos folytatni akarja?</string>
+    <string name="missing_filter_files_title">Hiányzó szürö fájl</string>
+    <string name="button_no">Nem</string>
+    <string name="button_yes">Igen</string>
+    <string name="system_apps">Rendszer Fájlok</string>
+    <string name="filter">Szürő</string>
 </resources>
