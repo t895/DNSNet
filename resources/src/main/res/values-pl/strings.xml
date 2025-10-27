@@ -195,4 +195,7 @@
     <string name="get_started">Rozpocznij</string>
     <string name="adbuster_credit">Części zaczerpnięte z AdBustera stworzonego przez Daniela Brodiego</string>
     <string name="filter_field_hint">Filtr</string>
+    <string name="address">Adres</string>
+    <string name="skip_this_step">Pomiń ten krok</string>
+    <string name="skip_presets_description">Jeżeli pominiesz ten krok, później będziesz musiał ręcznie skonfigurować blokowanie treści.</string>
 </resources>
