@@ -13,7 +13,7 @@
     <string name="title">Título</string>
     <string name="location">Ubicación</string>
     <string name="action">Acción</string>
-    <string name="cannot_write_config">No se puede escribir la configuración: %s</string>
+    <string name="cannot_write_config">No se puede escribir los ajustes: %s</string>
     <string name="action_refresh">Actualizar archivos de filtros</string>
     <string name="notification_starting">Iniciando</string>
     <string name="notification_running">Activo</string>
@@ -65,7 +65,7 @@
     <string name="allowlist_description">Bypass DNSNet para aplicaciones marcadas</string>
     <string name="notifications_update">Estado</string>
     <string name="view_source_code">Ver código fuente</string>
-    <string name="export_description">Crea un respaldo de tu configuración</string>
+    <string name="export_description">Crea un respaldo de tus ajustes</string>
     <string name="logcat_description">Comparte el registro de la aplicación cuando necesites informar de un problema</string>
     <string name="allowlist_defaults_title">Lista de permitido por defecto</string>
     <string name="input_blank_error">La entrada no debe estar en blanco</string>
@@ -106,7 +106,7 @@
     <string name="import_description">Carga un archivo de ajustes de respaldo</string>
     <string name="load_defaults_description">Restablece todos los ajustes a sus valores por defecto</string>
     <string name="about_description">Información sobre DNSNet</string>
-    <string name="cannot_read_config">No se puede leer la configuración</string>
+    <string name="cannot_read_config">No se puede leer los ajustes</string>
     <string name="dns66_credit">Basado en DNS66 creado por Julian Andres Klode</string>
     <string name="adbuster_credit">Partes derivadas de AdBuster creado por Daniel Brodie</string>
     <string name="legend_host_intro">Primero se añaden las entradas bloqueadas. A continuación, las entradas permitidas crean excepciones. Puedes controlar esto con las siguientes opciones:</string>
@@ -160,7 +160,7 @@
     <string name="filter">Filtrar</string>
     <string name="sort">Ordenar</string>
     <string name="welcome_to">Bienvenido a</string>
-    <string name="get_started">Iniciemos</string>
+    <string name="get_started">Comenzar</string>
     <string name="logcat_written_successfully">Logcat escrito correctamente</string>
     <string name="failed_to_open_network_settings">Error al abrir los ajustes de red</string>
     <string name="help">Ayuda</string>
@@ -196,4 +196,7 @@
     <string name="hagezi_dns_blocklists">hagezi\'s DNS-Blocklists</string>
     <string name="doh3">DNS mediante HTTP/3</string>
     <string name="filter_field_hint">Filtro</string>
+    <string name="address">Dirección</string>
+    <string name="skip_this_step">Saltar este paso</string>
+    <string name="skip_presets_description">Si te saltas este paso, tendrás que configurar manualmente el bloqueo de contenido más adelante.</string>
 </resources>
