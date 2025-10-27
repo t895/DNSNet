@@ -202,4 +202,7 @@
     <string name="supported_formats_wildcard">Wildcard (mis. *.contoh.com)</string>
     <string name="supported_formats_adblock_plus">Adblock Plus (mis. ||contoh.com^)</string>
     <string name="filter_field_hint">Penyaring</string>
+    <string name="address">Alamat</string>
+    <string name="skip_this_step">Lewati langkah ini</string>
+    <string name="skip_presets_description">Jika Anda melewati langkah ini, Anda perlu mengatur pemblokiran konten secara manual nantinya.</string>
 </resources>
