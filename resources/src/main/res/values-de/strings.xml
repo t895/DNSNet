@@ -21,7 +21,7 @@
         <item>@string/allow</item>
         <item>@string/ignore</item>
     </string-array>
-    <string name="action_refresh">Filterdateien aktualisieren</string>
+    <string name="action_refresh">Filterdateien auffrischen</string>
     <string name="cannot_write_config">Kann Einstellungen nicht speichern: %s</string>
     <string name="notification_reconnecting">Verbindung wird wiederhergestellt</string>
     <string name="notification_reconnecting_error">Verbindung konnte nicht wiederhergestellt werden</string>
@@ -48,7 +48,7 @@
     <string name="action_delete">Löschen</string>
     <string name="action_start">Start</string>
     <string name="action_stop">Stop</string>
-    <string name="automatic_refresh">Täglich aktualisieren</string>
+    <string name="automatic_refresh">Täglich auffrischen</string>
     <string name="automatic_refresh_description">Tägliche Aktualisierungen finden statt, wenn das Gerät lädt, nicht genutzt wird und die Verbindung gebührenfrei ist.</string>
     <string name="activity_edit_dns_server">DNS Server bearbeiten</string>
     <string name="notification_action_pause">Unterbrechen</string>
@@ -57,12 +57,12 @@
         <item>Alle Apps umgehen standardmäßig</item>
         <item>System Apps umgehen standardmäßig</item>
     </string-array>
-    <string name="update_incomplete_description">Einige Filter-Dateien konnten nicht heruntergeladen werden. Falls Dateien früher bereits heruntergeladen wurden, werden die alten Versionen weiter verwendet.</string>
+    <string name="update_incomplete_description">Einige Filterdateien konnten nicht heruntergeladen werden. Falls Dateien früher bereits heruntergeladen wurden, werden die alten Versionen weiter verwendet.</string>
     <string name="action_logcat">Logcat erstellen</string>
     <string name="notifications_running">Aktiver Dienst</string>
     <string name="notifications_running_desc">Benachrichtigungen zur Interaktion mit dem laufendem Dienst</string>
     <string name="notifications_update">Status</string>
-    <string name="notifications_update_desc">Meldungen zur Aktualisierung von Filterdateien</string>
+    <string name="notifications_update_desc">Benachrichtigungen über die Aktualisierung von Filterdateien</string>
     <string name="notifications_paused">Unterbrochener Dienst</string>
     <string name="notifications_paused_desc">Benachrichtigung zum Fortsetzen nach Unterbrechung</string>
     <string name="notifications_group_service">Dienstkontrolle</string>
@@ -183,17 +183,19 @@
     <string name="filters_tab">Filter</string>
     <string name="filter_field_hint">Filter</string>
     <string name="missing_filter_files_title">Fehlende Filterdatei</string>
-    <string name="address">Anschrift</string>
+    <string name="address">Adresse</string>
     <string name="updating_filter_files">Filterdateien aktualisieren</string>
     <string name="could_not_update_all_filter_files">Konnte nicht alle Filterdateien aktualisieren</string>
-    <string name="updating_n_filter_files">Aktualisierung %1$d Filterdateien</string>
+    <string name="updating_n_filter_files">Aktualisierung von %1$d Filterdateien</string>
     <string name="add_filter_file">Filterdatei hinzufügen</string>
     <string name="edit_filter_file">Filterdatei bearbeiten</string>
     <string name="add_filter">Filter hinzufügen</string>
     <string name="edit_filter">Filter bearbeiten</string>
     <string name="supported_formats">Unterstützte Formate</string>
-    <string name="supported_formats_host_name">Hostnamen (z.B. example.com)</string>
-    <string name="skip_this_step">Über diesen Schritt</string>
-    <string name="skip_presets_description">Wenn Sie diesen Schritt überspringen, müssen Sie den Inhalt später manuell einrichten.</string>
-    <string name="missing_filter_files_message">Einige Ihrer konfigurierten (nicht ignorierten) Filterdateien fehlen.\n\nVerwenden Sie die Refresh-Taste in der Filter-Tab, um sie herunterzuladen.\n\nWillst du noch weitermachen?</string>
+    <string name="supported_formats_host_name">Hostnamen (z. B. example.com)</string>
+    <string name="skip_this_step">Diesen Schritt überspringen</string>
+    <string name="skip_presets_description">Wenn Sie diesen Schritt überspringen, müssen Sie die Inhaltsblockierung später manuell einrichten.</string>
+    <string name="missing_filter_files_message">Einige Ihrer konfigurierten (nicht ignorierten) Filterdateien fehlen.\n\nVerwenden Sie die Auffrischen-Schaltfläche auf der Filter-Registerkarte, um sie herunterzuladen.\n\nMöchten Sie trotzdem fortfahren?</string>
+    <string name="supported_formats_wildcard">Platzhalter (z. B. *.example.com)</string>
+    <string name="supported_formats_adblock_plus">Adblock Plus (z. B. ||example.com^)</string>
 </resources>
