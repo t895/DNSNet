@@ -1,0 +1,3 @@
+Mit DNSNet haben Sie mehr Kontrolle darüber, welcher Internetverkehr auf Ihrem Gerät ein- und ausgeht. Sie können Hostdateien herunterladen, um eine Reihe bekannter Werbe- oder bösartiger Hostnamen zu blockieren, und dann nach eigenem Ermessen Ausnahmen erstellen.
+
+Dies funktioniert durch die Einrichtung eines schlanken VPN-Dienstes, der Ihren Internetverkehr filtert, während Sie Ihr Gerät nutzen. Wenn Sie jemals Probleme mit der Verbindung zu einer Website oder der Nutzung einer App haben, können Sie eine App jederzeit von der Filterung ausnehmen oder eine Ausnahme für einen bestimmten Hostnamen erstellen.
