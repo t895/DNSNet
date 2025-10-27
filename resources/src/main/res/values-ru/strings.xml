@@ -181,4 +181,21 @@
     <string name="doh3_description">Безопасная отправка DNS-запросов. Использует URL-адреса как \"https://example.com/dns-query\".</string>
     <string name="doh3_warning">По крайней мере один сервер должен быть выбран</string>
     <string name="acknowledge">Подтвердить</string>
+    <string name="filters_tab">Фильтры</string>
+    <string name="missing_filter_files_message">Некоторые из ваших настроенных (не зажигаемых) файлов фильтра отсутствуют.\n\nИспользуйте кнопку обновления на вкладке фильтра, чтобы загрузить их.\n\nТы все еще хочешь продолжить?</string>
+    <string name="missing_filter_files_title">Пропущенный файл фильтра</string>
+    <string name="address">Адрес</string>
+    <string name="updating_filter_files">Обновление файлов фильтров</string>
+    <string name="could_not_update_all_filter_files">Не удалось обновить все файлы фильтра</string>
+    <string name="updating_n_filter_files">Обновление файлов фильтра %1$d</string>
+    <string name="add_filter_file">Добавить файл фильтра</string>
+    <string name="edit_filter_file">Изменить файл фильтра</string>
+    <string name="add_filter">Добавить фильтр</string>
+    <string name="edit_filter">Редактировать фильтр</string>
+    <string name="supported_formats">Поддержка форматов</string>
+    <string name="supported_formats_host_name">Имя хоста (например, example.com)</string>
+    <string name="supported_formats_wildcard">Wildcard (например *.example.com)</string>
+    <string name="supported_formats_adblock_plus">Adblock Plus (например, ||example.com)</string>
+    <string name="skip_this_step">Пропустите этот шаг</string>
+    <string name="skip_presets_description">Если вы пропустите этот шаг, вам нужно будет вручную настроить блокировку контента позже.</string>
 </resources>

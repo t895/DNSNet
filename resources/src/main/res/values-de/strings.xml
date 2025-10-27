@@ -62,7 +62,7 @@
     <string name="notifications_running">Aktiver Dienst</string>
     <string name="notifications_running_desc">Benachrichtigungen zur Interaktion mit dem laufendem Dienst</string>
     <string name="notifications_update">Status</string>
-    <string name="notifications_update_desc">Informationen über Aktualisierung von Filter-Dateien</string>
+    <string name="notifications_update_desc">Meldungen zur Aktualisierung von Filterdateien</string>
     <string name="notifications_paused">Unterbrochener Dienst</string>
     <string name="notifications_paused_desc">Benachrichtigung zum Fortsetzen nach Unterbrechung</string>
     <string name="notifications_group_service">Dienstkontrolle</string>
@@ -182,4 +182,18 @@
     <string name="doh3_warning">Mindestens ein Server muss ausgewählt werden</string>
     <string name="filters_tab">Filter</string>
     <string name="filter_field_hint">Filter</string>
+    <string name="missing_filter_files_title">Fehlende Filterdatei</string>
+    <string name="address">Anschrift</string>
+    <string name="updating_filter_files">Filterdateien aktualisieren</string>
+    <string name="could_not_update_all_filter_files">Konnte nicht alle Filterdateien aktualisieren</string>
+    <string name="updating_n_filter_files">Aktualisierung %1$d Filterdateien</string>
+    <string name="add_filter_file">Filterdatei hinzufügen</string>
+    <string name="edit_filter_file">Filterdatei bearbeiten</string>
+    <string name="add_filter">Filter hinzufügen</string>
+    <string name="edit_filter">Filter bearbeiten</string>
+    <string name="supported_formats">Unterstützte Formate</string>
+    <string name="supported_formats_host_name">Hostnamen (z.B. example.com)</string>
+    <string name="skip_this_step">Über diesen Schritt</string>
+    <string name="skip_presets_description">Wenn Sie diesen Schritt überspringen, müssen Sie den Inhalt später manuell einrichten.</string>
+    <string name="missing_filter_files_message">Einige Ihrer konfigurierten (nicht ignorierten) Filterdateien fehlen.\n\nVerwenden Sie die Refresh-Taste in der Filter-Tab, um sie herunterzuladen.\n\nWillst du noch weitermachen?</string>
 </resources>
