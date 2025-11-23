@@ -46,7 +46,7 @@ fun LoadingIndicatorBox(
     isRefreshing: Boolean,
     modifier: Modifier = Modifier,
     containerColor: Color = MaterialTheme.colorScheme.secondaryContainer,
-    color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    color: Color = MaterialTheme.colorScheme.onSecondaryContainer,
     indicatorMaxDistance: Dp = PullToRefreshDefaults.IndicatorMaxDistance,
 ) {
     IndicatorBox(
