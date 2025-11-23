@@ -394,12 +394,6 @@ data class DnsServers(
                 enabled = false,
                 type = DnsServerType.DoH3,
             ),
-            DnsServer(
-                title = "Google DoH3 IPv6-only",
-                addresses = "dns64.dns.google",
-                enabled = false,
-                type = DnsServerType.DoH3,
-            ),
         )
     }
 }
