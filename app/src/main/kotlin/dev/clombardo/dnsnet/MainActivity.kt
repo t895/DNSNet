@@ -168,7 +168,7 @@ class MainActivity : AppCompatActivity() {
                     val localDensity = LocalDensity.current
                     val systemBarShadeHeight =
                         WindowInsets.systemBars.getTop(localDensity) / localDensity.density
-                    val surfaceColor = MaterialTheme.colorScheme.surface
+                    val surfaceColor = MaterialTheme.colorScheme.surfaceContainerLowest
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
