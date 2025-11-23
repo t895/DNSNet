@@ -51,6 +51,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalDensity
@@ -165,7 +166,10 @@ fun BlockLog(
             ) {
                 val density = LocalDensity.current.density
                 val stroke = remember {
-                    Stroke(width = 8.dp.value * density)
+                    Stroke(
+                        width = 8.dp.value * density,
+                        cap = StrokeCap.Round,
+                    )
                 }
                 CircularWavyProgressIndicator(
                     modifier = Modifier.size(size),
@@ -187,7 +191,8 @@ fun BlockLog(
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.displayLargeEmphasized,
                     color = MaterialTheme.colorScheme.primary,
-                    autoSize = TextAutoSize.StepBased(stepSize = 3.sp)
+                    maxLines = 2,
+                    autoSize = TextAutoSize.StepBased(),
                 )
             }
 

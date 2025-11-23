@@ -27,9 +27,6 @@ val displayEmphasizedFontFamily = FontFamily(
             FontVariation.grade(150),
             FontVariation.slant(-10f),
             FontVariation.width(60f),
-            FontVariation.Setting("XOPQ", 27f),
-            FontVariation.Setting("YOPQ", 90f),
-            FontVariation.Setting("XTRA", 540f),
         )
     )
 )
