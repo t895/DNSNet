@@ -156,6 +156,7 @@
     <string name="help">Help</string>
     <string name="faq_link" translatable="false">https://github.com/t895/DNSNet/wiki/FAQ</string>
     <string name="failed_to_open_link">Failed to open link</string>
+    <string name="activity_not_found">Activity not found</string>
     <string name="welcome_to">Welcome to</string>
     <string name="get_started">Get started</string>
     <string name="notice">Notice</string>

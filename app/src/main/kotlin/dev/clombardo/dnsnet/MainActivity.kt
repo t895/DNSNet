@@ -13,6 +13,7 @@ package dev.clombardo.dnsnet
 
 import android.app.Activity
 import android.app.PendingIntent
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
@@ -47,6 +48,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityOptionsCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -61,6 +63,7 @@ import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.clombardo.dnsnet.log.logDebug
 import dev.clombardo.dnsnet.log.logInfo
+import dev.clombardo.dnsnet.log.logWarning
 import dev.clombardo.dnsnet.service.FilterUtil
 import dev.clombardo.dnsnet.service.db.RuleDatabaseUpdateWorker
 import dev.clombardo.dnsnet.service.vpn.DnsNetVpnService
@@ -82,6 +85,16 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             window.isNavigationBarContrastEnforced = false
+        }
+
+        fun <I> ManagedActivityResultLauncher<I, *>.safeLaunch(input: I, options: ActivityOptionsCompat? = null) {
+            try {
+                launch(input, options)
+            } catch (e: ActivityNotFoundException) {
+                logWarning("Activity not found", e)
+                Toast.makeText(this@MainActivity, R.string.activity_not_found, Toast.LENGTH_SHORT)
+                    .show()
+            }
         }
 
         setContent {
@@ -141,9 +154,9 @@ class MainActivity : AppCompatActivity() {
                                 RuleDatabaseUpdateWorker.runNow(this@MainActivity)
                             }
                         },
-                        onImport = { importLauncher.launch(arrayOf("*/*")) },
-                        onExport = { exportLauncher.launch("dnsnet.json") },
-                        onShareLogcat = { logcatLauncher.launch("dnsnet-log.txt") },
+                        onImport = { importLauncher.safeLaunch(arrayOf("*/*")) },
+                        onExport = { exportLauncher.safeLaunch("dnsnet.json") },
+                        onShareLogcat = { logcatLauncher.safeLaunch("dnsnet-log.txt") },
                         onTryToggleService = { tryToggleService(true, vpnLauncher) },
                         onStartWithoutFiltersCheck = { tryToggleService(false, vpnLauncher) },
                         onReloadVpn = { DnsNetVpnService.reconnect(this@MainActivity) },
