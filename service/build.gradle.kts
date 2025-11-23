@@ -12,7 +12,7 @@ import com.nishtahir.CargoBuildTask
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-    id("org.mozilla.rust-android-gradle.rust-android")
+    alias(libs.plugins.rust.android.gradle)
     alias(libs.plugins.kotlinx.atomicfu)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)

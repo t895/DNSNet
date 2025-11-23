@@ -16,9 +16,11 @@
 
 package dev.clombardo.dnsnet.service.vpn
 
+import android.content.Context
 import dev.clombardo.dnsnet.log.logError
 import dev.clombardo.dnsnet.log.logInfo
 import dev.clombardo.dnsnet.log.logWarning
+import dev.clombardo.dnsnet.service.NativeFileHelperWrapper
 import dev.clombardo.dnsnet.service.db.RuleDatabaseManager
 import uniffi.net.BlockLoggerCallback
 import uniffi.net.VpnController
@@ -31,6 +33,7 @@ class VpnThread(
     private val notify: (VpnStatus) -> Unit,
     private val blockLoggerCallback: BlockLoggerCallback?,
     private val ruleDatabaseManager: RuleDatabaseManager,
+    private val context: Context
 ) : Runnable {
     companion object {
         private const val MIN_RETRY_TIME = 5
@@ -91,7 +94,7 @@ class VpnThread(
             var reloadOnInterrupt = false
             try {
                 // If the function returns, that means it was interrupted
-                val result = runVpn()
+                val result = runVpn(context)
                 immediateRetryCount = 0
                 retryTimeout = MIN_RETRY_TIME
                 when (result) {
@@ -159,13 +162,14 @@ class VpnThread(
     }
 
     @Throws(VpnException::class)
-    private fun runVpn(): VpnResult {
+    private fun runVpn(context: Context): VpnResult {
         // Authenticate and configure the virtual network interface.
         return runVpnNative(
             adVpnCallback = dnsNetVpnService,
             blockLoggerCallback = blockLoggerCallback,
             vpnController = vpnController,
             ruleDatabase = ruleDatabaseManager.ruleDatabase,
+            androidFileHelper = NativeFileHelperWrapper(context)
         )
     }
 }

@@ -20,6 +20,7 @@ use mio::{Interest, Poll, Token, event::Source, net::UdpSocket};
 use quiche::h3::NameValue;
 use quiche::{SendInfo, h3::Header};
 
+use crate::cache::DnsCache;
 use crate::validation::{NativeDnsServer, NativeDnsServerType};
 use crate::{Vpn, VpnCallback};
 
@@ -472,6 +473,7 @@ impl DnsBackend for DoH3Backend {
     fn process_events(
         &mut self,
         vpn: &mut Vpn,
+        dns_cache: Arc<DnsCache>,
         _events: Vec<&mio::event::Event>,
     ) -> Result<Vec<Box<dyn Source>>, DnsBackendError> {
         let mut sources_to_remove = Vec::<Box<dyn Source>>::new();
@@ -525,7 +527,7 @@ impl DnsBackend for DoH3Backend {
                                 // There are no more UDP packets to read, so end the read
                                 // loop.
                                 if error.kind() == std::io::ErrorKind::WouldBlock {
-                                    debug!("process_events: recv() would block");
+                                    trace!("process_events: recv() would block");
                                     break 'read;
                                 }
 
@@ -725,6 +727,7 @@ impl DnsBackend for DoH3Backend {
                                     match connection.sent_request_streams.get(&stream_id) {
                                         Some(request) => {
                                             vpn.handle_dns_response(
+                                                Some(dns_cache.clone()),
                                                 &request.request_packet,
                                                 &self.input_buffer[..read],
                                             );

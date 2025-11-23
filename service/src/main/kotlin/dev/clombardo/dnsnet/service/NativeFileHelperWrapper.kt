@@ -9,10 +9,19 @@
 package dev.clombardo.dnsnet.service
 
 import android.content.Context
+import android.os.ParcelFileDescriptor
 import dev.clombardo.dnsnet.file.FileHelper
 import uniffi.net.AndroidFileHelper
+import java.io.File
 
 class NativeFileHelperWrapper(private val context: Context) : AndroidFileHelper {
     override fun getFilterFileFd(path: String): Int? =
-        FileHelper.getDetachedReadOnlyFd(context, path)
+        FileHelper.getDetachedFd(context, path)
+
+    override fun getDnsCacheFileFd(): Int? =
+        FileHelper.getDetachedFd(
+            context = context,
+            path = File(context.externalCacheDir, "dnscache.blob").absolutePath,
+            mode = ParcelFileDescriptor.MODE_READ_WRITE
+        )
 }

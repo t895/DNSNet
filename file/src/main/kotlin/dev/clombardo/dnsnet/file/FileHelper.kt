@@ -131,21 +131,31 @@ object FileHelper {
      * @param path A content:// URI, a https:// http:// URL, or a local path
      * @return A read-only file descriptor or null if it cannot be opened.
      */
-    fun getDetachedReadOnlyFd(context: Context, path: String): Int? {
-        var descriptor: Int? = null
-        try {
-            descriptor = if (path.startsWith("content://")) {
-                context.contentResolver.openFileDescriptor(path.toUri(), "r")!!.detachFd()
+    fun getDetachedFd(
+        context: Context,
+        path: String,
+        mode: Int = ParcelFileDescriptor.MODE_READ_ONLY
+    ): Int? {
+        val modeString = when (mode) {
+            ParcelFileDescriptor.MODE_WRITE_ONLY -> "w"
+            ParcelFileDescriptor.MODE_READ_WRITE -> "rw"
+            else -> "r"
+        }
+
+        return try {
+            if (path.startsWith("content://")) {
+                context.contentResolver.openFileDescriptor(path.toUri(), modeString)!!.detachFd()
             } else if (isDownloadable(path)) {
                 val itemFile = getLocalFileForRemoteUrl(context, path) ?: return null
-                ParcelFileDescriptor.open(itemFile, ParcelFileDescriptor.MODE_READ_ONLY).detachFd()
+                ParcelFileDescriptor.open(itemFile, mode).detachFd()
             } else {
                 val file = File(path)
-                ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).detachFd()
+                file.createNewFile()
+                ParcelFileDescriptor.open(file, mode).detachFd()
             }
         } catch (e: Exception) {
             logError("getDetachedReadOnlyFd: $path", e)
+            null
         }
-        return descriptor
     }
 }

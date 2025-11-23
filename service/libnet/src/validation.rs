@@ -20,7 +20,7 @@ use mio::{
     unix::{SourceFd, pipe},
 };
 
-use crate::{VpnController, VpnResult};
+use crate::{VpnController, VpnResult, cache::DnsCache};
 
 #[derive(uniffi::Enum, Clone)]
 pub enum NativeDnsServerType {
@@ -155,6 +155,7 @@ impl DnsRequester {
 #[uniffi::export]
 pub fn validate_dns_servers(
     vpn_controller: Arc<VpnController>,
+    dns_cache: Arc<DnsCache>,
     ipv6_support: bool,
     user_servers: Vec<String>,
 ) -> Result<ValidateDnsResult, ValidateDnsError> {
@@ -210,6 +211,24 @@ pub fn validate_dns_servers(
             error!(
                 "validate_dns_servers: Rejecting invalid DoH3 server name - {unvalidated_server}"
             );
+            continue;
+        }
+
+        if let Some(entry) = dns_cache.get(stripped_server) {
+            match entry.ip_record {
+                IpAddr::V4(ipv4_addr) => {
+                    validated_servers.push(Arc::new(NativeDnsServer::new(
+                        ipv4_addr.octets().to_vec(),
+                        NativeDnsServerType::DoH3(stripped_server.to_string()),
+                    )));
+                }
+                IpAddr::V6(ipv6_addr) => {
+                    validated_servers.push(Arc::new(NativeDnsServer::new(
+                        ipv6_addr.octets().to_vec(),
+                        NativeDnsServerType::DoH3(stripped_server.to_string()),
+                    )));
+                }
+            }
             continue;
         }
 
@@ -328,35 +347,37 @@ pub fn validate_dns_servers(
                         None => {
                             error!("validate_dns_servers: Could not get result_size!");
                             continue 'read;
-                        },
+                        }
                     };
 
-                    let current_result_slice = match result_slice.get(current_index..current_index + result_size) {
-                        Some(value) => value,
-                        None => {
-                            error!("validate_dns_servers: Could not get current_result_size!");
-                            continue 'read;
-                        },
-                    };
+                    let current_result_slice =
+                        match result_slice.get(current_index..current_index + result_size) {
+                            Some(value) => value,
+                            None => {
+                                error!("validate_dns_servers: Could not get current_result_size!");
+                                continue 'read;
+                            }
+                        };
 
                     let result_id = match current_result_slice.get(1) {
                         Some(value) => *value,
                         None => {
                             error!("validate_dns_servers: Could not get result_id!");
                             continue 'read;
-                        },
+                        }
                     };
 
                     let dns_requester = match dns_requesters
                         .iter_mut()
-                        .find(|dns_requester| dns_requester.result_id == result_id) {
-                            Some(value) => value,
-                            None => {
-                                error!(
-                                    "validate_dns_servers: Could not find requester for result id {result_id}"
-                                );
-                                continue 'read;
-                            },
+                        .find(|dns_requester| dns_requester.result_id == result_id)
+                    {
+                        Some(value) => value,
+                        None => {
+                            error!(
+                                "validate_dns_servers: Could not find requester for result id {result_id}"
+                            );
+                            continue 'read;
+                        }
                     };
                     dns_requester.resolved_address = Some(current_result_slice[2..].to_vec());
 
@@ -371,6 +392,7 @@ pub fn validate_dns_servers(
 
     for dns_requester in dns_requesters.iter_mut() {
         if let Some(address) = dns_requester.resolved_address.take() {
+            dns_cache.put_answer(&dns_requester.server_name, &address);
             validated_servers.push(Arc::new(NativeDnsServer::new(
                 address,
                 NativeDnsServerType::DoH3(dns_requester.server_name.clone()),

@@ -8,6 +8,7 @@
 
 use std::collections::VecDeque;
 use std::os::fd::AsRawFd;
+use std::sync::Arc;
 use std::{
     net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6},
     time::Duration,
@@ -15,6 +16,7 @@ use std::{
 
 use mio::{Interest, Poll, Token, event::Source, net::UdpSocket};
 
+use crate::cache::DnsCache;
 use crate::get_epoch;
 use crate::{Vpn, VpnCallback, backend::DnsBackendError};
 
@@ -231,6 +233,7 @@ impl DnsBackend for StandardDnsBackend {
     fn process_events(
         &mut self,
         vpn: &mut Vpn,
+        dns_cache: Arc<DnsCache>,
         events: Vec<&mio::event::Event>,
     ) -> Result<Vec<Box<dyn Source>>, DnsBackendError> {
         let mut sources_to_remove = Vec::<Box<dyn Source>>::new();
@@ -247,6 +250,7 @@ impl DnsBackend for StandardDnsBackend {
                     match wosp.socket.recv(&mut self.response_packet.as_mut_slice()) {
                         Ok(size) => {
                             vpn.handle_dns_response(
+                                Some(dns_cache.clone()),
                                 &wosp.packet,
                                 &mut self.response_packet[..size],
                             );

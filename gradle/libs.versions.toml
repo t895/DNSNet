@@ -108,3 +108,4 @@ arturbosch-detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt"
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 gradle-play-publisher = { id = "com.github.triplet.play", version.ref = "playPublisher" }
+rust-android-gradle = { id = "org.mozilla.rust-android-gradle.rust-android" }
