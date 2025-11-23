@@ -240,6 +240,20 @@ fun CreditsScreen(
                 )
             }
 
+            item {
+                LicenseListItem(
+                    title = stringResource(R.string.bincode),
+                    licenseLink = stringResource(R.string.bincode_link),
+                )
+            }
+
+            item {
+                LicenseListItem(
+                    title = stringResource(R.string.lru),
+                    licenseLink = stringResource(R.string.lru_link),
+                )
+            }
+
             if (libs != null) {
                 items(librariesList) {
                     CreditListItem(it)

@@ -250,4 +250,8 @@
     <string name="base64_license_link" translatable="false">https://github.com/marshallpierce/rust-base64/tree/v0.22.1</string>
     <string name="roboto_flex" translatable="false">Roboto Flex</string>
     <string name="roboto_flex_link" translatable="false">https://github.com/googlefonts/roboto-flex/blob/3.200/OFL.txt</string>
+    <string name="bincode" translatable="false">bincode</string>
+    <string name="bincode_link" translatable="false">https://git.sr.ht/~stygianentity/bincode/tree/trunk/item/LICENSE.md</string>
+    <string name="lru" translatable="false">LRU</string>
+    <string name="lru_link" translatable="false">https://github.com/jeromefroe/lru-rs/blob/0.16.2/LICENSE</string>
 </resources>
