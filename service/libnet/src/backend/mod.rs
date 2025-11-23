@@ -9,11 +9,11 @@
 pub mod doh3;
 pub mod standard;
 
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use mio::{Poll, event::Source};
 
-use crate::{Vpn, VpnCallback};
+use crate::{Vpn, VpnCallback, cache::DnsCache};
 
 #[derive(Debug)]
 pub enum DnsBackendError {
@@ -47,6 +47,7 @@ pub trait DnsBackend {
     fn process_events(
         &mut self,
         ad_vpn: &mut Vpn,
+        dns_cache: Arc<DnsCache>,
         events: Vec<&mio::event::Event>,
     ) -> Result<Vec<Box<dyn Source>>, DnsBackendError>;
 }

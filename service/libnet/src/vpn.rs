@@ -17,12 +17,13 @@ use std::{
 use mio::{Events, Interest, Poll, Token, unix::SourceFd};
 
 use crate::{
-    BlockLoggerCallback, VpnCallback,
+    AndroidFileHelper, BlockLoggerCallback, VpnCallback,
     backend::{
         DnsBackend,
         doh3::{DoH3Backend, DoH3BackendError},
         standard::StandardDnsBackend,
     },
+    cache::{DnsCache, SerializableDnsCache},
     database::RuleDatabase,
     packet::build_response_packet,
     proxy::DnsPacketProxy,
@@ -226,11 +227,31 @@ impl Vpn {
         android_vpn_callback: Box<dyn VpnCallback>,
         block_logger_callback: Option<Box<dyn BlockLoggerCallback>>,
         rule_database: Arc<RuleDatabase>,
+        android_file_helper: Box<dyn AndroidFileHelper>,
     ) -> Result<VpnResult, VpnError> {
         let mut packet = vec![0u8; i16::MAX as usize];
 
+        let mut dns_cache_file = match android_file_helper.get_dns_cache_file_fd() {
+            Some(cache_fd) => {
+                // SAFETY: The descriptor is guaranteed to be valid by Android and detached from the Kotlin side
+                Some(unsafe { File::from_raw_fd(cache_fd) })
+            }
+            None => {
+                error!("run: Failed to get DNS cache file fd!");
+                None
+            }
+        };
+
+        let dns_cache = match dns_cache_file {
+            Some(ref mut dns_cache_file) => {
+                let serializable_cache = SerializableDnsCache::from(dns_cache_file);
+                Arc::new(DnsCache::from(serializable_cache))
+            }
+            None => Arc::new(DnsCache::new()),
+        };
+
         let (vpn_fd, dns_servers) =
-            match android_vpn_callback.configure(self.vpn_controller.clone()) {
+            match android_vpn_callback.configure(self.vpn_controller.clone(), dns_cache.clone()) {
                 VpnConfigurationResult::NoNetwork => {
                     error!("run: No network available");
                     return Result::Err(VpnError::NoNetwork);
@@ -320,11 +341,17 @@ impl Vpn {
                 &mut vpn_file,
                 &mut backend,
                 &mut dns_packet_proxy,
+                dns_cache.clone(),
                 packet.as_mut_slice(),
             ) {
                 Ok(result) => match result {
                     VpnResult::Continuing => continue,
-                    _ => return Ok(result),
+                    _ => {
+                        if let Some(ref mut dns_cache_file) = dns_cache_file {
+                            dns_cache.to_disk_cache().write_to(dns_cache_file);
+                        }
+                        return Ok(result);
+                    }
                 },
                 Err(error) => {
                     return Result::Err(error);
@@ -341,6 +368,7 @@ impl Vpn {
         vpn_file: &mut File,
         backend: &mut Box<dyn DnsBackend>,
         dns_packet_proxy: &mut DnsPacketProxy,
+        dns_cache: Arc<DnsCache>,
         packet: &mut [u8],
     ) -> Result<VpnResult, VpnError> {
         if let Err(error) = poll.registry().register(
@@ -393,7 +421,7 @@ impl Vpn {
             }
         }
 
-        match backend.process_events(self, events_to_process) {
+        match backend.process_events(self, dns_cache.clone(), events_to_process) {
             Ok(mut sources_to_remove) => {
                 for source in sources_to_remove.iter_mut() {
                     if let Err(error) = poll.registry().deregister(source) {
@@ -412,7 +440,7 @@ impl Vpn {
         }
 
         if read_from_device {
-            self.read_packet_from_device(vpn_file, backend, dns_packet_proxy, packet)?;
+            self.read_packet_from_device(vpn_file, backend, dns_packet_proxy, dns_cache, packet)?;
         }
 
         if let Err(error) = poll
@@ -451,6 +479,7 @@ impl Vpn {
         vpn_file: &mut File,
         backend: &mut Box<dyn DnsBackend>,
         dns_packet_proxy: &mut DnsPacketProxy,
+        dns_cache: Arc<DnsCache>,
         packet: &mut [u8],
     ) -> Result<(), VpnError> {
         let length = match vpn_file.read(packet) {
@@ -469,15 +498,25 @@ impl Vpn {
             return Result::Ok(());
         }
 
-        dns_packet_proxy.handle_dns_request(self, backend, &packet[..length])?;
+        dns_packet_proxy.handle_dns_request(self, backend, dns_cache, &packet[..length])?;
 
         return Result::Ok(());
     }
 
     /// Handles a DNS response and forwards it to the tunnel with the translated destination
-    pub fn handle_dns_response(&mut self, request_packet: &[u8], response_payload: &[u8]) {
+    pub fn handle_dns_response(
+        &mut self,
+        dns_cache: Option<Arc<DnsCache>>,
+        request_packet: &[u8],
+        response_payload: &[u8],
+    ) {
         match build_response_packet(request_packet, response_payload) {
-            Some(packet) => self.device_writes.push_back(packet),
+            Some(packet) => {
+                if let Some(dns_cache) = dns_cache {
+                    dns_cache.put_packet(response_payload);
+                }
+                self.device_writes.push_back(packet)
+            }
             None => return,
         };
     }

@@ -7,6 +7,7 @@
  */
 
 mod backend;
+mod cache;
 mod database;
 mod packet;
 mod proxy;
@@ -25,6 +26,8 @@ use database::RuleDatabase;
 use log::LevelFilter;
 use mio::net::UdpSocket;
 use vpn::{Vpn, VpnConfigurationResult, VpnController, VpnError, VpnResult};
+
+use crate::cache::DnsCache;
 
 #[macro_use]
 extern crate log;
@@ -58,9 +61,15 @@ pub fn run_vpn_native(
     block_logger_callback: Option<Box<dyn BlockLoggerCallback>>,
     vpn_controller: Arc<VpnController>,
     rule_database: Arc<RuleDatabase>,
+    android_file_helper: Box<dyn AndroidFileHelper>,
 ) -> Result<VpnResult, VpnError> {
     let mut vpn = Vpn::new(vpn_controller);
-    let result = vpn.run(ad_vpn_callback, block_logger_callback, rule_database);
+    let result = vpn.run(
+        ad_vpn_callback,
+        block_logger_callback,
+        rule_database,
+        android_file_helper,
+    );
     info!("run_vpn_native: Stopped");
     return result;
 }
@@ -100,7 +109,11 @@ fn get_epoch() -> Duration {
 /// Callback interface to be implemented by a Kotlin class and then passed into the main loop
 #[uniffi::export(callback_interface)]
 pub trait VpnCallback: Send + Sync {
-    fn configure(&self, vpn_controller: Arc<VpnController>) -> VpnConfigurationResult;
+    fn configure(
+        &self,
+        vpn_controller: Arc<VpnController>,
+        dns_cache: Arc<DnsCache>,
+    ) -> VpnConfigurationResult;
 
     fn protect_raw_socket_fd(&self, socket_fd: i32) -> bool;
 
@@ -111,6 +124,7 @@ pub trait VpnCallback: Send + Sync {
 #[uniffi::export(callback_interface)]
 pub trait AndroidFileHelper {
     fn get_filter_file_fd(&self, path: String) -> Option<i32>;
+    fn get_dns_cache_file_fd(&self) -> Option<i32>;
 }
 
 /// Callback interface for logging connections that we've blocked for the block logger

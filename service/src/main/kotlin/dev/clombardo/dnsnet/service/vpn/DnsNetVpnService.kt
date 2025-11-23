@@ -55,6 +55,7 @@ import dev.clombardo.dnsnet.settings.Preferences
 import dev.clombardo.dnsnet.ui.common.FabState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import uniffi.net.DnsCache
 import uniffi.net.VpnCallback
 import uniffi.net.ValidateDnsException
 import uniffi.net.ValidateDnsResult
@@ -587,6 +588,7 @@ class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
                 null
             },
             ruleDatabaseManager = ruleDatabaseManager,
+            context = applicationContext
         )
     }
 
@@ -699,7 +701,7 @@ class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
     }
 
     @Throws(NoNetworkException::class)
-    override fun configure(vpnController: VpnController): VpnConfigurationResult {
+    override fun configure(vpnController: VpnController, dnsCache: DnsCache): VpnConfigurationResult {
         logDebug("Configuring")
         val unvalidatedDnsServers = mutableListOf<String>()
         // Get the current DNS servers before starting the VPN
@@ -748,6 +750,7 @@ class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
                 vpnController = vpnController,
                 ipv6Support = ipv6Support,
                 userServers = unvalidatedDnsServers,
+                dnsCache = dnsCache
             )
 
             when (result) {
