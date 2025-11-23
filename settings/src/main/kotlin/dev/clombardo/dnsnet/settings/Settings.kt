@@ -24,6 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
@@ -300,11 +301,13 @@ class Settings @Inject constructor(
                 configuration.replaceInstance(context.contentResolver.openInputStream(uri)!!)
             } catch (e: Exception) {
                 logDebug("Cannot read file", e)
-                Toast.makeText(
-                    context,
-                    "Cannot read file: ${e.message}",
-                    Toast.LENGTH_SHORT,
-                ).show()
+                launch(Dispatchers.Main) {
+                    Toast.makeText(
+                        context,
+                        "Cannot read file: ${e.message}",
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                }
             }
             onFinish()
         }
