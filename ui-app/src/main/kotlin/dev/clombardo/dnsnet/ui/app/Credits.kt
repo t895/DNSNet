@@ -32,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.core.net.toUri
 import com.mikepenz.aboutlibraries.entity.Library
+import com.mikepenz.aboutlibraries.ui.compose.produceLibraries
 import com.mikepenz.aboutlibraries.ui.compose.rememberLibraries
 import dev.clombardo.dnsnet.ui.common.BasicTooltipButton
 import dev.clombardo.dnsnet.ui.common.ContentSetting
@@ -44,6 +45,7 @@ import dev.clombardo.dnsnet.ui.common.rememberAtTop
 import dev.clombardo.dnsnet.ui.common.clickable
 import dev.clombardo.dnsnet.ui.common.theme.ListPadding
 import dev.clombardo.dnsnet.ui.common.tryOpenUri
+import androidx.compose.ui.platform.LocalResources
 
 @Composable
 fun LicenseListItem(
@@ -104,19 +106,15 @@ fun CreditsScreen(
     modifier: Modifier = Modifier,
     onNavigateUp: () -> Unit,
 ) {
-    val resources = LocalContext.current.resources
-    val libs by rememberLibraries {
+    val resources = LocalResources.current
+    val libs by produceLibraries {
         resources.openRawResource(R.raw.aboutlibraries).use {
             it.bufferedReader().readText()
         }
     }
     val librariesList by remember {
         derivedStateOf {
-            if (libs == null) {
-                emptyList()
-            } else {
-                libs!!.libraries.distinctBy { it.artifactId }.distinctBy { it.name }
-            }
+            libs?.libraries?.distinctBy { it.artifactId }?.distinctBy { it.name } ?: emptyList()
         }
     }
 
