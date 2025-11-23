@@ -30,8 +30,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Filter1
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Button
@@ -253,6 +255,16 @@ fun FiltersScreen(
                 title = it.title,
                 details = it.data,
                 clip = true,
+                startContent = {
+                    val icon = when (it) {
+                        is FilterFile -> Icons.Default.Filter1
+                        is SingleFilter -> Icons.AutoMirrored.Default.InsertDriveFile
+                    }
+                    Icon(
+                        painter = rememberVectorPainter(icon),
+                        contentDescription = null,
+                    )
+                },
                 endContent = {
                     val stateText = getStateString(it.state)
                     TooltipIconButton(
