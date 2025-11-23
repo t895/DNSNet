@@ -46,6 +46,7 @@ dependencies {
 androidComponents {
     onVariants { v ->
         val artifactsLoader = v.artifacts.getBuiltArtifactsLoader()
+        @Suppress("UnstableApiUsage")
         v.instrumentationRunnerArguments.put(
             "targetAppId",
             v.testedApks.map { artifactsLoader.load(it)?.applicationId ?: "" }
