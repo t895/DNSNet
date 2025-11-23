@@ -494,6 +494,7 @@ fun App(
                     } else {
                         { vm.onDeleteDnsServerWarning() }
                     },
+                    pingAddress = { vm.pingAddress(it) },
                 )
             }
             composable<TopLevelDestination.About> {

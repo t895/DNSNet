@@ -98,6 +98,7 @@
         <item>System apps bypass by default</item>
     </string-array>
     <string name="input_blank_error">Input must not be blank</string>
+    <string name="address_not_reachable">Address not reachable</string>
     <string name="resume">Resume</string>
     <string name="notification_permission">Notification permission needed</string>
     <string name="notification_permission_description">We need the notification permission to show the status of the host blocker and updates for it.</string>

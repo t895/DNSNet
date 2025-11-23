@@ -9,6 +9,9 @@
 package dev.clombardo.dnsnet.ui.app
 
 import android.os.Parcelable
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,6 +21,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -27,7 +31,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +42,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -60,6 +67,8 @@ import dev.clombardo.dnsnet.ui.common.rememberAtTop
 import dev.clombardo.dnsnet.ui.common.rememberMutableStateListOf
 import dev.clombardo.dnsnet.ui.common.theme.DnsNetTheme
 import dev.clombardo.dnsnet.ui.common.theme.ListPadding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
 
 @Composable
@@ -78,7 +87,11 @@ fun DnsScreen(
     onItemCheckClicked: (DnsServer) -> Unit,
 ) {
     val serversState = servers.filter {
-        it.type == if (doh3Support) { DnsServerType.DoH3 } else { DnsServerType.Standard }
+        it.type == if (doh3Support) {
+            DnsServerType.DoH3
+        } else {
+            DnsServerType.Standard
+        }
     }
     LazyColumn(
         modifier = modifier,
@@ -186,12 +199,18 @@ private fun DnsScreenPreview() {
 }
 
 @Parcelize
-data class AddressInputState(
+private data class AddressInputState(
     val address: String = "",
-    val error: Boolean = false,
+    val error: AddressInputError = AddressInputError.None,
 ) : Parcelable
 
-@OptIn(ExperimentalMaterial3Api::class)
+private enum class AddressInputError {
+    None,
+    Blank,
+    NotReachable,
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun EditDnsScreen(
     modifier: Modifier = Modifier,
@@ -199,6 +218,7 @@ fun EditDnsScreen(
     onNavigateUp: () -> Unit,
     onSave: (DnsServer) -> Unit,
     onDelete: (() -> Unit)? = null,
+    pingAddress: suspend (String) -> Boolean = { false },
 ) {
     var titleInput by rememberSaveable { mutableStateOf(server.title) }
     var titleInputError by rememberSaveable { mutableStateOf(false) }
@@ -209,7 +229,7 @@ fun EditDnsScreen(
             add(AddressInputState())
         } else {
             server.getAddresses().forEach {
-                add(AddressInputState(address = it, error = false))
+                add(AddressInputState(address = it, error = AddressInputError.None))
             }
         }
     }
@@ -219,6 +239,8 @@ fun EditDnsScreen(
     }
 
     val state = rememberLazyListState()
+    val savingScope = rememberCoroutineScope()
+    var isSaving by rememberSaveable { mutableStateOf(false) }
     InsetScaffold(
         modifier = modifier,
         topBar = {
@@ -244,32 +266,74 @@ fun EditDnsScreen(
                     }
 
                     item {
-                        BasicTooltipButton(
-                            icon = Icons.Default.Save,
-                            contentDescription = stringResource(R.string.save),
-                            onClick = {
-                                titleInputError = titleInput.isBlank()
-                                var locationInputError = false
-                                addressesState.forEachIndexed { i, state ->
-                                    if (state.address.isBlank()) {
-                                        locationInputError = true
-                                        addressesState[i] = state.copy(error = true)
-                                    }
-                                }
-                                if (titleInputError || locationInputError) {
-                                    return@BasicTooltipButton
-                                }
+                        Box(
+                            modifier = Modifier.size(48.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            AnimatedVisibility(
+                                visible = !isSaving,
+                                enter = fadeIn(),
+                                exit = fadeOut(),
+                            ) {
+                                BasicTooltipButton(
+                                    icon = Icons.Default.Save,
+                                    contentDescription = stringResource(R.string.save),
+                                    onClick = {
+                                        titleInputError = titleInput.isBlank()
+                                        var locationInputError = false
+                                        addressesState.forEachIndexed { i, state ->
+                                            if (state.address.isBlank()) {
+                                                locationInputError = true
+                                                addressesState[i] =
+                                                    state.copy(error = AddressInputError.Blank)
+                                            }
+                                        }
 
-                                onSave(
-                                    DnsServer(
-                                        titleInput,
-                                        addressesState.fastJoinToString(separator = ",") { it.address },
-                                        enabledInput,
-                                        server.type,
-                                    )
+                                        if (titleInputError || locationInputError) {
+                                            return@BasicTooltipButton
+                                        }
+
+                                        savingScope.launch(Dispatchers.IO) {
+                                            isSaving = true
+                                            var pingFailed = false
+                                            addressesState.forEachIndexed { i, state ->
+                                                if (!pingAddress(state.address)) {
+                                                    pingFailed = true
+                                                    addressesState[i] =
+                                                        state.copy(error = AddressInputError.NotReachable)
+                                                }
+                                            }
+
+                                            isSaving = false
+                                            if (pingFailed) {
+                                                return@launch
+                                            }
+
+                                            launch(Dispatchers.Main) {
+                                                onSave(
+                                                    DnsServer(
+                                                        titleInput,
+                                                        addressesState.fastJoinToString(separator = ",") { it.address },
+                                                        enabledInput,
+                                                        server.type,
+                                                    )
+                                                )
+                                            }
+                                        }
+                                    },
                                 )
-                            },
-                        )
+                            }
+
+                            AnimatedVisibility(
+                                visible = isSaving,
+                                enter = fadeIn(),
+                                exit = fadeOut(),
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                        }
                     }
                 },
             )
@@ -329,10 +393,12 @@ fun EditDnsScreen(
                     onValueChange = {
                         addressesState[i] = AddressInputState(it)
                     },
-                    isError = state.error,
+                    isError = state.error != AddressInputError.None,
                     supportingText = {
-                        if (state.error) {
-                            Text(text = stringResource(R.string.input_blank_error))
+                        when (state.error) {
+                            AddressInputError.NotReachable -> Text(text = stringResource(R.string.address_not_reachable))
+                            AddressInputError.Blank -> Text(text = stringResource(R.string.input_blank_error))
+                            AddressInputError.None -> {}
                         }
                     },
                     trailingIcon = {

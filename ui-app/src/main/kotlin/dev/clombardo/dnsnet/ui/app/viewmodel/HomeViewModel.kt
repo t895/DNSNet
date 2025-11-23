@@ -43,6 +43,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import java.net.InetAddress
+import java.net.UnknownHostException
 import javax.inject.Inject
 
 @SuppressLint("StaticFieldLeak")
@@ -418,6 +420,13 @@ class HomeViewModel @Inject constructor(
             }
         }
     }
+
+    fun pingAddress(address: String): Boolean =
+        try {
+            InetAddress.getByName(address).isReachable(3_000)
+        } catch (_: UnknownHostException) {
+            false
+        }
 
     companion object {
         const val KEY_SETUP_SHOWN = "setupShown"
