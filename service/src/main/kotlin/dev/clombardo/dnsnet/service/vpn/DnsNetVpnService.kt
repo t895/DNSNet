@@ -16,6 +16,7 @@
 
 package dev.clombardo.dnsnet.service.vpn
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -231,6 +232,7 @@ enum class Command {
     RELOAD_DATABASE,
 }
 
+@SuppressLint("VpnServicePolicy")
 class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
     companion object {
         const val SERVICE_RUNNING_NOTIFICATION_ID = 1
