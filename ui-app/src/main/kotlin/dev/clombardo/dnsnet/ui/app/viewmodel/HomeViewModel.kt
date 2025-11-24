@@ -423,7 +423,9 @@ class HomeViewModel @Inject constructor(
 
     fun pingAddress(address: String): Boolean =
         try {
-            InetAddress.getByName(address).isReachable(3_000)
+            InetAddress.getByName(
+                address.substringBeforeLast("/").substringAfterLast("/")
+            ).isReachable(3_000)
         } catch (_: UnknownHostException) {
             false
         }
