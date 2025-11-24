@@ -370,6 +370,9 @@ data class DnsServers(
     var type: DnsServerType = DnsServerType.Standard,
     var items: MutableList<DnsServer> = defaultServers.toMutableList(),
 ) {
+    fun getCurrentServers(): List<DnsServer> =
+        items.mapNotNull { if (it.type == type) it else null }.toList()
+
     companion object {
         val defaultServers = listOf(
             DnsServer(

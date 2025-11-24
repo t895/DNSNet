@@ -718,10 +718,8 @@ class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
         // servers first. See issue DNSNet/#91.
         configuration.read {
             if (this.dnsServers.enabled) {
-                this.dnsServers.items.forEach {
-                    if (it.enabled && it.type == this.dnsServers.type) {
-                        unvalidatedDnsServers.addAll(it.getAddresses())
-                    }
+                this.dnsServers.getCurrentServers().forEach {
+                    unvalidatedDnsServers.addAll(it.getAddresses())
                 }
             }
         }
