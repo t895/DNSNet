@@ -199,4 +199,6 @@
     <string name="address">Dirección</string>
     <string name="skip_this_step">Saltar este paso</string>
     <string name="skip_presets_description">Si te saltas este paso, tendrás que configurar manualmente el bloqueo de contenido más adelante.</string>
+    <string name="address_not_reachable">Dirección no accesible</string>
+    <string name="activity_not_found">Actividad no encontrada</string>
 </resources>
