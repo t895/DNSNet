@@ -205,4 +205,6 @@
     <string name="address">Alamat</string>
     <string name="skip_this_step">Lewati langkah ini</string>
     <string name="skip_presets_description">Jika Anda melewati langkah ini, Anda perlu mengatur pemblokiran konten secara manual nantinya.</string>
+    <string name="address_not_reachable">Alamat tidak dapat dijangkau</string>
+    <string name="activity_not_found">Aktivitas tidak ditemukan</string>
 </resources>
