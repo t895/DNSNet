@@ -7,51 +7,26 @@
  */
 
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.dnsnet.android.library)
+    alias(libs.plugins.dnsnet.kotlin.json)
+    alias(libs.plugins.dnsnet.compose)
 }
 
 android {
     namespace = "dev.clombardo.dnsnet.ui.common"
-    compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
-        minSdk = libs.versions.minSdk.get().toInt()
-
         consumerProguardFiles("consumer-rules.pro")
     }
-
-    buildTypes {
-        create("benchmark")
-    }
-
-    buildFeatures {
-        compose = true
-    }
-}
-
-kotlin {
-    jvmToolchain(libs.versions.java.get().toInt())
 }
 
 dependencies {
-    val composeBom = platform(libs.compose.bom)
-    implementation(composeBom)
-    debugImplementation(composeBom)
-    androidTestImplementation(composeBom)
-    implementation(libs.androidx.material3)
-    implementation(libs.androidx.ui.tooling.preview)
-    debugImplementation(libs.androidx.ui.tooling)
     implementation(libs.androidx.material.icons.core)
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.graphics.shapes)
     implementation(libs.androidx.material3.adaptive.navigation.suite)
 
     implementation(libs.materialswitch)
-
-    implementation(libs.kotlinx.serialization.json)
 
     implementation(project(":log"))
     implementation(project(":resources"))

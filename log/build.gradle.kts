@@ -7,29 +7,13 @@
  */
 
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.dnsnet.android.library)
 }
 
 android {
     namespace = "dev.clombardo.dnsnet.log"
-    compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
-        minSdk = libs.versions.minSdk.get().toInt()
-
         consumerProguardFiles("consumer-rules.pro")
     }
-
-    buildTypes {
-        create("benchmark")
-    }
-
-    buildFeatures {
-        buildConfig = true
-    }
-}
-
-kotlin {
-    jvmToolchain(libs.versions.java.get().toInt())
 }

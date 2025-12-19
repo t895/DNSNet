@@ -15,8 +15,10 @@ pluginManagement {
         }
     }
     includeBuild("./rust-android-gradle")
+    includeBuild("./build-logic")
 }
 
+@Suppress("UnstableApiUsage")
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {

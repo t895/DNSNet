@@ -7,31 +7,24 @@
  */
 
 import com.github.triplet.gradle.androidpublisher.ReleaseStatus
-import io.gitlab.arturbosch.detekt.Detekt
 
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.dnsnet.android.application)
+    alias(libs.plugins.dnsnet.compose)
     alias(libs.plugins.kotlin.parcelize)
-    alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.kotlinx.atomicfu)
+    alias(libs.plugins.dnsnet.kotlin.json)
+    alias(libs.plugins.dnsnet.atomicfu)
     alias(libs.plugins.androidx.baselineprofile)
     alias(libs.plugins.accrescent.bundletool)
-    alias(libs.plugins.arturbosch.detekt)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.hilt)
+    alias(libs.plugins.dnsnet.hilt)
     alias(libs.plugins.gradle.play.publisher)
 }
 
 android {
     namespace = "dev.clombardo.dnsnet"
-    compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
         applicationId = "dev.clombardo.dnsnet"
-        minSdk = libs.versions.minSdk.get().toInt()
-        targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = rootProject.extra["versionCode"] as Int
         versionName = rootProject.extra["versionName"] as String
 
@@ -97,11 +90,6 @@ android {
         }
     }
 
-    buildFeatures {
-        compose = true
-        buildConfig = true
-    }
-
     // Required for reproducible builds on F-Droid
     dependenciesInfo {
         // Disables dependency metadata when building APKs.
@@ -123,30 +111,11 @@ android {
             excludes += "/META-INF/gradle/incremental.annotation.processors"
         }
     }
-
-    /**
-     * Already excluded in the :service module
-     */
-    lint {
-        disable += "RemoveWorkManagerInitializer"
-    }
-}
-
-kotlin {
-    jvmToolchain(libs.versions.java.get().toInt())
 }
 
 dependencies {
     implementation(libs.androidx.appcompat)
 
-    // Compose
-    val composeBom = platform(libs.compose.bom)
-    implementation(composeBom)
-    debugImplementation(composeBom)
-    androidTestImplementation(composeBom)
-    implementation(libs.androidx.material3)
-    implementation(libs.androidx.ui.tooling.preview)
-    debugImplementation(libs.androidx.ui.tooling)
     implementation(libs.androidx.material.icons.core)
     implementation(libs.androidx.material.icons.extended)
 
@@ -158,10 +127,6 @@ dependencies {
 
     implementation(libs.androidx.activity.compose)
 
-    implementation(libs.kotlinx.serialization.json)
-
-    implementation(libs.atomicfu)
-
     // Baseline profiles
     implementation(libs.androidx.profileinstaller)
     "baselineProfile"(project(":baselineprofile"))
@@ -170,16 +135,12 @@ dependencies {
 
     implementation(libs.androidx.core.splashscreen)
 
-    detektPlugins(libs.detekt.formatting)
-
     implementation(libs.haze)
 
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.rules)
 
-    implementation(libs.hilt)
     implementation(libs.androidx.hilt.work)
-    ksp(libs.hilt.compiler)
 
     implementation(project(":ui-app"))
     implementation(project(":ui-common"))
@@ -190,19 +151,6 @@ dependencies {
     implementation(project(":service"))
     implementation(project(":notification"))
     implementation(project(":blocklogger"))
-}
-
-detekt {
-    toolVersion = libs.versions.detekt.get()
-    config.setFrom(file("config/detekt/detekt.yml"))
-    buildUponDefaultConfig = true
-    autoCorrect = true
-}
-
-tasks.withType<Detekt>().configureEach {
-    reports {
-        html.required.set(true)
-    }
 }
 
 play {

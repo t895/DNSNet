@@ -7,57 +7,25 @@
  */
 
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.dnsnet.android.library)
+    alias(libs.plugins.dnsnet.compose)
     alias(libs.plugins.kotlin.parcelize)
-    alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.kotlinx.atomicfu)
+    alias(libs.plugins.dnsnet.kotlin.json)
+    alias(libs.plugins.dnsnet.atomicfu)
     alias(libs.plugins.aboutLibraries)
     alias(libs.plugins.aboutLibrariesAndroid)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.hilt)
+    alias(libs.plugins.dnsnet.hilt)
 }
 
 android {
     namespace = "dev.clombardo.dnsnet.ui.app"
-    compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
-        minSdk = libs.versions.minSdk.get().toInt()
-
         consumerProguardFiles("consumer-rules.pro")
-
-        val versionName: String by rootProject.extra
-        buildConfigField(
-            type = "String",
-            name = "VERSION_NAME",
-            value = "\"$versionName\"",
-        )
     }
-
-    buildTypes {
-        create("benchmark")
-    }
-
-    buildFeatures {
-        compose = true
-        buildConfig = true
-    }
-}
-
-kotlin {
-    jvmToolchain(libs.versions.java.get().toInt())
 }
 
 dependencies {
-    val composeBom = platform(libs.compose.bom)
-    implementation(composeBom)
-    debugImplementation(composeBom)
-    androidTestImplementation(composeBom)
-    implementation(libs.androidx.material3)
-    implementation(libs.androidx.ui.tooling.preview)
-    debugImplementation(libs.androidx.ui.tooling)
     implementation(libs.androidx.material.icons.core)
     implementation(libs.androidx.material.icons.extended)
 
@@ -65,17 +33,11 @@ dependencies {
 
     implementation(libs.accompanist.permissions)
 
-    implementation(libs.kotlinx.serialization.json)
-
     implementation(libs.string.similarity.kotlin)
 
     implementation(libs.coil.compose)
 
-    implementation(libs.atomicfu)
-
-    implementation(libs.hilt)
     implementation(libs.androidx.hilt.navigation.compose)
-    ksp(libs.hilt.compiler)
 
     implementation(libs.aboutlibraries.core)
     implementation(libs.aboutlibraries.compose.core)

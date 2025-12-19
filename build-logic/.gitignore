@@ -1,0 +1,4 @@
+/.gradle
+.DS_Store
+/build
+/.kotlin

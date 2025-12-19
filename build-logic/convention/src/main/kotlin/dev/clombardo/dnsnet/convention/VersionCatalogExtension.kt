@@ -8,20 +8,12 @@
  * GPL.
  */
 
-plugins {
-    alias(libs.plugins.dnsnet.android.library)
-}
+package dev.clombardo.dnsnet.convention
 
-android {
-    namespace = "dev.clombardo.dnsnet.file"
+import org.gradle.api.Project
+import org.gradle.api.artifacts.VersionCatalog
+import org.gradle.api.artifacts.VersionCatalogsExtension
+import org.gradle.kotlin.dsl.getByType
 
-    defaultConfig {
-        consumerProguardFiles("consumer-rules.pro")
-    }
-}
-
-dependencies {
-    implementation(libs.androidx.core.ktx)
-
-    implementation(project(":log"))
-}
+val Project.libs
+    get(): VersionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")

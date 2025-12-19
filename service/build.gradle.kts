@@ -10,12 +10,10 @@ import com.android.build.gradle.tasks.MergeSourceSetFolders
 import com.nishtahir.CargoBuildTask
 
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.dnsnet.android.library)
     alias(libs.plugins.rust.android.gradle)
-    alias(libs.plugins.kotlinx.atomicfu)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.hilt)
+    alias(libs.plugins.dnsnet.atomicfu)
+    alias(libs.plugins.dnsnet.hilt)
 }
 
 val libnet = "libnet"
@@ -106,11 +104,8 @@ tasks.getByName("clean") {
 
 android {
     namespace = "dev.clombardo.dnsnet.service"
-    compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
-        minSdk = libs.versions.minSdk.get().toInt()
-
         consumerProguardFiles("consumer-rules.pro")
 
         ndk {
@@ -128,20 +123,10 @@ android {
             jniLibs.srcDir("build/rustJniLibs")
         }
     }
-
-    buildTypes {
-        create("benchmark")
-    }
-}
-
-kotlin {
-    jvmToolchain(libs.versions.java.get().toInt())
 }
 
 dependencies {
     implementation(libs.androidx.work.runtime.ktx)
-
-    implementation(libs.atomicfu)
 
     implementation(libs.androidx.core.ktx)
 
@@ -151,9 +136,7 @@ dependencies {
         }
     }
 
-    implementation(libs.hilt)
     implementation(libs.androidx.hilt.work)
-    ksp(libs.hilt.compiler)
     ksp(libs.hilt.extensions.compiler)
 
     testImplementation(libs.junit)

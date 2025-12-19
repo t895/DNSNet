@@ -7,52 +7,23 @@
  */
 
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.dnsnet.android.library)
+    alias(libs.plugins.dnsnet.compose)
     alias(libs.plugins.kotlin.parcelize)
-    alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.kotlinx.atomicfu)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.hilt)
+    alias(libs.plugins.dnsnet.kotlin.json)
+    alias(libs.plugins.dnsnet.atomicfu)
+    alias(libs.plugins.dnsnet.hilt)
 }
 
 android {
     namespace = "dev.clombardo.dnsnet.settings"
-    compileSdk = libs.versions.compileSdk.get().toInt()
-
     defaultConfig {
-        minSdk = libs.versions.minSdk.get().toInt()
-
         consumerProguardFiles("consumer-rules.pro")
-    }
-
-    buildTypes {
-        create("benchmark")
-    }
-
-    buildFeatures {
-        compose = true
-    }
-}
-
-kotlin {
-    jvmToolchain(libs.versions.java.get().toInt())
-    compilerOptions {
-        freeCompilerArgs.add("-Xannotation-default-target=param-property")
     }
 }
 
 dependencies {
     implementation(libs.androidx.preference.ktx)
-
-    implementation(libs.kotlinx.serialization.json)
-
-    implementation(libs.atomicfu)
-
-    implementation(libs.hilt)
-    implementation(libs.androidx.runtime.android)
-    ksp(libs.hilt.compiler)
 
     implementation(project(":log"))
     implementation(project(":file"))

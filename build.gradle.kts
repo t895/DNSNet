@@ -18,14 +18,19 @@ plugins {
     alias(libs.plugins.aboutLibraries) apply false
     alias(libs.plugins.aboutLibrariesAndroid) apply false
 
-    alias(libs.plugins.arturbosch.detekt) apply false
-
     alias(libs.plugins.rust.android.gradle) apply false
 
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.hilt) apply false
 
     alias(libs.plugins.gradle.play.publisher) apply false
+
+    alias(libs.plugins.dnsnet.android.application) apply false
+    alias(libs.plugins.dnsnet.android.library) apply false
+    alias(libs.plugins.dnsnet.hilt) apply false
+    alias(libs.plugins.dnsnet.kotlin.json) apply false
+    alias(libs.plugins.dnsnet.compose) apply false
+    alias(libs.plugins.dnsnet.atomicfu) apply false
 }
 
 val versionCode by extra { 63 }

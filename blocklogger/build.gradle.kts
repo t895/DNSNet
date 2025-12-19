@@ -7,38 +7,20 @@
  */
 
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.hilt)
+    alias(libs.plugins.dnsnet.android.library)
+    alias(libs.plugins.dnsnet.hilt)
+    alias(libs.plugins.dnsnet.kotlin.json)
 }
 
 android {
     namespace = "dev.clombardo.dnsnet.blocklogger"
-    compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
-        minSdk = libs.versions.minSdk.get().toInt()
-
         consumerProguardFiles("consumer-rules.pro")
     }
-
-    buildTypes {
-        create("benchmark")
-    }
-}
-
-kotlin {
-    jvmToolchain(libs.versions.java.get().toInt())
 }
 
 dependencies {
-    implementation(libs.kotlinx.serialization.json)
-
-    implementation(libs.hilt)
-    ksp(libs.hilt.compiler)
-
     implementation(project(":file"))
     implementation(project(":log"))
 }

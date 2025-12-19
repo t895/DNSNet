@@ -15,7 +15,7 @@
             android:permission="android.permission.BIND_VPN_SERVICE"
             android:exported="true"
             android:foregroundServiceType="systemExempted"
-            tools:ignore="ForegroundServicePermission"> <!-- This is a VPN, we don't need the alarm permission -->
+            tools:ignore="ForegroundServicePermission,VpnServicePolicy"> <!-- This is a VPN, we don't need the alarm permission -->
             <intent-filter>
                 <action android:name="android.net.VpnService" />
             </intent-filter>
@@ -28,13 +28,7 @@
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
             android:exported="false"
-            tools:node="merge">
-            <!-- If you are using androidx.startup to initialize other components -->
-            <meta-data
-                android:name="androidx.work.WorkManagerInitializer"
-                android:value="androidx.startup"
-                tools:node="remove" />
-        </provider>
+            tools:node="merge" />
 
     </application>
 
