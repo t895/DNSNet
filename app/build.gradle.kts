@@ -111,6 +111,13 @@ android {
             excludes += "/META-INF/gradle/incremental.annotation.processors"
         }
     }
+
+    /**
+     * Already excluded in the :service module
+     */
+    lint {
+        disable += "RemoveWorkManagerInitializer"
+    }
 }
 
 dependencies {
