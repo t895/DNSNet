@@ -257,8 +257,8 @@ fun FiltersScreen(
                 clip = true,
                 startContent = {
                     val icon = when (it) {
-                        is FilterFile -> Icons.Default.Filter1
-                        is SingleFilter -> Icons.AutoMirrored.Default.InsertDriveFile
+                        is FilterFile -> Icons.AutoMirrored.Default.InsertDriveFile
+                        is SingleFilter -> Icons.Default.Filter1
                     }
                     Icon(
                         painter = rememberVectorPainter(icon),
