@@ -9,7 +9,7 @@
  * (at your option) any later version.
  */
 
-package dev.clombardo.dnsnet.file
+package dev.clombardo.dnsnet.common
 
 import java.io.File
 import java.io.FileInputStream

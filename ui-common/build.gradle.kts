@@ -28,6 +28,6 @@ dependencies {
 
     implementation(libs.materialswitch)
 
-    implementation(project(":log"))
+    implementation(project(":common"))
     implementation(project(":resources"))
 }

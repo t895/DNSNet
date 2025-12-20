@@ -17,7 +17,7 @@ import coil3.disk.DiskCache
 import coil3.disk.directory
 import coil3.memory.MemoryCache
 import dagger.hilt.android.HiltAndroidApp
-import dev.clombardo.dnsnet.notification.NotificationChannels
+import dev.clombardo.dnsnet.common.NotificationChannels
 import dev.clombardo.dnsnet.settings.Preferences
 import dev.clombardo.dnsnet.ui.app.coil.AppImageFetcher
 import dev.clombardo.dnsnet.ui.app.coil.AppImageKeyer

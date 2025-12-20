@@ -152,11 +152,9 @@ dependencies {
     implementation(project(":ui-app"))
     implementation(project(":ui-common"))
     implementation(project(":settings"))
-    implementation(project(":log"))
-    implementation(project(":file"))
+    implementation(project(":common"))
     implementation(project(":resources"))
     implementation(project(":service"))
-    implementation(project(":notification"))
     implementation(project(":blocklogger"))
 }
 

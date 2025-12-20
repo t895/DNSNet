@@ -21,6 +21,5 @@ android {
 }
 
 dependencies {
-    implementation(project(":file"))
-    implementation(project(":log"))
+    implementation(project(":common"))
 }

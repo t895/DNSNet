@@ -17,9 +17,9 @@
 package dev.clombardo.dnsnet.service.vpn
 
 import android.content.Context
-import dev.clombardo.dnsnet.log.logError
-import dev.clombardo.dnsnet.log.logInfo
-import dev.clombardo.dnsnet.log.logWarning
+import dev.clombardo.dnsnet.common.logError
+import dev.clombardo.dnsnet.common.logInfo
+import dev.clombardo.dnsnet.common.logWarning
 import dev.clombardo.dnsnet.service.NativeFileHelperWrapper
 import dev.clombardo.dnsnet.service.db.RuleDatabaseManager
 import uniffi.net.BlockLoggerCallback

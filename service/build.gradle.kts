@@ -146,11 +146,9 @@ dependencies {
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.rules)
 
-    implementation(project(":log"))
-    implementation(project(":file"))
+    implementation(project(":common"))
     implementation(project(":ui-common"))
     implementation(project(":resources"))
     implementation(project(":settings"))
     implementation(project(":blocklogger"))
-    implementation(project(":notification"))
 }

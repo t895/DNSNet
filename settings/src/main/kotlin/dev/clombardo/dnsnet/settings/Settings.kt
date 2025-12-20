@@ -17,9 +17,9 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import dev.clombardo.dnsnet.log.logDebug
-import dev.clombardo.dnsnet.log.logError
-import dev.clombardo.dnsnet.log.logWarning
+import dev.clombardo.dnsnet.common.logDebug
+import dev.clombardo.dnsnet.common.logError
+import dev.clombardo.dnsnet.common.logWarning
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

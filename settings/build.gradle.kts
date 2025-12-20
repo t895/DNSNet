@@ -25,7 +25,6 @@ android {
 dependencies {
     implementation(libs.androidx.preference.ktx)
 
-    implementation(project(":log"))
-    implementation(project(":file"))
+    implementation(project(":common"))
     implementation(project(":resources"))
 }

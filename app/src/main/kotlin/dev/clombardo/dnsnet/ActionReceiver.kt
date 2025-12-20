@@ -13,8 +13,8 @@ package dev.clombardo.dnsnet
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import dev.clombardo.dnsnet.log.logDebug
-import dev.clombardo.dnsnet.log.logWarning
+import dev.clombardo.dnsnet.common.logDebug
+import dev.clombardo.dnsnet.common.logWarning
 import dev.clombardo.dnsnet.service.vpn.DnsNetVpnService
 
 class ActionReceiver : BroadcastReceiver() {

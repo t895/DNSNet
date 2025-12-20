@@ -13,7 +13,7 @@ package dev.clombardo.dnsnet.service.vpn
 import android.net.ConnectivityManager.NetworkCallback
 import android.net.Network
 import android.net.NetworkCapabilities
-import dev.clombardo.dnsnet.log.logDebug
+import dev.clombardo.dnsnet.common.logDebug
 import dev.clombardo.dnsnet.service.NetworkState
 
 class VpnNetworkCallback(

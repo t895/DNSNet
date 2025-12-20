@@ -61,9 +61,9 @@ import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
-import dev.clombardo.dnsnet.log.logDebug
-import dev.clombardo.dnsnet.log.logInfo
-import dev.clombardo.dnsnet.log.logWarning
+import dev.clombardo.dnsnet.common.logDebug
+import dev.clombardo.dnsnet.common.logInfo
+import dev.clombardo.dnsnet.common.logWarning
 import dev.clombardo.dnsnet.service.FilterUtil
 import dev.clombardo.dnsnet.service.db.RuleDatabaseUpdateWorker
 import dev.clombardo.dnsnet.service.vpn.DnsNetVpnService

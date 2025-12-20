@@ -9,14 +9,12 @@
  * (at your option) any later version.
  */
 
-package dev.clombardo.dnsnet.file
+package dev.clombardo.dnsnet.common
 
 import android.content.Context
 import android.os.ParcelFileDescriptor
 import android.system.ErrnoException
 import android.system.Os
-import dev.clombardo.dnsnet.log.logDebug
-import dev.clombardo.dnsnet.log.logError
 import java.io.Closeable
 import java.io.File
 import java.io.FileDescriptor

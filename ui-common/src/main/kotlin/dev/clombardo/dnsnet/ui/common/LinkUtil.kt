@@ -12,7 +12,7 @@ import android.content.Context
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.ui.platform.UriHandler
-import dev.clombardo.dnsnet.log.logWarning
+import dev.clombardo.dnsnet.common.logWarning
 
 /**
  * This prevents a rare crash where a user does not have a web browser installed to open a link.

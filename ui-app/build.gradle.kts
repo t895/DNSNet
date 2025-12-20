@@ -44,7 +44,7 @@ dependencies {
 
     implementation(project(":ui-common"))
     implementation(project(":settings"))
-    implementation(project(":log"))
+    implementation(project(":common"))
     implementation(project(":blocklogger"))
 }
 

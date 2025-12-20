@@ -26,10 +26,10 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import dev.clombardo.dnsnet.log.logDebug
-import dev.clombardo.dnsnet.log.logInfo
-import dev.clombardo.dnsnet.log.logVerbose
-import dev.clombardo.dnsnet.notification.NotificationChannels
+import dev.clombardo.dnsnet.common.logDebug
+import dev.clombardo.dnsnet.common.logInfo
+import dev.clombardo.dnsnet.common.logVerbose
+import dev.clombardo.dnsnet.common.NotificationChannels
 import dev.clombardo.dnsnet.resources.R
 import dev.clombardo.dnsnet.service.vpn.DnsNetVpnService
 import dev.clombardo.dnsnet.settings.ConfigurationManager

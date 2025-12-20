@@ -15,9 +15,9 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.net.toUri
 import dev.clombardo.dnsnet.resources.R
-import dev.clombardo.dnsnet.file.FileHelper
-import dev.clombardo.dnsnet.file.SingleWriterMultipleReaderFile
-import dev.clombardo.dnsnet.log.logDebug
+import dev.clombardo.dnsnet.common.FileHelper
+import dev.clombardo.dnsnet.common.SingleWriterMultipleReaderFile
+import dev.clombardo.dnsnet.common.logDebug
 import dev.clombardo.dnsnet.settings.FilterFile
 import java.io.File
 import java.io.FileNotFoundException

@@ -1,15 +1,4 @@
-/* Copyright (C) 2025 Charles Lombardo <clombardo169@gmail.com>
- *
- * Derived from DNS66:
- * Copyright (C) 2017 Julian Andres Klode <jak@jak-linux.org>
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- */
-
-package dev.clombardo.dnsnet.notification
+package dev.clombardo.dnsnet.common
 
 import android.app.NotificationChannel
 import android.app.NotificationChannelGroup

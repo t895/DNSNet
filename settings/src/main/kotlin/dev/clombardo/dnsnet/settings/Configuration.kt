@@ -20,10 +20,10 @@ import androidx.annotation.Keep
 import androidx.annotation.StringRes
 import androidx.core.net.toUri
 import dagger.hilt.android.qualifiers.ApplicationContext
-import dev.clombardo.dnsnet.file.FileHelper
-import dev.clombardo.dnsnet.log.logDebug
-import dev.clombardo.dnsnet.log.logError
-import dev.clombardo.dnsnet.log.logInfo
+import dev.clombardo.dnsnet.common.FileHelper
+import dev.clombardo.dnsnet.common.logDebug
+import dev.clombardo.dnsnet.common.logError
+import dev.clombardo.dnsnet.common.logInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

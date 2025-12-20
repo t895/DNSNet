@@ -38,11 +38,11 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import dev.clombardo.dnsnet.blocklogger.BlockLogger
-import dev.clombardo.dnsnet.log.logDebug
-import dev.clombardo.dnsnet.log.logError
-import dev.clombardo.dnsnet.log.logInfo
-import dev.clombardo.dnsnet.log.logWarning
-import dev.clombardo.dnsnet.notification.NotificationChannels
+import dev.clombardo.dnsnet.common.logDebug
+import dev.clombardo.dnsnet.common.logError
+import dev.clombardo.dnsnet.common.logInfo
+import dev.clombardo.dnsnet.common.logWarning
+import dev.clombardo.dnsnet.common.NotificationChannels
 import dev.clombardo.dnsnet.resources.R
 import dev.clombardo.dnsnet.service.NativeBlockLoggerWrapper
 import dev.clombardo.dnsnet.service.NetworkState

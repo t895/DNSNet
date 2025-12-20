@@ -9,8 +9,8 @@
 package dev.clombardo.dnsnet.blocklogger
 
 import android.content.Context
-import dev.clombardo.dnsnet.file.FileHelper
-import dev.clombardo.dnsnet.log.logError
+import dev.clombardo.dnsnet.common.FileHelper
+import dev.clombardo.dnsnet.common.logError
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient

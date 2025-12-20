@@ -23,7 +23,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.clombardo.dnsnet.blocklogger.BlockLogger
 import dev.clombardo.dnsnet.blocklogger.LoggedConnection
-import dev.clombardo.dnsnet.log.logDebug
+import dev.clombardo.dnsnet.common.logDebug
 import dev.clombardo.dnsnet.settings.BlockList
 import dev.clombardo.dnsnet.settings.DnsServer
 import dev.clombardo.dnsnet.settings.Filter

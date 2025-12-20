@@ -10,7 +10,7 @@ package dev.clombardo.dnsnet.service
 
 import android.content.Context
 import android.os.ParcelFileDescriptor
-import dev.clombardo.dnsnet.file.FileHelper
+import dev.clombardo.dnsnet.common.FileHelper
 import uniffi.net.AndroidFileHelper
 import java.io.File
 

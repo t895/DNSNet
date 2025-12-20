@@ -9,8 +9,8 @@
 package dev.clombardo.dnsnet.service.db
 
 import android.content.Context
-import dev.clombardo.dnsnet.log.logInfo
-import dev.clombardo.dnsnet.log.logWarning
+import dev.clombardo.dnsnet.common.logInfo
+import dev.clombardo.dnsnet.common.logWarning
 import dev.clombardo.dnsnet.service.NativeFileHelperWrapper
 import dev.clombardo.dnsnet.service.toNative
 import dev.clombardo.dnsnet.settings.ConfigurationManager

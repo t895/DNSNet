@@ -9,8 +9,8 @@
 package dev.clombardo.dnsnet.service
 
 import android.content.Context
-import dev.clombardo.dnsnet.file.FileHelper
-import dev.clombardo.dnsnet.log.logInfo
+import dev.clombardo.dnsnet.common.FileHelper
+import dev.clombardo.dnsnet.common.logInfo
 import dev.clombardo.dnsnet.settings.Filter
 import dev.clombardo.dnsnet.settings.FilterState
 import dev.clombardo.dnsnet.settings.Settings

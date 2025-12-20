@@ -6,7 +6,7 @@
  * (at your option) any later version.
  */
 
-package dev.clombardo.dnsnet.log
+package dev.clombardo.dnsnet.common
 
 import android.util.Log
 
