@@ -8,11 +8,20 @@
 
 package dev.clombardo.dnsnet.settings
 
+import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import androidx.preference.PreferenceManager
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlin.reflect.KProperty
 
-class Preferences(val sharedPreferences: SharedPreferences) {
+@Singleton
+class Preferences @Inject constructor(@ApplicationContext context: Context) {
+    val sharedPreferences: SharedPreferences =
+        PreferenceManager.getDefaultSharedPreferences(context)
+
     /**
      * Old preference that is no longer used to see if the user interacted with the notification
      * permission dialog. Now it's just used to make sure that we don't show existing users the
