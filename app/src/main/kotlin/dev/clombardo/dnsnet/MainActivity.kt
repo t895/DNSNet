@@ -20,7 +20,6 @@ import android.net.ConnectivityManager
 import android.net.VpnService.prepare
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -56,6 +55,7 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.lifecycle.withCreationCallback
 import dev.chrisbanes.haze.HazeDefaults
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.HazeState
@@ -67,27 +67,48 @@ import dev.clombardo.dnsnet.log.logWarning
 import dev.clombardo.dnsnet.service.FilterUtil
 import dev.clombardo.dnsnet.service.db.RuleDatabaseUpdateWorker
 import dev.clombardo.dnsnet.service.vpn.DnsNetVpnService
+import dev.clombardo.dnsnet.settings.Settings
 import dev.clombardo.dnsnet.ui.app.App
 import dev.clombardo.dnsnet.ui.app.viewmodel.HomeViewModel
 import dev.clombardo.dnsnet.ui.common.theme.DnsNetTheme
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
-    private val vm: HomeViewModel by viewModels()
+    lateinit var vm: HomeViewModel
+
+    @Inject
+    lateinit var settings: Settings
 
     @OptIn(ExperimentalComposeUiApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
+        vm = viewModels<HomeViewModel>(extrasProducer = {
+            defaultViewModelCreationExtras.withCreationCallback<HomeViewModel.Factory> {
+                it.create(
+                    onSetupComplete = {
+                        if (!FilterUtil.areFilterFilesExistent(this@MainActivity, settings)) {
+                            RuleDatabaseUpdateWorker.runNow(this@MainActivity)
+                        }
+                    },
+                    onReloadVpn = { DnsNetVpnService.reconnect(this@MainActivity) },
+                )
+            }
+        }).value
+
         enableEdgeToEdge()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             window.isNavigationBarContrastEnforced = false
         }
 
-        fun <I> ManagedActivityResultLauncher<I, *>.safeLaunch(input: I, options: ActivityOptionsCompat? = null) {
+        fun <I> ManagedActivityResultLauncher<I, *>.safeLaunch(
+            input: I,
+            options: ActivityOptionsCompat? = null,
+        ) {
             try {
                 launch(input, options)
             } catch (e: ActivityNotFoundException) {
@@ -104,7 +125,7 @@ class MainActivity : AppCompatActivity() {
                     rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
                         it ?: return@rememberLauncherForActivityResult
                         saveSettingsCoroutineScope.launch {
-                            vm.settings.replaceUserConfiguration(this@MainActivity, it) {
+                            settings.replaceUserConfiguration(this@MainActivity, it) {
                                 DnsNetVpnService.reconnect(this@MainActivity)
                             }
                         }
@@ -114,7 +135,7 @@ class MainActivity : AppCompatActivity() {
                     rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("*/*")) { uri ->
                         uri ?: return@rememberLauncherForActivityResult
                         saveSettingsCoroutineScope.launch {
-                            vm.settings.saveOutUserConfiguration(this@MainActivity, uri)
+                            settings.saveOutUserConfiguration(this@MainActivity, uri)
                         }
                     }
 
@@ -149,17 +170,11 @@ class MainActivity : AppCompatActivity() {
                         state = status.toFabState(),
                         isDatabaseRefreshing = isDatabaseRefreshing,
                         onRefreshFilters = { RuleDatabaseUpdateWorker.runNow(this@MainActivity) },
-                        onSetupComplete = {
-                            if (!FilterUtil.areFilterFilesExistent(this@MainActivity, vm.settings)) {
-                                RuleDatabaseUpdateWorker.runNow(this@MainActivity)
-                            }
-                        },
                         onImport = { importLauncher.safeLaunch(arrayOf("*/*")) },
                         onExport = { exportLauncher.safeLaunch("dnsnet.json") },
                         onShareLogcat = { logcatLauncher.safeLaunch("dnsnet-log.txt") },
                         onTryToggleService = { tryToggleService(true, vpnLauncher) },
                         onStartWithoutFiltersCheck = { tryToggleService(false, vpnLauncher) },
-                        onReloadVpn = { DnsNetVpnService.reconnect(this@MainActivity) },
                         onReloadDatabase = { DnsNetVpnService.reloadDatabase(this@MainActivity) },
                         onUpdateRefreshWork = ::updateRefreshWork,
                         onOpenNetworkSettings = ::openNetworkSettings,
@@ -218,7 +233,7 @@ class MainActivity : AppCompatActivity() {
                 vm.onPrivateDnsEnabledWarning()
                 return
             }
-            if (!FilterUtil.areFilterFilesExistent(this, vm.settings) && hostsCheck) {
+            if (!FilterUtil.areFilterFilesExistent(this, settings) && hostsCheck) {
                 vm.onFilterFilesNotFound()
                 return
             }
@@ -239,7 +254,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun openNetworkSettings() {
         try {
-            startActivity(Intent(Settings.ACTION_WIRELESS_SETTINGS))
+            startActivity(Intent(android.provider.Settings.ACTION_WIRELESS_SETTINGS))
         } catch (_: Exception) {
             Toast.makeText(
                 this,
@@ -267,7 +282,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateRefreshWork() {
         val workManager = WorkManager.getInstance(this)
-        if (vm.settings.filters.automaticRefresh.get()) {
+        if (settings.filters.automaticRefresh.get()) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.UNMETERED)
                 .setRequiresDeviceIdle(true)

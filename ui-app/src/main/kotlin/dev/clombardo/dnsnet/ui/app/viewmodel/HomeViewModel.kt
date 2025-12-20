@@ -8,7 +8,6 @@
 
 package dev.clombardo.dnsnet.ui.app.viewmodel
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.net.Uri
@@ -17,12 +16,14 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.clombardo.dnsnet.blocklogger.BlockLogger
 import dev.clombardo.dnsnet.blocklogger.LoggedConnection
 import dev.clombardo.dnsnet.log.logDebug
-import dev.clombardo.dnsnet.log.logInfo
 import dev.clombardo.dnsnet.settings.BlockList
 import dev.clombardo.dnsnet.settings.DnsServer
 import dev.clombardo.dnsnet.settings.Filter
@@ -45,16 +46,16 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.InetAddress
 import java.net.UnknownHostException
-import javax.inject.Inject
 
-@SuppressLint("StaticFieldLeak")
-@HiltViewModel
-class HomeViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = HomeViewModel.Factory::class)
+class HomeViewModel @AssistedInject constructor(
     private val savedStateHandle: SavedStateHandle,
-    @ApplicationContext val context: Context,
+    @ApplicationContext private val context: Context,
     val settings: Settings,
-    val preferences: Preferences,
-    val blockLogger: BlockLogger,
+    private val preferences: Preferences,
+    private val blockLogger: BlockLogger,
+    @Assisted private val onSetupComplete: suspend () -> Unit,
+    @Assisted private val onReloadVpn: () -> Unit,
 ) : ViewModel() {
     private val _showUpdateIncompleteDialog = MutableStateFlow(false)
     val showUpdateIncompleteDialog = _showUpdateIncompleteDialog.asStateFlow()
@@ -72,7 +73,7 @@ class HomeViewModel @Inject constructor(
         flow = settings.appList.onVpn.asStateFlow(),
         flow2 = settings.appList.notOnVpn.asStateFlow(),
         flow3 = appData
-    ) { onVpn, notOnVpn, appData ->
+    ) { _, _, appData ->
         val notOnVpn = HashSet<String>()
         val pm = context.packageManager
         settings.appList.resolve(context.packageName, pm, HashSet(), notOnVpn)
@@ -363,6 +364,8 @@ class HomeViewModel @Inject constructor(
         settings.blockLogging.set(false)
         _connectionsLog.clear()
         blockLogger.clear(context)
+        onReloadVpn.invoke()
+        onDismissDisableBlockLogWarning()
     }
 
     fun onWriteLogcat(uri: Uri) {
@@ -421,6 +424,32 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun onResetSettings() {
+        viewModelScope.launch {
+            settings.loadDefaultUserConfiguration {
+                onDismissResetSettingsDialog()
+                onReloadVpn()
+            }
+        }
+    }
+
+    fun onSetupComplete(onNavigateHome: () -> Unit) {
+        preferences.SetupComplete = true
+        onNavigateHome()
+        viewModelScope.launch {
+            onSetupComplete.invoke()
+        }
+    }
+
+    fun onEnterHome(onNavigateToGreeting: () -> Unit) {
+        if (!preferences.SetupComplete && !setupShown) {
+            setupShown = true
+            onNavigateToGreeting()
+        }
+    }
+
+    fun onReloadVpn() = onReloadVpn.invoke()
+
     fun pingAddress(address: String): Boolean =
         try {
             InetAddress.getByName(
@@ -429,6 +458,14 @@ class HomeViewModel @Inject constructor(
         } catch (_: UnknownHostException) {
             false
         }
+
+    @AssistedFactory
+    interface Factory {
+        fun create(
+            onSetupComplete: suspend () -> Unit,
+            onReloadVpn: () -> Unit,
+        ): HomeViewModel
+    }
 
     companion object {
         const val KEY_SETUP_SHOWN = "setupShown"

@@ -43,11 +43,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -62,11 +62,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -90,7 +88,6 @@ import dev.clombardo.dnsnet.ui.common.plus
 import dev.clombardo.dnsnet.ui.common.theme.DefaultFabSize
 import dev.clombardo.dnsnet.ui.common.theme.FabPadding
 import dev.clombardo.dnsnet.ui.common.theme.ListPadding
-import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 
@@ -218,17 +215,15 @@ object Home {
 @Composable
 fun App(
     modifier: Modifier = Modifier,
-    vm: HomeViewModel = viewModel(),
+    vm: HomeViewModel,
     state: FabState,
     isDatabaseRefreshing: Boolean,
     onRefreshFilters: () -> Unit,
-    onSetupComplete: suspend () -> Unit,
     onImport: () -> Unit,
     onExport: () -> Unit,
     onShareLogcat: () -> Unit,
     onTryToggleService: () -> Unit,
     onStartWithoutFiltersCheck: () -> Unit,
-    onReloadVpn: () -> Unit,
     onReloadDatabase: () -> Unit,
     onUpdateRefreshWork: () -> Unit,
     onOpenNetworkSettings: () -> Unit,
@@ -330,20 +325,12 @@ fun App(
 
     val showResetSettingsWarningDialog by vm.showResetSettingsWarningDialog.collectAsState()
     if (showResetSettingsWarningDialog) {
-        val loadDefaultsCoroutineScope = rememberCoroutineScope()
         BasicDialog(
             title = stringResource(R.string.warning),
             text = stringResource(R.string.reset_settings_warning_description),
             primaryButton = DialogButton(
                 text = stringResource(R.string.reset),
-                onClick = {
-                    loadDefaultsCoroutineScope.launch {
-                        vm.settings.loadDefaultUserConfiguration {
-                            vm.onDismissResetSettingsDialog()
-                            onReloadVpn()
-                        }
-                    }
-                },
+                onClick = { vm.onResetSettings() },
             ),
             secondaryButton = DialogButton(
                 text = stringResource(R.string.button_cancel),
@@ -384,7 +371,6 @@ fun App(
             }
             composable<TopLevelDestination.Presets> { backstackEntry ->
                 val route = backstackEntry.toRoute<TopLevelDestination.Presets>()
-                val updateCoroutineScope = rememberCoroutineScope()
                 PresetsScreen(
                     canGoBack = route.canGoBack,
                     onNavigateUp = { navController.tryPopBackstack(backstackEntry.id) },
@@ -394,19 +380,14 @@ fun App(
                         if (route.canGoBack) {
                             navController.tryPopBackstack(backstackEntry.id)
                         } else {
-                            vm.preferences.SetupComplete = true
-                            navController.popNavigate(TopLevelDestination.Home)
-                            updateCoroutineScope.launch {
-                                onSetupComplete()
-                            }
+                            vm.onSetupComplete { navController.popNavigate(TopLevelDestination.Home) }
                         }
                     },
                 )
             }
             composable<TopLevelDestination.Home> {
-                if (!vm.preferences.SetupComplete && !vm.setupShown) {
-                    vm.setupShown = true
-                    navController.navigate(TopLevelDestination.Greeting)
+                LaunchedEffect(Unit) {
+                    vm.onEnterHome { navController.navigate(TopLevelDestination.Greeting) }
                 }
 
                 if (!navController.containsRoute<TopLevelDestination.Greeting>() &&
@@ -422,7 +403,6 @@ fun App(
                         onExport = onExport,
                         onShareLogcat = onShareLogcat,
                         onTryToggleService = onTryToggleService,
-                        onReloadVpn = onReloadVpn,
                         onReloadDatabase = onReloadDatabase,
                         onUpdateRefreshWork = onUpdateRefreshWork,
                     )
@@ -434,7 +414,7 @@ fun App(
                     filter = filter,
                     vm = vm,
                     onPopBackStack = { navController.tryPopBackstack(backstackEntry.id) },
-                    onReloadVpn = onReloadVpn,
+                    onReloadVpn = { vm.onReloadVpn() },
                     onReloadDatabase = onReloadDatabase,
                 )
             }
@@ -444,7 +424,7 @@ fun App(
                     filter = filter,
                     vm = vm,
                     onPopBackStack = { navController.tryPopBackstack(backstackEntry.id) },
-                    onReloadVpn = onReloadVpn,
+                    onReloadVpn = { vm.onReloadVpn() },
                     onReloadDatabase = onReloadDatabase,
                 )
             }
@@ -466,7 +446,7 @@ fun App(
                                 vm.removeDnsServer(server)
                                 vm.onDismissDeleteDnsServerWarning()
                                 navController.tryPopBackstack(backstackEntry.id)
-                                onReloadVpn()
+                                vm.onReloadVpn()
                             },
                         ),
                         secondaryButton = DialogButton(
@@ -487,7 +467,7 @@ fun App(
                             vm.replaceDnsServer(server, savedServer)
                         }
                         navController.tryPopBackstack(backstackEntry.id)
-                        onReloadVpn()
+                        vm.onReloadVpn()
                     },
                     onDelete = if (server.title.isEmpty()) {
                         null
@@ -503,9 +483,9 @@ fun App(
                     onOpenCredits = { navController.navigate(TopLevelDestination.Credits) },
                 )
             }
-            composable<TopLevelDestination.BlockLog> {
+            composable<TopLevelDestination.BlockLog> { backstackEntry ->
                 BlockLogScreen(
-                    onNavigateUp = { navController.tryPopBackstack(it.id) },
+                    onNavigateUp = { navController.tryPopBackstack(backstackEntry.id) },
                     listViewModel = hiltViewModel(),
                     loggedConnections = vm.connectionsLog,
                     onCreateException = {
@@ -591,26 +571,6 @@ fun EditFilterDestination(
     )
 }
 
-@Preview
-@Composable
-fun AppPreview() {
-    App(
-        state = FabState.Inactive,
-        isDatabaseRefreshing = false,
-        onRefreshFilters = {},
-        onSetupComplete = {},
-        onImport = {},
-        onExport = {},
-        onShareLogcat = {},
-        onTryToggleService = {},
-        onStartWithoutFiltersCheck = {},
-        onReloadVpn = {},
-        onReloadDatabase = {},
-        onUpdateRefreshWork = {},
-        onOpenNetworkSettings = {},
-    )
-}
-
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun HomeScreen(
@@ -624,7 +584,6 @@ fun HomeScreen(
     onExport: () -> Unit,
     onShareLogcat: () -> Unit,
     onTryToggleService: () -> Unit,
-    onReloadVpn: () -> Unit,
     onReloadDatabase: () -> Unit,
     onUpdateRefreshWork: () -> Unit,
 ) {
@@ -668,8 +627,10 @@ fun HomeScreen(
                 exit = NavigationScaffold.FabExit,
             ) {
                 var expanded by rememberSaveable { mutableStateOf(false) }
-                if (currentDestination == HomeDestinations.DNS) {
-                    expanded = false
+                LaunchedEffect(currentDestination) {
+                    if (currentDestination == HomeDestinations.DNS) {
+                        expanded = false
+                    }
                 }
                 FloatingActionButtonMenu(
                     expanded = expanded,
@@ -786,11 +747,7 @@ fun HomeScreen(
                         text = stringResource(R.string.disable_block_log_warning_description),
                         primaryButton = DialogButton(
                             text = stringResource(R.string.disable),
-                            onClick = {
-                                vm.onDisableBlockLog()
-                                onReloadVpn()
-                                vm.onDismissDisableBlockLogWarning()
-                            },
+                            onClick = { vm.onDisableBlockLog() },
                         ),
                         secondaryButton = DialogButton(
                             text = stringResource(R.string.close),
@@ -814,7 +771,7 @@ fun HomeScreen(
                             vm.onDisableBlockLogWarning()
                         } else {
                             vm.settings.blockLogging.set(true)
-                            onReloadVpn()
+                            vm.onReloadVpn()
                         }
                     },
                     onOpenBlockLog = {
@@ -874,13 +831,13 @@ fun HomeScreen(
                     bypassSelection = allowlistDefault,
                     onBypassSelection = { selection ->
                         vm.settings.appList.defaultMode.set(selection)
-                        onReloadVpn()
+                        vm.onReloadVpn()
                         vm.populateAppList()
                     },
                     apps = appList,
                     onAppClick = { app, enabled ->
                         vm.onToggleApp(app, enabled)
-                        onReloadVpn()
+                        vm.onReloadVpn()
                     },
                 )
             }
@@ -898,12 +855,12 @@ fun HomeScreen(
                     customDnsServers = customDnsServers,
                     onCustomDnsServersClick = {
                         vm.settings.dnsServers.enabled.set(!customDnsServers)
-                        onReloadVpn()
+                        vm.onReloadVpn()
                     },
                     useNetworkDnsServers = useNetworkDnsServers,
                     onUseNetworkDnsServersClick = {
                         vm.settings.useNetworkDnsServers.set(!useNetworkDnsServers)
-                        onReloadVpn()
+                        vm.onReloadVpn()
                     },
                     doh3Support = type == DnsServerType.DoH3,
                     onDoh3SupportClick = {
@@ -913,7 +870,7 @@ fun HomeScreen(
                                 DnsServerType.DoH3 -> DnsServerType.Standard
                             }
                         )
-                        onReloadVpn()
+                        vm.onReloadVpn()
                     },
                     onItemClick = { item ->
                         topLevelNavController.navigate(item)
@@ -921,7 +878,7 @@ fun HomeScreen(
                     onItemCheckClicked = { item ->
                         vm.toggleDnsServer(item)
                         if (customDnsServers) {
-                            onReloadVpn()
+                            vm.onReloadVpn()
                         }
                     },
                 )
