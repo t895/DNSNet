@@ -1,0 +1,11 @@
+[package]
+name = "net"
+version = "1.0.0"
+edition = "2024"
+
+[lib]
+name="net"
+
+[dependencies]
+mio = { workspace = true }
+log = { workspace = true }

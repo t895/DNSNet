@@ -9,7 +9,7 @@
 package dev.clombardo.dnsnet.service
 
 import dev.clombardo.dnsnet.blocklogger.BlockLogger
-import uniffi.netAndroid.BlockLoggerCallback
+import uniffi.net_bindings.BlockLoggerCallback
 
 class NativeBlockLoggerWrapper(private val logger: BlockLogger): BlockLoggerCallback {
     override fun log(connectionName: String, allowed: Boolean) =

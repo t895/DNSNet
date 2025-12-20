@@ -20,9 +20,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.withContext
-import uniffi.netAndroid.RuleDatabase
-import uniffi.netAndroid.RuleDatabaseController
-import uniffi.netAndroid.RuleDatabaseException
+import uniffi.net_bindings.RuleDatabase
+import uniffi.net_bindings.RuleDatabaseController
+import uniffi.net_bindings.RuleDatabaseException
 
 class RuleDatabaseManager(
     private val context: Context,

@@ -22,11 +22,11 @@ import dev.clombardo.dnsnet.common.logInfo
 import dev.clombardo.dnsnet.common.logWarning
 import dev.clombardo.dnsnet.service.NativeFileHelperWrapper
 import dev.clombardo.dnsnet.service.db.RuleDatabaseManager
-import uniffi.netAndroid.BlockLoggerCallback
-import uniffi.netAndroid.VpnController
-import uniffi.netAndroid.VpnException
-import uniffi.netAndroid.VpnResult
-import uniffi.netAndroid.runVpnNative
+import uniffi.net_bindings.BlockLoggerCallback
+import uniffi.net_bindings.VpnControllerBinding
+import uniffi.net_bindings.VpnException
+import uniffi.net_bindings.VpnResultBinding
+import uniffi.net_bindings.runVpnNative
 
 class VpnThread(
     private val dnsNetVpnService: DnsNetVpnService,
@@ -47,7 +47,7 @@ class VpnThread(
 
     private val threadLock = Object()
     private val thread = Thread(this, "VpnThread")
-    private val vpnController = VpnController()
+    private val vpnController = VpnControllerBinding()
     private var userStop = false
 
     init {
@@ -60,7 +60,7 @@ class VpnThread(
             logInfo("Stopping")
 
             // Tell the Rust code to stop
-            vpnController.stop(VpnResult.STOPPING)
+            vpnController.stop(VpnResultBinding.STOPPING)
             userStop = true
             thread.interrupt()
             try {
@@ -76,7 +76,7 @@ class VpnThread(
     fun reconnect() {
         synchronized(threadLock) {
             logInfo("Reconnecting")
-            vpnController.stop(VpnResult.RECONNECTING)
+            vpnController.stop(VpnResultBinding.RECONNECTING)
             thread.interrupt()
         }
     }
@@ -98,14 +98,14 @@ class VpnThread(
                 immediateRetryCount = 0
                 retryTimeout = MIN_RETRY_TIME
                 when (result) {
-                    VpnResult.RECONNECTING,
-                    VpnResult.CONTINUING -> {
+                    VpnResultBinding.RECONNECTING,
+                    VpnResultBinding.CONTINUING -> {
                         logInfo("Reconnecting")
                         notify(VpnStatus.RECONNECTING)
                         continue
                     }
 
-                    VpnResult.STOPPING -> {
+                    VpnResultBinding.STOPPING -> {
                         logInfo("Stopping")
                         break
                     }
@@ -162,7 +162,7 @@ class VpnThread(
     }
 
     @Throws(VpnException::class)
-    private fun runVpn(context: Context): VpnResult {
+    private fun runVpn(context: Context): VpnResultBinding {
         // Authenticate and configure the virtual network interface.
         return runVpnNative(
             adVpnCallback = dnsNetVpnService,

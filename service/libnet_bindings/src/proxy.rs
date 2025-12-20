@@ -146,7 +146,8 @@ impl<'a> DnsPacketProxy<'a> {
         if !self.rule_database.is_blocked(&dns_query_name) {
             info!(
                 "handle_dns_request: DNS Name {} allowed. Sending to {:?}",
-                dns_query_name, str::from_utf8(&translated_destination_address),
+                dns_query_name,
+                str::from_utf8(&translated_destination_address),
             );
 
             if let Some(block_logger) = &self.block_logger_callback {

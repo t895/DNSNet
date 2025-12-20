@@ -15,6 +15,7 @@ use std::{
 };
 
 use mio::{Events, Interest, Poll, Token, unix::SourceFd};
+use net::{controller::VpnController, vpn::VpnResult};
 
 use crate::{
     AndroidFileHelper, BlockLoggerCallback, VpnCallback,
@@ -34,88 +35,53 @@ use crate::{
 ///
 /// Meant to be created on the Kotlin side and passed to the main Rust loop
 #[derive(uniffi::Object)]
-pub struct VpnController {
-    event_fd: i32,
-    stop_result: RwLock<Option<VpnResult>>,
+pub struct VpnControllerBinding {
+    controller: RwLock<VpnController>,
 }
 
 #[uniffi::export]
-impl VpnController {
+impl VpnControllerBinding {
     #[uniffi::constructor]
     fn new() -> Arc<Self> {
-        Arc::new(VpnController {
-            event_fd: unsafe {
-                let result = libc::eventfd(0, 0);
-                if result != -1 { result } else { panic!() }
-            },
-            stop_result: RwLock::new(None),
-        })
+        let vpn_controller = VpnController::new().unwrap();
+        Arc::new(VpnControllerBinding { controller: RwLock::new(vpn_controller) })
     }
 
-    /// Returns whether the VPN has been given a reason to stop. The main loop should stop if the result is [Some].
-    /// If [None], it should be ignored.
-    ///
-    /// Once this function is called and the result is [Some], the result will be cleared and the next call will return [None].
-    pub fn get_stop_result(&self) -> Option<VpnResult> {
-        return match self.stop_result.write() {
-            Ok(mut lock) => match *lock {
-                Some(result) => {
-                    // Additionally clear the eventfd
-                    unsafe {
-                        let mut eventfd_result = libc::eventfd_t::default();
-                        libc::eventfd_read(self.event_fd, &mut eventfd_result);
-                    };
-
-                    let result_clone = result.clone();
-                    *lock = None;
-                    Some(result_clone)
-                }
-                None => None,
+    pub fn stop(&self, result: VpnResultBinding) {
+        match self.controller.write() {
+            Ok(mut controller) => {
+                controller.stop(result.into());
             },
             Err(error) => {
-                error!(
-                    "get_should_stop: Failed to get write lock for should_stop - {:?}",
-                    error
-                );
+                error!("stop: Failed to acquire write lock on controller! - {:?}", error);
+                return;
+            },
+        }
+    }
+
+    pub fn get_event_fd(&self) -> Option<i32> {
+        match self.controller.read() {
+            Ok(controller) => Some(controller.get_receiver_fd()),
+            Err(error) => {
+                error!("get_event_fd: Failed to acquire read lock on controller! - {:?}", error);
                 None
-            }
-        };
+            },
+        }
     }
 
-    /// Writes an int to the event file descriptor and sets the stop flag so we can interrupt epoll and stop the VPN
-    fn stop(&self, result: VpnResult) {
-        if result == VpnResult::Continuing {
-            error!("stop: Cannot stop with VpnResult::Continuing");
-            return;
-        }
-
-        info!("VpnController::stop");
-        match self.stop_result.write() {
-            Ok(mut lock) => {
-                if lock.is_none() {
-                    unsafe { libc::eventfd_write(self.event_fd, 1) };
-                    *lock = Some(result);
-                } else {
-                    warn!("stop: stop_result is already set!");
+    pub fn get_stop_result(&self) -> Option<VpnResultBinding> {
+        match self.controller.write() {
+            Ok(mut controller) => {
+                match controller.get_stop_result() {
+                    Some(result) => Some(result.into()),
+                    None => None,
                 }
-            }
+            },
             Err(error) => {
-                error!(
-                    "stop: Failed to get write lock for should_stop. This should never happen. - {:?}",
-                    error
-                );
-            }
+                error!("get_stop_result: Failed to acquire write lock on controller! - {:?}", error);
+                return None;
+            },
         }
-    }
-
-    pub fn get_event_fd(&self) -> i32 {
-        self.event_fd
-    }
-}
-
-impl Drop for VpnController {
-    fn drop(&mut self) {
-        unsafe { libc::close(self.event_fd) };
     }
 }
 
@@ -132,7 +98,7 @@ pub enum VpnStatus {
 
 /// Represents the possible results that can occur in the VPN and that will be passed back to Kotlin
 #[derive(uniffi::Enum, PartialEq, PartialOrd, Debug, Clone, Copy)]
-pub enum VpnResult {
+pub enum VpnResultBinding {
     // Loop should continue
     Continuing,
 
@@ -141,6 +107,26 @@ pub enum VpnResult {
 
     // Loop should stop, the VPN should be reconfigured, and then the loop should start again
     Reconnecting,
+}
+
+impl From<VpnResult> for VpnResultBinding {
+    fn from(value: VpnResult) -> Self {
+        match value {
+            VpnResult::Continuing => VpnResultBinding::Continuing,
+            VpnResult::Stopping => VpnResultBinding::Stopping,
+            VpnResult::Reconnecting => VpnResultBinding::Reconnecting,
+        }
+    }
+}
+
+impl From<VpnResultBinding> for VpnResult {
+    fn from(value: VpnResultBinding) -> Self {
+        match value {
+            VpnResultBinding::Continuing => VpnResult::Continuing,
+            VpnResultBinding::Stopping => VpnResult::Stopping,
+            VpnResultBinding::Reconnecting => VpnResult::Reconnecting,
+        }
+    }
 }
 
 /// Represents the possible errors that can occur in the VPN and that will be passed back to Kotlin
@@ -173,6 +159,9 @@ pub enum VpnError {
 
     #[error("Failed to send/receive data on a socket")]
     SocketFailure,
+
+    #[error("Failed to get event fd from controller")]
+    ControllerFailure,
 }
 
 #[derive(uniffi::Enum)]
@@ -187,7 +176,7 @@ pub enum VpnConfigurationResult {
     InvalidDnsServers,
 
     // VPN controller interrupted configuration
-    Interrupted(VpnResult),
+    Interrupted(VpnResultBinding),
 
     // The VpnService was established correctly with a valid file descriptor
     Success(i32, Vec<Arc<NativeDnsServer>>),
@@ -195,7 +184,7 @@ pub enum VpnConfigurationResult {
 
 /// Main struct that holds the state of the VPN and runs the main loop
 pub struct Vpn {
-    vpn_controller: Arc<VpnController>,
+    vpn_controller: Arc<VpnControllerBinding>,
     device_writes: VecDeque<Vec<u8>>,
 }
 
@@ -203,7 +192,7 @@ impl Vpn {
     const VPN_TOKEN: Token = Token(usize::MAX);
     const VPN_CONTROLLER_TOKEN: Token = Token(usize::MAX - 1);
 
-    pub fn new(vpn_controller: Arc<VpnController>) -> Self {
+    pub fn new(vpn_controller: Arc<VpnControllerBinding>) -> Self {
         Vpn {
             vpn_controller,
             device_writes: VecDeque::new(),
@@ -228,7 +217,7 @@ impl Vpn {
         block_logger_callback: Option<Box<dyn BlockLoggerCallback>>,
         rule_database: Arc<RuleDatabase>,
         android_file_helper: Box<dyn AndroidFileHelper>,
-    ) -> Result<VpnResult, VpnError> {
+    ) -> Result<VpnResultBinding, VpnError> {
         let mut packet = vec![0u8; i16::MAX as usize];
 
         let mut dns_cache_file = match android_file_helper.get_dns_cache_file_fd() {
@@ -323,8 +312,17 @@ impl Vpn {
                 return Result::Err(VpnError::TunnelPollRegistrationFailure);
             }
         };
+
+        let event_fd = match self.vpn_controller.get_event_fd() {
+            Some(fd) => fd,
+            None => {
+                error!("run: Failed to get event fd from controller!");
+                return Result::Err(VpnError::ControllerFailure);
+            },
+        };
+
         if let Err(error) = poll.registry().register(
-            &mut SourceFd(&self.vpn_controller.event_fd),
+            &mut SourceFd(&event_fd),
             Self::VPN_CONTROLLER_TOKEN,
             Interest::READABLE,
         ) {
@@ -345,7 +343,7 @@ impl Vpn {
                 packet.as_mut_slice(),
             ) {
                 Ok(result) => match result {
-                    VpnResult::Continuing => continue,
+                    VpnResultBinding::Continuing => continue,
                     _ => {
                         if let Some(ref mut dns_cache_file) = dns_cache_file {
                             dns_cache.to_disk_cache().write_to(dns_cache_file);
@@ -370,7 +368,7 @@ impl Vpn {
         dns_packet_proxy: &mut DnsPacketProxy,
         dns_cache: Arc<DnsCache>,
         packet: &mut [u8],
-    ) -> Result<VpnResult, VpnError> {
+    ) -> Result<VpnResultBinding, VpnError> {
         if let Err(error) = poll.registry().register(
             &mut SourceFd(&vpn_file.as_raw_fd()),
             Self::VPN_TOKEN,
@@ -403,7 +401,7 @@ impl Vpn {
 
         if let Some(result) = self.vpn_controller.get_stop_result() {
             info!("do_one: Told to stop");
-            return Ok(result);
+            return Ok(result.into());
         }
 
         let mut read_from_device = false;
@@ -451,7 +449,7 @@ impl Vpn {
             return Result::Err(VpnError::TunnelPollRegistrationFailure);
         }
 
-        return Result::Ok(VpnResult::Continuing);
+        return Result::Ok(VpnResultBinding::Continuing);
     }
 
     /// Writes a packet to the tunnel from the device_writes queue

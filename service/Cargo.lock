@@ -597,7 +597,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "netAndroid"
+name = "net"
+version = "1.0.0"
+dependencies = [
+ "log",
+ "mio",
+]
+
+[[package]]
+name = "net_bindings"
 version = "1.0.0"
 dependencies = [
  "android_logger",
@@ -605,10 +613,10 @@ dependencies = [
  "bincode",
  "etherparse",
  "getrandom",
- "libc",
  "log",
  "lru",
  "mio",
+ "net",
  "quiche",
  "simple-dns",
  "thiserror",

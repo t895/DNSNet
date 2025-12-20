@@ -55,14 +55,14 @@ import dev.clombardo.dnsnet.settings.Preferences
 import dev.clombardo.dnsnet.ui.common.FabState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import uniffi.netAndroid.DnsCache
-import uniffi.netAndroid.VpnCallback
-import uniffi.netAndroid.ValidateDnsException
-import uniffi.netAndroid.ValidateDnsResult
-import uniffi.netAndroid.VpnConfigurationResult
-import uniffi.netAndroid.VpnController
-import uniffi.netAndroid.networkHasIpv6Support
-import uniffi.netAndroid.validateDnsServers
+import uniffi.net_bindings.DnsCache
+import uniffi.net_bindings.VpnCallback
+import uniffi.net_bindings.ValidateDnsException
+import uniffi.net_bindings.ValidateDnsResult
+import uniffi.net_bindings.VpnConfigurationResult
+import uniffi.net_bindings.VpnControllerBinding
+import uniffi.net_bindings.networkHasIpv6Support
+import uniffi.net_bindings.validateDnsServers
 import java.net.Inet4Address
 import java.net.Inet6Address
 import java.net.InetAddress
@@ -701,7 +701,7 @@ class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
     }
 
     @Throws(NoNetworkException::class)
-    override fun configure(vpnController: VpnController, dnsCache: DnsCache): VpnConfigurationResult {
+    override fun configure(vpnController: VpnControllerBinding, dnsCache: DnsCache): VpnConfigurationResult {
         logDebug("Configuring")
         val unvalidatedDnsServers = mutableListOf<String>()
         // Get the current DNS servers before starting the VPN

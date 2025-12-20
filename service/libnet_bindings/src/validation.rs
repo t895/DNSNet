@@ -20,7 +20,7 @@ use mio::{
     unix::{SourceFd, pipe},
 };
 
-use crate::{VpnController, VpnResult, cache::DnsCache};
+use crate::{VpnResultBinding, cache::DnsCache, vpn::VpnControllerBinding};
 
 #[derive(uniffi::Enum, Clone)]
 pub enum NativeDnsServerType {
@@ -66,12 +66,15 @@ pub enum ValidateDnsError {
 
     #[error("Failed to parse IPv4/IPv6 address")]
     ParseFailure,
+
+    #[error("Received failure from VpnController")]
+    ControllerFailure,
 }
 
 #[derive(uniffi::Enum)]
 pub enum ValidateDnsResult {
     Success(Vec<Arc<NativeDnsServer>>),
-    Interrupted(VpnResult),
+    Interrupted(VpnResultBinding),
 }
 
 struct DnsRequester {
@@ -154,7 +157,7 @@ impl DnsRequester {
 
 #[uniffi::export]
 pub fn validate_dns_servers(
-    vpn_controller: Arc<VpnController>,
+    vpn_controller: Arc<VpnControllerBinding>,
     dns_cache: Arc<DnsCache>,
     ipv6_support: bool,
     user_servers: Vec<String>,
@@ -272,8 +275,16 @@ pub fn validate_dns_servers(
         return Err(ValidateDnsError::ResolveFailure);
     };
 
+    let event_fd = match vpn_controller.get_event_fd() {
+            Some(fd) => fd,
+            None => {
+                error!("run: Failed to get event fd from controller!");
+                return Result::Err(ValidateDnsError::ControllerFailure);
+            },
+        };
+
     if let Err(error) = poll.registry().register(
-        &mut SourceFd(&vpn_controller.get_event_fd()),
+        &mut SourceFd(&event_fd),
         Token(usize::MAX),
         Interest::READABLE,
     ) {
@@ -307,7 +318,7 @@ pub fn validate_dns_servers(
                 let stop_result = if let Some(result) = vpn_controller.get_stop_result() {
                     result
                 } else {
-                    VpnResult::Reconnecting
+                    VpnResultBinding::Reconnecting
                 };
                 return Ok(ValidateDnsResult::Interrupted(stop_result));
             }

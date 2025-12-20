@@ -14,8 +14,8 @@ import dev.clombardo.dnsnet.common.logInfo
 import dev.clombardo.dnsnet.settings.Filter
 import dev.clombardo.dnsnet.settings.FilterState
 import dev.clombardo.dnsnet.settings.Settings
-import uniffi.netAndroid.NativeFilter
-import uniffi.netAndroid.NativeFilterState
+import uniffi.net_bindings.NativeFilter
+import uniffi.net_bindings.NativeFilterState
 import java.io.IOException
 
 object FilterUtil {
@@ -42,10 +42,6 @@ object FilterUtil {
 }
 
 fun FilterState.toNative(): NativeFilterState =
-    try {
-        NativeFilterState.entries[ordinal]
-    } catch (e: IndexOutOfBoundsException) {
-        NativeFilterState.IGNORE
-    }
+    NativeFilterState.entries.getOrNull(ordinal) ?: NativeFilterState.IGNORE
 
 fun Filter.toNative(): NativeFilter = NativeFilter(title, data, state.toNative())

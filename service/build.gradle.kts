@@ -16,7 +16,7 @@ plugins {
     alias(libs.plugins.dnsnet.hilt)
 }
 
-val libnetModule = "libnetAndroid"
+val libnetModule = "libnet_bindings"
 
 // Required for reproducible builds on F-Droid
 val remapCargo = listOf(
@@ -26,7 +26,7 @@ val remapCargo = listOf(
 
 cargo {
     module = libnetModule
-    libname = "netAndroid"
+    libname = "net_bindings"
 
     targets = listOf("arm64", "arm", "x86_64")
     targetDirectory = "./target"
@@ -51,7 +51,7 @@ val uniffiBindgen = tasks.register<Exec>("uniffiBindgen") {
         "generate",
         "--library",
         project.layout.projectDirectory.dir("build").dir("rustJniLibs").dir("android")
-            .dir("arm64-v8a").file("libnetAndroid.so").asFile.path,
+            .dir("arm64-v8a").file("libnet_bindings.so").asFile.path,
         "--language",
         "kotlin",
         "--out-dir",

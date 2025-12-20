@@ -25,9 +25,9 @@ use android_logger::Config;
 use database::RuleDatabase;
 use log::LevelFilter;
 use mio::net::UdpSocket;
-use vpn::{Vpn, VpnConfigurationResult, VpnController, VpnError, VpnResult};
+use vpn::{Vpn, VpnConfigurationResult, VpnError, VpnResultBinding};
 
-use crate::cache::DnsCache;
+use crate::{cache::DnsCache, vpn::VpnControllerBinding};
 
 #[macro_use]
 extern crate log;
@@ -59,10 +59,10 @@ pub fn rust_init(debug: bool) {
 pub fn run_vpn_native(
     ad_vpn_callback: Box<dyn VpnCallback>,
     block_logger_callback: Option<Box<dyn BlockLoggerCallback>>,
-    vpn_controller: Arc<VpnController>,
+    vpn_controller: Arc<VpnControllerBinding>,
     rule_database: Arc<RuleDatabase>,
     android_file_helper: Box<dyn AndroidFileHelper>,
-) -> Result<VpnResult, VpnError> {
+) -> Result<VpnResultBinding, VpnError> {
     let mut vpn = Vpn::new(vpn_controller);
     let result = vpn.run(
         ad_vpn_callback,
@@ -111,7 +111,7 @@ fn get_epoch() -> Duration {
 pub trait VpnCallback: Send + Sync {
     fn configure(
         &self,
-        vpn_controller: Arc<VpnController>,
+        vpn_controller: Arc<VpnControllerBinding>,
         dns_cache: Arc<DnsCache>,
     ) -> VpnConfigurationResult;
 

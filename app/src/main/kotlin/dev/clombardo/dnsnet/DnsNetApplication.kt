@@ -21,7 +21,7 @@ import dev.clombardo.dnsnet.common.NotificationChannels
 import dev.clombardo.dnsnet.settings.Preferences
 import dev.clombardo.dnsnet.ui.app.coil.AppImageFetcher
 import dev.clombardo.dnsnet.ui.app.coil.AppImageKeyer
-import uniffi.netAndroid.rustInit
+import uniffi.net_bindings.rustInit
 import javax.inject.Inject
 
 @HiltAndroidApp
