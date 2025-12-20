@@ -17,6 +17,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.core.app.NotificationCompat
+import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
@@ -33,7 +34,6 @@ import dev.clombardo.dnsnet.resources.R
 import dev.clombardo.dnsnet.service.vpn.DnsNetVpnService
 import dev.clombardo.dnsnet.settings.ConfigurationManager
 import dev.clombardo.dnsnet.settings.Filter
-import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
@@ -55,7 +55,13 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
 
         const val PERIODIC_TAG = "RuleDatabaseUpdatePeriodicWorker"
 
-        var lastErrors by atomic<MutableList<String>?>(null)
+        private val _lastErrors = MutableStateFlow(emptyList<String>())
+        val lastErrors = _lastErrors.asStateFlow()
+
+        fun clearErrors(context: Context) {
+            _lastErrors.value = emptyList()
+            context.getSystemService<NotificationManager>()?.cancel(UPDATE_NOTIFICATION_ID)
+        }
 
         private const val DATABASE_UPDATE_TIMEOUT = 3600000L
 
@@ -69,7 +75,6 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
         }
     }
 
-    private val errors = ArrayList<String>()
     private val pending = ArrayList<String>()
     private val done = ArrayList<String>()
 
@@ -117,8 +122,7 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
     }
 
     private fun setupNotificationBuilder() {
-        notificationManager =
-            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager = context.getSystemService<NotificationManager>()!!
         notificationBuilder =
             NotificationCompat.Builder(context, NotificationChannels.UPDATE_STATUS)
                 .setContentTitle(context.getString(R.string.updating_filter_files))
@@ -183,7 +187,7 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
     @Synchronized
     private fun postExecute() {
         logDebug("postExecute: Sending notification")
-        if (errors.isEmpty()) {
+        if (_lastErrors.value.isEmpty()) {
             notificationManager.cancel(UPDATE_NOTIFICATION_ID)
         } else {
             val intent =
@@ -191,7 +195,6 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
                     addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 }
 
-            lastErrors = errors
             val pendingIntent = PendingIntent.getActivity(
                 context,
                 0,
@@ -219,7 +222,7 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
     @Synchronized
     fun addError(item: Filter, message: String) {
         logDebug("error: ${item.title}:$message")
-        errors.add("${item.title}\n$message")
+        _lastErrors.value += "${item.title}\n$message"
     }
 
     @Synchronized

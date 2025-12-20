@@ -230,19 +230,10 @@ fun App(
 ) {
     val showUpdateIncompleteDialog by vm.showUpdateIncompleteDialog.collectAsState()
     if (showUpdateIncompleteDialog) {
-        val messageText = StringBuilder(stringResource(R.string.update_incomplete_description))
-        val errorText = remember {
-            if (vm.errors != null) {
-                messageText.append("\n")
-            }
-            vm.errors?.forEach {
-                messageText.append("$it\n")
-            }
-            messageText.toString()
-        }
+        val messageText by vm.databaseUpdateErrorString.collectAsState()
         BasicDialog(
             title = stringResource(R.string.update_incomplete),
-            text = errorText,
+            text = messageText,
             primaryButton = DialogButton(
                 text = stringResource(android.R.string.ok),
                 onClick = { vm.onDismissUpdateIncomplete() },

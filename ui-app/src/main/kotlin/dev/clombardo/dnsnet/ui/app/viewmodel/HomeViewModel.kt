@@ -36,10 +36,13 @@ import dev.clombardo.dnsnet.ui.app.R
 import dev.clombardo.dnsnet.ui.app.model.AppData
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.BufferedReader
@@ -54,15 +57,34 @@ class HomeViewModel @AssistedInject constructor(
     val settings: Settings,
     private val preferences: Preferences,
     private val blockLogger: BlockLogger,
-    @Assisted private val onSetupComplete: suspend () -> Unit,
-    @Assisted private val onReloadVpn: () -> Unit,
+    @Assisted private val onSetupComplete: OnSetupComplete,
+    @Assisted private val onReloadVpn: OnReloadVpn,
+    @Assisted private val databaseUpdaterErrors: StateFlow<List<String>>,
+    @Assisted private val onClearDatabaseUpdaterErrors: OnClearDatabaseUpdaterErrors,
 ) : ViewModel() {
-    private val _showUpdateIncompleteDialog = MutableStateFlow(false)
-    val showUpdateIncompleteDialog = _showUpdateIncompleteDialog.asStateFlow()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val showUpdateIncompleteDialog = databaseUpdaterErrors.mapLatest { it.isNotEmpty() }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = false,
+        )
 
-    var errors: List<String>? = null
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val databaseUpdateErrorString = databaseUpdaterErrors.mapLatest { errors ->
+        val messageText = StringBuilder(context.getString(R.string.update_incomplete_description))
+        messageText.append("\n")
+        errors.forEach {
+            messageText.append("$it\n")
+        }
+        messageText.toString()
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = "",
+    )
 
-    private var refreshingLock by atomic(false)
+    private var refreshingLock = atomic(false)
 
     private val _appListRefreshing = MutableStateFlow(false)
     val appListRefreshing = _appListRefreshing.asStateFlow()
@@ -139,23 +161,14 @@ class HomeViewModel @AssistedInject constructor(
         blockLogger.setOnConnectionListener(null)
     }
 
-    fun onCheckForUpdateErrors(workerErrors: List<String>?) {
-        if (!workerErrors.isNullOrEmpty()) {
-            _showUpdateIncompleteDialog.value = true
-            errors = workerErrors
-        }
-    }
-
     fun onDismissUpdateIncomplete() {
-        errors = null
-        _showUpdateIncompleteDialog.value = false
+        onClearDatabaseUpdaterErrors()
     }
 
     fun populateAppList() {
-        if (refreshingLock) {
+        if (refreshingLock.getAndSet(true)) {
             return
         }
-        refreshingLock = true
         _appListRefreshing.value = true
 
         val pm = context.packageManager
@@ -178,7 +191,7 @@ class HomeViewModel @AssistedInject constructor(
 
             appData.value = entries
             _appListRefreshing.value = false
-            refreshingLock = false
+            refreshingLock.getAndSet(false)
             Runtime.getRuntime().gc()
         }
     }
@@ -459,11 +472,25 @@ class HomeViewModel @AssistedInject constructor(
             false
         }
 
+    fun interface OnSetupComplete {
+        suspend operator fun invoke()
+    }
+
+    fun interface OnReloadVpn {
+        operator fun invoke()
+    }
+
+    fun interface OnClearDatabaseUpdaterErrors {
+        operator fun invoke()
+    }
+
     @AssistedFactory
     interface Factory {
         fun create(
-            onSetupComplete: suspend () -> Unit,
-            onReloadVpn: () -> Unit,
+            onSetupComplete: OnSetupComplete,
+            onReloadVpn: OnReloadVpn,
+            databaseUpdaterErrors: StateFlow<List<String>>,
+            onClearDatabaseUpdaterErrors: OnClearDatabaseUpdaterErrors,
         ): HomeViewModel
     }
 

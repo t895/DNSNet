@@ -77,7 +77,7 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
-    lateinit var vm: HomeViewModel
+    private lateinit var vm: HomeViewModel
 
     @Inject
     lateinit var settings: Settings
@@ -96,6 +96,8 @@ class MainActivity : AppCompatActivity() {
                         }
                     },
                     onReloadVpn = { DnsNetVpnService.reconnect(this@MainActivity) },
+                    databaseUpdaterErrors = RuleDatabaseUpdateWorker.lastErrors,
+                    onClearDatabaseUpdaterErrors = { RuleDatabaseUpdateWorker.clearErrors(this@MainActivity) },
                 )
             }
         }).value
@@ -210,17 +212,6 @@ class MainActivity : AppCompatActivity() {
         updateRefreshWork()
     }
 
-    override fun onNewIntent(intent: Intent) {
-        if (intent.getBooleanExtra("UPDATE", false)) {
-            RuleDatabaseUpdateWorker.runNow(this)
-        }
-
-        vm.onCheckForUpdateErrors(RuleDatabaseUpdateWorker.lastErrors)
-        RuleDatabaseUpdateWorker.lastErrors = null
-
-        super.onNewIntent(intent)
-    }
-
     private fun tryToggleService(
         hostsCheck: Boolean,
         launcher: ManagedActivityResultLauncher<Intent, ActivityResult>,
@@ -302,12 +293,6 @@ class MainActivity : AppCompatActivity() {
         } else {
             workManager.cancelAllWorkByTag(RuleDatabaseUpdateWorker.PERIODIC_TAG)
         }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        vm.onCheckForUpdateErrors(RuleDatabaseUpdateWorker.lastErrors)
-        RuleDatabaseUpdateWorker.lastErrors = null
     }
 
     companion object {
