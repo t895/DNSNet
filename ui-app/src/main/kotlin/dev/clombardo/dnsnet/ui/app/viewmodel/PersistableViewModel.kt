@@ -15,8 +15,7 @@ import androidx.lifecycle.ViewModel
 import com.aallam.similarity.Cosine
 import kotlinx.serialization.json.Json
 
-abstract class PersistableViewModel : ViewModel() {
-    protected abstract val context: Context
+abstract class PersistableViewModel(context: Context) : ViewModel() {
     abstract val tag: String
     protected val cosineSimilarity = Cosine()
 

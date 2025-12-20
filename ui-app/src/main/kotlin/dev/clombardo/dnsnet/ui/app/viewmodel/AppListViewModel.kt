@@ -21,8 +21,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AppListViewModel @Inject constructor(
-    @ApplicationContext override val context: Context,
-) : PersistableViewModel() {
+    @ApplicationContext context: Context,
+) : PersistableViewModel(context) {
     override val tag = "AppListViewModel"
 
     var searchValue by mutableStateOf("")
