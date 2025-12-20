@@ -8,21 +8,20 @@
 
 package dev.clombardo.dnsnet.ui.app.viewmodel
 
+import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dev.clombardo.dnsnet.settings.Preferences
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.clombardo.dnsnet.ui.app.model.AppData
 import dev.clombardo.dnsnet.ui.app.state.AppListState
 import dev.clombardo.dnsnet.ui.common.FilterMode
 import javax.inject.Inject
-import kotlin.collections.sortedBy
-import kotlin.collections.sortedByDescending
 
 @HiltViewModel
 class AppListViewModel @Inject constructor(
-    override val preferences: Preferences
+    @ApplicationContext override val context: Context,
 ) : PersistableViewModel() {
     override val tag = "AppListViewModel"
 

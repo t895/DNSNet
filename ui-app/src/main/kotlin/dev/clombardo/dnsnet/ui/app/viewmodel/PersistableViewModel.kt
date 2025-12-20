@@ -8,22 +8,25 @@
 
 package dev.clombardo.dnsnet.ui.app.viewmodel
 
+import android.content.Context
+import android.content.SharedPreferences
 import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import com.aallam.similarity.Cosine
-import dev.clombardo.dnsnet.settings.Preferences
 import kotlinx.serialization.json.Json
 
 abstract class PersistableViewModel : ViewModel() {
-    abstract val preferences: Preferences
+    protected abstract val context: Context
     abstract val tag: String
     protected val cosineSimilarity = Cosine()
 
+    private val preferences: SharedPreferences = context.getSharedPreferences(PREFERENCES_STORE_FILE, Context.MODE_PRIVATE)
+
     internal inline fun <reified T> getInitialPersistedValue(key: String, defaultValue: T): T {
         val key = "$tag:$key"
-        return if (preferences.sharedPreferences.contains(key)) {
+        return if (preferences.contains(key)) {
             try {
-                Json.decodeFromString(preferences.sharedPreferences.getString(key, "")!!)
+                Json.decodeFromString(preferences.getString(key, "")!!)
             } catch (_: Exception) {
                 defaultValue
             }
@@ -34,8 +37,12 @@ abstract class PersistableViewModel : ViewModel() {
 
     internal inline fun <reified T> persistValue(key: String, value: T) {
         try {
-            preferences.sharedPreferences.edit { putString("$tag:$key", Json.encodeToString(value)) }
+            preferences.edit { putString("$tag:$key", Json.encodeToString(value)) }
         } catch (_: Exception) {
         }
+    }
+
+    companion object {
+        private const val PREFERENCES_STORE_FILE = "PersistableViewModelPreferences"
     }
 }

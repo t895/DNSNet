@@ -8,22 +8,20 @@
 
 package dev.clombardo.dnsnet.ui.app.viewmodel
 
+import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dev.clombardo.dnsnet.settings.Preferences
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.clombardo.dnsnet.ui.app.LoggedConnectionState
 import dev.clombardo.dnsnet.ui.app.state.BlockLogListState
 import dev.clombardo.dnsnet.ui.common.FilterMode
 import javax.inject.Inject
-import kotlin.collections.component1
-import kotlin.collections.component2
-import kotlin.collections.set
 
 @HiltViewModel
 class BlockLogListViewModel @Inject constructor(
-    override val preferences: Preferences
+    @ApplicationContext override val context: Context,
 ) : PersistableViewModel() {
     override val tag = "BlockLogListViewModel"
 
