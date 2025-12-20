@@ -12,7 +12,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 
 data class DialogButton(
@@ -31,35 +30,31 @@ fun BasicDialog(
     tertiaryButton: DialogButton? = null,
     onDismissRequest: () -> Unit,
 ) {
-    val primaryButtonState = remember { primaryButton }
-    val secondaryButtonState = remember { secondaryButton }
-    val tertiaryButtonState = remember { tertiaryButton }
-
     AlertDialog(
         modifier = modifier,
         onDismissRequest = onDismissRequest,
         confirmButton = {
-            if (tertiaryButtonState != null) {
+            if (tertiaryButton != null) {
                 TextButton(
-                    modifier = tertiaryButtonState.modifier,
-                    onClick = tertiaryButtonState.onClick,
+                    modifier = tertiaryButton.modifier,
+                    onClick = tertiaryButton.onClick,
                 ) {
-                    Text(text = tertiaryButtonState.text)
+                    Text(text = tertiaryButton.text)
                 }
             }
-            if (secondaryButtonState != null) {
+            if (secondaryButton != null) {
                 TextButton(
-                    modifier = secondaryButtonState.modifier,
-                    onClick = secondaryButtonState.onClick,
+                    modifier = secondaryButton.modifier,
+                    onClick = secondaryButton.onClick,
                 ) {
-                    Text(text = secondaryButtonState.text)
+                    Text(text = secondaryButton.text)
                 }
             }
             TextButton(
-                modifier = primaryButtonState.modifier,
-                onClick = primaryButtonState.onClick,
+                modifier = primaryButton.modifier,
+                onClick = primaryButton.onClick,
             ) {
-                Text(text = primaryButtonState.text)
+                Text(text = primaryButton.text)
             }
         },
         title = { Text(text = title) },

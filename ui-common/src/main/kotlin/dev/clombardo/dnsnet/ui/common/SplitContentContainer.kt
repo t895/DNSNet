@@ -145,7 +145,7 @@ fun SplitContentRowContainer(
         targetValue = if (elevated) {
             color
         } else {
-            color.copy(alpha = 0f)
+            Color.Transparent
         }
     )
     val contentColor by animateColorAsState(
@@ -277,7 +277,7 @@ fun SplitContentColumnContainer(
         targetValue = if (elevated) {
             color
         } else {
-            color.copy(alpha = 0f)
+            Color.Transparent
         }
     )
     val contentColor by animateColorAsState(

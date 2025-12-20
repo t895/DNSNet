@@ -9,6 +9,7 @@
 package dev.clombardo.dnsnet.ui.common
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.SnapshotStateList
@@ -23,6 +24,7 @@ fun <T: Any> rememberMutableStateListOf(builderAction: MutableList<T>.() -> Unit
     }
 }
 
+@Stable
 private fun <T : Any> snapshotStateListSaver() = listSaver<SnapshotStateList<T>, T>(
     save = { stateList -> stateList.toList() },
     restore = { it.toMutableStateList() },

@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
@@ -28,7 +29,7 @@ object Animation {
     val EmphasizedAccelerateEasing by lazy { CubicBezierEasing(0.3f, 0f, 0.8f, 0.15f) }
 
     val ShowSpinnerHorizontal: EnterTransition
-        @Composable get() {
+        @ReadOnlyComposable @Composable get() {
             return fadeIn(
                 animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
             ) + expandHorizontally(
@@ -39,7 +40,7 @@ object Animation {
         }
 
     val HideSpinnerHorizontal: ExitTransition
-        @Composable get() {
+        @ReadOnlyComposable @Composable get() {
             return fadeOut(
                 animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
             ) + shrinkHorizontally(

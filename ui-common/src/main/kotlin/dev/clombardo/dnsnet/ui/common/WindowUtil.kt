@@ -10,8 +10,10 @@ package dev.clombardo.dnsnet.ui.common
 
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.window.core.layout.WindowSizeClass
 
+@Stable
 @Composable
 fun isSmallScreen(): Boolean {
     return !currentWindowAdaptiveInfo().windowSizeClass

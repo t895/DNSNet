@@ -32,6 +32,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,7 +61,26 @@ enum class FabState(internal val progress: Float) {
 object TriStateFab {
     val size = 128.dp
     val safeInsets: WindowInsets
-        @Composable get() = WindowInsets.displayCutout.union(WindowInsets.systemBars)
+        @NonRestartableComposable @Composable get() =
+            WindowInsets.displayCutout.union(WindowInsets.systemBars)
+
+    private val inactiveShape = RoundedPolygon(
+        numVertices = 3,
+        rounding = CornerRounding(0.2f)
+    )
+    private val loadingShape = RoundedPolygon.star(
+        numVerticesPerRadius = 12,
+        radius = 2f,
+        rounding = CornerRounding(0.2f)
+    )
+    private val activeShape = RoundedPolygon(
+        numVertices = 4,
+        radius = 0.9f,
+        rounding = CornerRounding(0.2f)
+    )
+
+    val inactiveToLoadingMorph = Morph(inactiveShape, loadingShape)
+    val loadingToActiveMorph = Morph(loadingShape, activeShape)
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -136,32 +156,6 @@ fun TriStateFab(
             label = "contentColor",
         )
 
-        val inactiveShape = remember {
-            RoundedPolygon(
-                numVertices = 3,
-                rounding = CornerRounding(0.2f)
-            )
-        }
-        val loadingShape = remember {
-            RoundedPolygon.star(
-                numVerticesPerRadius = 12,
-                radius = 2f,
-                rounding = CornerRounding(0.2f)
-            )
-        }
-        val activeShape = remember {
-            RoundedPolygon(
-                numVertices = 4,
-                radius = 0.9f,
-                rounding = CornerRounding(0.2f)
-            )
-        }
-        val inactiveToLoadingMorph = remember {
-            Morph(inactiveShape, loadingShape)
-        }
-        val loadingToActiveMorph = remember {
-            Morph(loadingShape, activeShape)
-        }
         val progress by animateFloatAsState(
             targetValue = state.progress,
             animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
@@ -191,7 +185,7 @@ fun TriStateFab(
                 .drawWithCache {
                     val shape = if (progress < 1f) {
                         RotatingMorphShape(
-                            morph = inactiveToLoadingMorph,
+                            morph = TriStateFab.inactiveToLoadingMorph,
                             percentage = progress,
                             rotation = if (state == FabState.Inactive) {
                                 animatedRotation
@@ -201,7 +195,7 @@ fun TriStateFab(
                         )
                     } else if (progress > 1f) {
                         RotatingMorphShape(
-                            morph = loadingToActiveMorph,
+                            morph = TriStateFab.loadingToActiveMorph,
                             percentage = progress - 1f,
                             rotation = if (state == FabState.Active) {
                                 animatedRotation
@@ -211,7 +205,7 @@ fun TriStateFab(
                         )
                     } else {
                         RotatingMorphShape(
-                            morph = inactiveToLoadingMorph,
+                            morph = TriStateFab.inactiveToLoadingMorph,
                             percentage = 1f,
                             rotation = infiniteAnimatedRotation,
                         )

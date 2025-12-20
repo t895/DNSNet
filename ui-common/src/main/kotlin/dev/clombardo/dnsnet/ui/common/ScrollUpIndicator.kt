@@ -74,7 +74,7 @@ fun BoxScope.ScrollUpIndicator(
     exitTransition: ExitTransition = ScrollUpIndicatorDefaults.ExitTransition,
     windowInsets: WindowInsets = ScrollUpIndicatorDefaults.windowInsets,
     alignment: Alignment = Alignment.BottomEnd,
-    onClick: suspend CoroutineScope.() -> Unit,
+    onClick: suspend () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     val scrollUpButtonColor = MaterialTheme.colorScheme.tertiaryContainer
@@ -98,9 +98,7 @@ fun BoxScope.ScrollUpIndicator(
                 .clickable(
                     enabled = enabled,
                     role = Role.Button,
-                ) {
-                    scope.launch(block = onClick)
-                },
+                ) { scope.launch { onClick() } },
             contentAlignment = Alignment.Center,
         ) {
             Icon(

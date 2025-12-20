@@ -12,10 +12,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
+@Stable
 @Composable
 fun PaddingValues.add(
     start: Dp = Dp.Unspecified,
@@ -53,6 +55,7 @@ fun PaddingValues.add(
     )
 }
 
+@Stable
 @Composable
 operator fun PaddingValues.plus(other: PaddingValues): PaddingValues {
     val layoutDirection = LocalLayoutDirection.current

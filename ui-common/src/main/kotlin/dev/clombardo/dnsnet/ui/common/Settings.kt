@@ -716,7 +716,7 @@ fun ExpandableOptionsItem(
                     label = "iconRotation",
                 )
                 Icon(
-                    modifier = Modifier.rotate(iconRotation),
+                    modifier = Modifier.graphicsLayer { rotationZ = iconRotation },
                     painter = rememberVectorPainter(Icons.Default.KeyboardArrowDown),
                     contentDescription = if (expanded) {
                         stringResource(R.string.collapse)

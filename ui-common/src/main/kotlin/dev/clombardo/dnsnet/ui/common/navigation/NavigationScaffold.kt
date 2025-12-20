@@ -10,7 +10,6 @@ package dev.clombardo.dnsnet.ui.common.navigation
 
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -38,16 +37,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import dev.clombardo.dnsnet.ui.common.plus
-import dev.clombardo.dnsnet.ui.common.theme.Animation
 import dev.clombardo.dnsnet.ui.common.theme.DnsNetTheme
 
 enum class LayoutType {
@@ -57,7 +55,8 @@ enum class LayoutType {
 
 object NavigationScaffoldDefaults {
     val windowInsets: WindowInsets
-        @Composable get() = WindowInsets.systemBars.union(WindowInsets.displayCutout)
+        @NonRestartableComposable @Composable get() =
+            WindowInsets.systemBars.union(WindowInsets.displayCutout)
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
