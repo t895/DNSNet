@@ -16,7 +16,7 @@ plugins {
     alias(libs.plugins.dnsnet.hilt)
 }
 
-val libnet = "libnet"
+val libnetModule = "libnetAndroid"
 
 // Required for reproducible builds on F-Droid
 val remapCargo = listOf(
@@ -25,10 +25,11 @@ val remapCargo = listOf(
 )
 
 cargo {
-    module = libnet
-    libname = "net"
+    module = libnetModule
+    libname = "netAndroid"
 
     targets = listOf("arm64", "arm", "x86_64")
+    targetDirectory = "./target"
 
     pythonCommand = "python3"
 
@@ -41,7 +42,7 @@ cargo {
 }
 
 val uniffiBindgen = tasks.register<Exec>("uniffiBindgen") {
-    workingDir = project.layout.projectDirectory.file("libnet").asFile
+    workingDir = project.layout.projectDirectory.asFile
     commandLine = listOf(
         "cargo",
         "run",
@@ -50,7 +51,7 @@ val uniffiBindgen = tasks.register<Exec>("uniffiBindgen") {
         "generate",
         "--library",
         project.layout.projectDirectory.dir("build").dir("rustJniLibs").dir("android")
-            .dir("arm64-v8a").file("libnet.so").asFile.path,
+            .dir("arm64-v8a").file("libnetAndroid.so").asFile.path,
         "--language",
         "kotlin",
         "--out-dir",
@@ -67,10 +68,6 @@ project.afterEvaluate {
         .forEach { buildTask ->
             tasks.withType(MergeSourceSetFolders::class)
                 .configureEach {
-                    inputs.dir(
-                        layout.buildDirectory.get().dir("rustJniLibs")
-                            .dir(buildTask.toolchain!!.folder)
-                    )
                     dependsOn(buildTask)
                 }
         }
@@ -87,7 +84,7 @@ abstract class CleanRustTarget @Inject constructor(
     @TaskAction
     fun clean() {
         fileSystemOperations.delete {
-            delete(projectLayout.projectDirectory.dir("libnet").dir("target"))
+            delete(projectLayout.projectDirectory.dir("target"))
         }
     }
 

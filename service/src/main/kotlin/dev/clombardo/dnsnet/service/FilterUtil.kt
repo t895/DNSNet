@@ -14,8 +14,8 @@ import dev.clombardo.dnsnet.common.logInfo
 import dev.clombardo.dnsnet.settings.Filter
 import dev.clombardo.dnsnet.settings.FilterState
 import dev.clombardo.dnsnet.settings.Settings
-import uniffi.net.NativeFilter
-import uniffi.net.NativeFilterState
+import uniffi.netAndroid.NativeFilter
+import uniffi.netAndroid.NativeFilterState
 import java.io.IOException
 
 object FilterUtil {

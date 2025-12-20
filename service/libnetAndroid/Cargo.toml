@@ -1,0 +1,30 @@
+[package]
+name = "netAndroid"
+version = "1.0.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+name = "netAndroid"
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "uniffi-bindgen.rs"
+
+[dependencies]
+base64 = { workspace = true }
+bincode = { workspace = true }
+etherparse = { workspace = true }
+getrandom = { workspace = true }
+libc = { workspace = true }
+log = { workspace = true }
+lru = { workspace = true }
+mio = { workspace = true }
+quiche = { workspace = true }
+thiserror = { workspace = true }
+uniffi = { workspace = true }
+url = { workspace = true }
+simple-dns = { workspace = true }
+
+[target.'cfg(target_os = "android")'.dependencies]
+android_logger = "0.15.1"

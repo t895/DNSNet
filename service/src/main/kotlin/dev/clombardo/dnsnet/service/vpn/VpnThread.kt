@@ -22,11 +22,11 @@ import dev.clombardo.dnsnet.common.logInfo
 import dev.clombardo.dnsnet.common.logWarning
 import dev.clombardo.dnsnet.service.NativeFileHelperWrapper
 import dev.clombardo.dnsnet.service.db.RuleDatabaseManager
-import uniffi.net.BlockLoggerCallback
-import uniffi.net.VpnController
-import uniffi.net.VpnException
-import uniffi.net.VpnResult
-import uniffi.net.runVpnNative
+import uniffi.netAndroid.BlockLoggerCallback
+import uniffi.netAndroid.VpnController
+import uniffi.netAndroid.VpnException
+import uniffi.netAndroid.VpnResult
+import uniffi.netAndroid.runVpnNative
 
 class VpnThread(
     private val dnsNetVpnService: DnsNetVpnService,

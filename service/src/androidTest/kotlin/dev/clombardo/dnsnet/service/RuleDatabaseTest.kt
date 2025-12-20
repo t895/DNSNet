@@ -14,10 +14,10 @@ import androidx.test.filters.SmallTest
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Before
 import org.junit.Test
-import uniffi.net.NativeFilter
-import uniffi.net.NativeFilterState
-import uniffi.net.RuleDatabase
-import uniffi.net.RuleDatabaseController
+import uniffi.netAndroid.NativeFilter
+import uniffi.netAndroid.NativeFilterState
+import uniffi.netAndroid.RuleDatabase
+import uniffi.netAndroid.RuleDatabaseController
 
 @SmallTest
 class RuleDatabaseTest {

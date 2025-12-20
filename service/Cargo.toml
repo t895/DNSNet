@@ -1,17 +1,11 @@
-[package]
-name = "net"
-version = "1.0.0"
-edition = "2024"
+[workspace]
+resolver = "3"
+members = ["libnetAndroid"]
 
-[lib]
-crate-type = ["cdylib"]
-name = "net"
+[profile.release]
+lto = "fat"
 
-[[bin]]
-name = "uniffi-bindgen"
-path = "uniffi-bindgen.rs"
-
-[dependencies]
+[workspace.dependencies]
 base64 = "0.22.1"
 bincode = "2.0.1"
 etherparse = "0.19.0"
@@ -25,9 +19,3 @@ simple-dns = "0.11.0"
 thiserror = "2.0.17"
 uniffi = { version = "0.30.0", features = ["cli"] }
 url = "2.5.7"
-
-[target.'cfg(target_os = "android")'.dependencies]
-android_logger = "0.15.1"
-
-[profile.release]
-lto = "fat"

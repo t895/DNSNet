@@ -11,7 +11,7 @@ package dev.clombardo.dnsnet.service
 import android.content.Context
 import android.os.ParcelFileDescriptor
 import dev.clombardo.dnsnet.common.FileHelper
-import uniffi.net.AndroidFileHelper
+import uniffi.netAndroid.AndroidFileHelper
 import java.io.File
 
 class NativeFileHelperWrapper(private val context: Context) : AndroidFileHelper {
