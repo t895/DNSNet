@@ -50,7 +50,7 @@ class SingleWriterMultipleReaderFile(file: File) {
     @Throws(IOException::class)
     fun startWrite(): FileOutputStream {
         if (workFile.exists() && !workFile.delete()) {
-            throw IOException("Cannot delete working file")
+            throw IOException("startWrite: Cannot delete working file")
         }
         return FileOutputStream(workFile)
     }
@@ -71,7 +71,7 @@ class SingleWriterMultipleReaderFile(file: File) {
         val activeFileAlreadyExists = activeFile.exists()
         if (!workFile.renameTo(activeFile) && (!activeFileAlreadyExists && !activeFile.exists())) {
             failWrite(stream)
-            throw IOException("Cannot commit transaction")
+            throw IOException("finishWrite: Cannot commit transaction")
         }
     }
 
@@ -84,7 +84,7 @@ class SingleWriterMultipleReaderFile(file: File) {
     fun failWrite(stream: FileOutputStream) {
         FileHelper.closeOrWarn(stream, "Cannot close working file")
         if (workFile.exists() && !workFile.delete()) {
-            throw IOException("Cannot delete working file")
+            throw IOException("failWrite: Cannot delete working file")
         }
     }
 }
