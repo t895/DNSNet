@@ -10,3 +10,10 @@ name="net"
 mio = { workspace = true }
 log = { workspace = true }
 thiserror = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+
+[[bench]]
+name = "database"
+harness = false
