@@ -110,6 +110,14 @@ android {
         resources {
             excludes += "/META-INF/gradle/incremental.annotation.processors"
         }
+        jniLibs {
+            excludes.apply {
+                add("**/x86/**")
+                add("**/armeabi/**")
+                add("**/mips64/**")
+                add("**/mips/**")
+            }
+        }
     }
 
     /**
