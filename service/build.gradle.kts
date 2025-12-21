@@ -112,7 +112,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    ndkVersion = "28.0.13004108"
+    ndkVersion = "29.0.14206865"
 
     sourceSets {
         getByName("main") {
