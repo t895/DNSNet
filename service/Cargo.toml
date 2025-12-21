@@ -6,6 +6,7 @@ members = ["libnet_bindings", "libnet"]
 lto = "fat"
 
 [workspace.dependencies]
+ahash = "0.8.12"
 base64 = "0.22.1"
 bincode = "2.0.1"
 criterion = { version = "0.8.1", features = ["html_reports"] }

@@ -101,14 +101,14 @@ pub enum RuleDatabaseError {
 
 pub struct RuleDatabase {
     controller: Arc<RuleDatabaseController>,
-    map: RwLock<HashMap<String, (FilterType, FilterAction)>>,
+    map: RwLock<HashMap<String, (FilterType, FilterAction), ahash::RandomState>>,
 }
 
 impl RuleDatabase {
     pub fn new(controller: Arc<RuleDatabaseController>) -> Self {
         RuleDatabase {
             controller,
-            map: RwLock::new(HashMap::new()),
+            map: RwLock::new(HashMap::default()),
         }
     }
 
@@ -133,7 +133,7 @@ impl RuleDatabase {
             single_filters.len()
         );
 
-        let mut map = HashMap::<String, (FilterType, FilterAction)>::new();
+        let mut map = HashMap::<String, (FilterType, FilterAction), ahash::RandomState>::default();
 
         let mut sorted_filter_files = filter_files
             .iter()
@@ -305,7 +305,7 @@ fn parse_line(line: &str) -> Option<String> {
 fn load_item(
     file_helper: &impl FileHelper,
     controller: &RuleDatabaseController,
-    map: &mut HashMap<String, (FilterType, FilterAction)>,
+    map: &mut HashMap<String, (FilterType, FilterAction), ahash::RandomState>,
     host: &Filter,
 ) -> Result<(), RuleDatabaseError> {
     if host.state == FilterState::IGNORE {
@@ -339,7 +339,7 @@ fn load_item(
 /// Adds a single filter to the block list
 fn add_filter(
     controller: &RuleDatabaseController,
-    map: &mut HashMap<String, (FilterType, FilterAction)>,
+    map: &mut HashMap<String, (FilterType, FilterAction), ahash::RandomState>,
     state: &FilterState,
     line: String,
 ) -> Result<(), RuleDatabaseError> {
@@ -433,7 +433,7 @@ fn add_filter(
 /// Loads a file of filters and adds them to the block list
 fn load_file(
     controller: &RuleDatabaseController,
-    map: &mut HashMap<String, (FilterType, FilterAction)>,
+    map: &mut HashMap<String, (FilterType, FilterAction), ahash::RandomState>,
     filter: &Filter,
     lines: io::Lines<io::BufReader<File>>,
 ) -> Result<(), RuleDatabaseError> {
