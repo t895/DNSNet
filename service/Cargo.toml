@@ -9,12 +9,12 @@ lto = "fat"
 ahash = "0.8.12"
 base64 = "0.22.1"
 bincode = "2.0.1"
-criterion = { version = "0.8.1", features = ["html_reports"] }
+criterion = { version = "0.7.0", features = ["html_reports"] }
 etherparse = "0.19.0"
 getrandom = "0.3.4"
-log = "0.4.28"
+log = "0.4.29"
 lru = "0.16.2"
-mio = { version="1.1.0", features=["net","os-poll","os-ext"] }
+mio = { version="1.1.1", features=["net","os-poll","os-ext"] }
 quiche = "0.24.6"
 simple-dns = "0.11.0"
 thiserror = "2.0.17"
