@@ -9,4 +9,6 @@
 extern crate log;
 
 pub mod controller;
+pub mod database;
+pub mod file;
 pub mod vpn;

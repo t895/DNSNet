@@ -15,16 +15,19 @@ mod validation;
 mod vpn;
 
 use std::{
+    fs::File,
     net::{Ipv6Addr, SocketAddr, SocketAddrV6},
+    os::fd::FromRawFd,
     str::FromStr,
     sync::Arc,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 use android_logger::Config;
-use database::RuleDatabase;
+use database::RuleDatabaseBinding;
 use log::LevelFilter;
 use mio::net::UdpSocket;
+use net::file::FileHelper;
 use vpn::{Vpn, VpnConfigurationResult, VpnError, VpnResultBinding};
 
 use crate::{cache::DnsCache, vpn::VpnControllerBinding};
@@ -60,7 +63,7 @@ pub fn run_vpn_native(
     ad_vpn_callback: Box<dyn VpnCallback>,
     block_logger_callback: Option<Box<dyn BlockLoggerCallback>>,
     vpn_controller: Arc<VpnControllerBinding>,
-    rule_database: Arc<RuleDatabase>,
+    rule_database: Arc<RuleDatabaseBinding>,
     android_file_helper: Box<dyn AndroidFileHelper>,
 ) -> Result<VpnResultBinding, VpnError> {
     let mut vpn = Vpn::new(vpn_controller);
@@ -123,8 +126,15 @@ pub trait VpnCallback: Send + Sync {
 /// Callback interface for accessing our filter files from the Android system
 #[uniffi::export(callback_interface)]
 pub trait AndroidFileHelper {
-    fn get_filter_file_fd(&self, path: String) -> Option<i32>;
+    fn get_fd(&self, path: String) -> Option<i32>;
     fn get_dns_cache_file_fd(&self) -> Option<i32>;
+}
+
+impl FileHelper for Box<dyn AndroidFileHelper> {
+    fn get_file(&self, path: String) -> Option<File> {
+        let fd = self.get_fd(path)?;
+        return Some(unsafe { File::from_raw_fd(fd) });
+    }
 }
 
 /// Callback interface for logging connections that we've blocked for the block logger

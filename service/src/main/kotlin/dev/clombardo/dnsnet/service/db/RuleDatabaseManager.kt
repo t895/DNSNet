@@ -20,9 +20,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.withContext
-import uniffi.net_bindings.RuleDatabase
-import uniffi.net_bindings.RuleDatabaseController
-import uniffi.net_bindings.RuleDatabaseException
+import uniffi.net_bindings.RuleDatabaseBinding
+import uniffi.net_bindings.RuleDatabaseControllerBinding
+import uniffi.net_bindings.RuleDatabaseErrorBinding
 
 class RuleDatabaseManager(
     private val context: Context,
@@ -32,8 +32,8 @@ class RuleDatabaseManager(
     private val pendingReloadLock = Semaphore(1)
     private var destroyed by atomic(false)
 
-    private val ruleDatabaseController = RuleDatabaseController()
-    val ruleDatabase = RuleDatabase(ruleDatabaseController)
+    private val ruleDatabaseController = RuleDatabaseControllerBinding()
+    val ruleDatabase = RuleDatabaseBinding(ruleDatabaseController)
 
     private suspend fun initialize() = withContext(Dispatchers.IO) {
         try {
@@ -42,9 +42,9 @@ class RuleDatabaseManager(
                 filterFiles = configuration.read { this.filters.files.map { it.toNative() } },
                 singleFilters = configuration.read { filters.singleFilters.map { it.toNative() } },
             )
-        } catch (e: RuleDatabaseException) {
+        } catch (e: RuleDatabaseErrorBinding) {
             when (e) {
-                is RuleDatabaseException.Interrupted -> logInfo("Interrupted", e)
+                is RuleDatabaseErrorBinding.Interrupted -> logInfo("Interrupted", e)
                 else -> throw IllegalStateException("Failed to initialize rule database", e)
             }
         }

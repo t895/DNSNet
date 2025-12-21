@@ -602,6 +602,7 @@ version = "1.0.0"
 dependencies = [
  "log",
  "mio",
+ "thiserror",
 ]
 
 [[package]]

@@ -25,7 +25,7 @@ use crate::{
         standard::StandardDnsBackend,
     },
     cache::{DnsCache, SerializableDnsCache},
-    database::RuleDatabase,
+    database::RuleDatabaseBinding,
     packet::build_response_packet,
     proxy::DnsPacketProxy,
     validation::{NativeDnsServer, NativeDnsServerType},
@@ -44,18 +44,23 @@ impl VpnControllerBinding {
     #[uniffi::constructor]
     fn new() -> Arc<Self> {
         let vpn_controller = VpnController::new().unwrap();
-        Arc::new(VpnControllerBinding { controller: RwLock::new(vpn_controller) })
+        Arc::new(VpnControllerBinding {
+            controller: RwLock::new(vpn_controller),
+        })
     }
 
     pub fn stop(&self, result: VpnResultBinding) {
         match self.controller.write() {
             Ok(mut controller) => {
                 controller.stop(result.into());
-            },
+            }
             Err(error) => {
-                error!("stop: Failed to acquire write lock on controller! - {:?}", error);
+                error!(
+                    "stop: Failed to acquire write lock on controller! - {:?}",
+                    error
+                );
                 return;
-            },
+            }
         }
     }
 
@@ -63,24 +68,28 @@ impl VpnControllerBinding {
         match self.controller.read() {
             Ok(controller) => Some(controller.get_receiver_fd()),
             Err(error) => {
-                error!("get_event_fd: Failed to acquire read lock on controller! - {:?}", error);
+                error!(
+                    "get_event_fd: Failed to acquire read lock on controller! - {:?}",
+                    error
+                );
                 None
-            },
+            }
         }
     }
 
     pub fn get_stop_result(&self) -> Option<VpnResultBinding> {
         match self.controller.write() {
-            Ok(mut controller) => {
-                match controller.get_stop_result() {
-                    Some(result) => Some(result.into()),
-                    None => None,
-                }
+            Ok(mut controller) => match controller.get_stop_result() {
+                Some(result) => Some(result.into()),
+                None => None,
             },
             Err(error) => {
-                error!("get_stop_result: Failed to acquire write lock on controller! - {:?}", error);
+                error!(
+                    "get_stop_result: Failed to acquire write lock on controller! - {:?}",
+                    error
+                );
                 return None;
-            },
+            }
         }
     }
 }
@@ -215,7 +224,7 @@ impl Vpn {
         &mut self,
         android_vpn_callback: Box<dyn VpnCallback>,
         block_logger_callback: Option<Box<dyn BlockLoggerCallback>>,
-        rule_database: Arc<RuleDatabase>,
+        rule_database: Arc<RuleDatabaseBinding>,
         android_file_helper: Box<dyn AndroidFileHelper>,
     ) -> Result<VpnResultBinding, VpnError> {
         let mut packet = vec![0u8; i16::MAX as usize];
@@ -318,7 +327,7 @@ impl Vpn {
             None => {
                 error!("run: Failed to get event fd from controller!");
                 return Result::Err(VpnError::ControllerFailure);
-            },
+            }
         };
 
         if let Err(error) = poll.registry().register(

@@ -276,12 +276,12 @@ pub fn validate_dns_servers(
     };
 
     let event_fd = match vpn_controller.get_event_fd() {
-            Some(fd) => fd,
-            None => {
-                error!("run: Failed to get event fd from controller!");
-                return Result::Err(ValidateDnsError::ControllerFailure);
-            },
-        };
+        Some(fd) => fd,
+        None => {
+            error!("run: Failed to get event fd from controller!");
+            return Result::Err(ValidateDnsError::ControllerFailure);
+        }
+    };
 
     if let Err(error) = poll.registry().register(
         &mut SourceFd(&event_fd),

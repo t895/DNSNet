@@ -15,8 +15,7 @@ import uniffi.net_bindings.AndroidFileHelper
 import java.io.File
 
 class NativeFileHelperWrapper(private val context: Context) : AndroidFileHelper {
-    override fun getFilterFileFd(path: String): Int? =
-        FileHelper.getDetachedFd(context, path)
+    override fun getFd(path: String): Int? = FileHelper.getDetachedFd(context, path)
 
     override fun getDnsCacheFileFd(): Int? =
         FileHelper.getDetachedFd(

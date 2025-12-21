@@ -14,8 +14,8 @@ import dev.clombardo.dnsnet.common.logInfo
 import dev.clombardo.dnsnet.settings.Filter
 import dev.clombardo.dnsnet.settings.FilterState
 import dev.clombardo.dnsnet.settings.Settings
-import uniffi.net_bindings.NativeFilter
-import uniffi.net_bindings.NativeFilterState
+import uniffi.net_bindings.FilterBinding
+import uniffi.net_bindings.FilterStateBinding
 import java.io.IOException
 
 object FilterUtil {
@@ -41,7 +41,7 @@ object FilterUtil {
     }
 }
 
-fun FilterState.toNative(): NativeFilterState =
-    NativeFilterState.entries.getOrNull(ordinal) ?: NativeFilterState.IGNORE
+fun FilterState.toNative(): FilterStateBinding =
+    FilterStateBinding.entries.getOrNull(ordinal) ?: FilterStateBinding.IGNORE
 
-fun Filter.toNative(): NativeFilter = NativeFilter(title, data, state.toNative())
+fun Filter.toNative(): FilterBinding = FilterBinding(title, data, state.toNative())

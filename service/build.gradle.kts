@@ -108,8 +108,6 @@ android {
         ndk {
             abiFilters += listOf("x86_64", "arm64-v8a", "armeabi-v7a")
         }
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     ndkVersion = "29.0.14206865"
@@ -138,10 +136,6 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.androidx.test.core)
-
-    androidTestImplementation(libs.androidx.test.core)
-    androidTestImplementation(libs.androidx.test.runner)
-    androidTestImplementation(libs.androidx.test.rules)
 
     implementation(project(":common"))
     implementation(project(":ui-common"))

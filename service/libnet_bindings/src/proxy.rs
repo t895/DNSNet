@@ -12,7 +12,7 @@ use std::sync::Arc;
 use simple_dns::{Name, PacketFlag, ResourceRecord, rdata::RData};
 
 use crate::{
-    BlockLoggerCallback, RuleDatabase, Vpn, VpnCallback, VpnError,
+    BlockLoggerCallback, RuleDatabaseBinding, Vpn, VpnCallback, VpnError,
     backend::{DnsBackend, DnsBackendError},
     cache::DnsCache,
     packet::GenericIpPacket,
@@ -22,7 +22,7 @@ use crate::{
 pub struct DnsPacketProxy<'a> {
     android_vpn_callback: &'a Box<dyn VpnCallback>,
     block_logger_callback: Option<Box<dyn BlockLoggerCallback>>,
-    rule_database: Arc<RuleDatabase>,
+    rule_database: Arc<RuleDatabaseBinding>,
     upstream_dns_servers: Vec<Vec<u8>>,
     negative_cache_record: ResourceRecord<'a>,
 }
@@ -34,7 +34,7 @@ impl<'a> DnsPacketProxy<'a> {
     pub fn new(
         android_vpn_callback: &'a Box<dyn VpnCallback>,
         block_logger_callback: Option<Box<dyn BlockLoggerCallback>>,
-        rule_database: Arc<RuleDatabase>,
+        rule_database: Arc<RuleDatabaseBinding>,
         upstream_dns_servers: Vec<Vec<u8>>,
     ) -> Self {
         let name = match Name::new(Self::INVALID_HOST_NAME) {

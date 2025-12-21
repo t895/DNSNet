@@ -30,7 +30,7 @@ impl VpnController {
             Err(error) => {
                 error!("new: Failed to create pipe! - {:?}", error);
                 return None;
-            },
+            }
         };
         Some(VpnController {
             sender_pipe,
@@ -52,7 +52,10 @@ impl VpnController {
                 // Additionally clear the receiver
                 let mut buf = vec![];
                 if let Err(error) = self.receiver_pipe.read_to_end(&mut buf) {
-                    error!("get_stop_result: Failed to read receiver data! - {:?}", error);
+                    warn!(
+                        "get_stop_result: Failed to read receiver data! - {:?}",
+                        error
+                    );
                 }
 
                 Some(result_clone)
