@@ -165,13 +165,6 @@ fun CreditsScreen(
 
             item {
                 LicenseListItem(
-                    title = stringResource(R.string.libc),
-                    licenseLink = stringResource(R.string.libc_license_link),
-                )
-            }
-
-            item {
-                LicenseListItem(
                     title = stringResource(R.string.log),
                     licenseLink = stringResource(R.string.log_license_link),
                 )
@@ -251,6 +244,13 @@ fun CreditsScreen(
                 LicenseListItem(
                     title = stringResource(R.string.lru),
                     licenseLink = stringResource(R.string.lru_link),
+                )
+            }
+
+            item {
+                LicenseListItem(
+                    title = stringResource(R.string.ahash),
+                    licenseLink = stringResource(R.string.ahash_link),
                 )
             }
 
