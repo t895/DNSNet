@@ -271,23 +271,15 @@ fn parse_line(line: &str) -> Option<&str> {
         None => line.len(),
     };
 
-    let mut start_of_filter = 0;
-
-    if let Some(index) = line.find(IPV4_LOOPBACK) {
-        start_of_filter += index + IPV4_LOOPBACK.len();
-    }
-
-    if start_of_filter == 0 {
-        if let Some(index) = line.find(IPV6_LOOPBACK) {
-            start_of_filter += index + IPV6_LOOPBACK.len();
-        }
-    }
-
-    if start_of_filter == 0 {
-        if let Some(index) = line.find(NO_ROUTE) {
-            start_of_filter += index + NO_ROUTE.len();
-        }
-    }
+    let start_of_filter = if line.starts_with(IPV4_LOOPBACK) {
+        IPV4_LOOPBACK.len()
+    } else if line.starts_with(IPV6_LOOPBACK) {
+        IPV6_LOOPBACK.len()
+    } else if line.starts_with(NO_ROUTE) {
+        NO_ROUTE.len()
+    } else {
+        0
+    };
 
     if start_of_filter >= end_of_line {
         return None;
