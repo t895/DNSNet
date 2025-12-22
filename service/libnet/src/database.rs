@@ -156,16 +156,7 @@ impl RuleDatabase {
         sorted_single_filters.sort_by(|a, b| a.state.partial_cmp(&b.state).unwrap());
 
         for single_filter in sorted_single_filters {
-            if let Err(error) = add_filter(
-                &self.controller,
-                &mut map,
-                &single_filter.state,
-                &single_filter.data,
-            ) {
-                if let RuleDatabaseError::Interrupted = error {
-                    return Err(error);
-                }
-            }
+            add_line(&mut map, &single_filter.state, &single_filter.data)
         }
 
         let mut filter_guard = match self.map.write() {
@@ -256,18 +247,65 @@ const IPV6_LOOPBACK: &'static str = "::1";
 const NO_ROUTE: &'static str = "0.0.0.0";
 
 /// Parses a single line in a filter file and returns the filter if it's valid
-fn parse_line(line: &str) -> Option<&str> {
+fn add_line(
+    map: &mut HashMap<String, (FilterType, FilterAction), ahash::RandomState>,
+    state: &FilterState,
+    line: &str,
+) {
     if line.trim().is_empty() {
-        return None;
+        return;
     }
 
-    // AdBlock Plus style filter files use ## for extra functionality that we don't support
-    if line.contains("##") {
-        return None;
+    let line_contains_whitespace = line.contains(char::is_whitespace);
+    if line.starts_with("||") && line.ends_with("^") && !line_contains_whitespace {
+        // AdBlock Plus style filter files use ## for extra functionality that we don't support
+        if line.contains("##") {
+            return;
+        }
+
+        match state {
+            FilterState::IGNORE => {}
+            FilterState::DENY => {
+                map.insert(
+                    line.to_owned(),
+                    (FilterType::Wildcard, FilterAction::Deny),
+                );
+            }
+            FilterState::ALLOW => {
+                map.insert(
+                    line.to_owned(),
+                    (FilterType::Wildcard, FilterAction::Allow),
+                );
+            }
+        };
+        return;
+    }
+
+    if line.starts_with("*.") && line.len() > 2 && !line_contains_whitespace {
+        match state {
+            FilterState::IGNORE => {}
+            FilterState::DENY => {
+                map.insert(
+                    line.to_owned(),
+                    (FilterType::Wildcard, FilterAction::Deny),
+                );
+            }
+            FilterState::ALLOW => {
+                map.insert(
+                    line.to_owned(),
+                    (FilterType::Wildcard, FilterAction::Allow),
+                );
+            }
+        };
+        return;
     }
 
     let end_of_line = match line.find('#') {
-        Some(index) => index,
+        Some(index) => if index == 0 {
+            return;
+        } else {
+            index
+        },
         None => line.len(),
     };
 
@@ -282,15 +320,23 @@ fn parse_line(line: &str) -> Option<&str> {
     };
 
     if start_of_filter >= end_of_line {
-        return None;
+        return;
     }
 
     let host = (&line[start_of_filter..end_of_line]).trim();
     if host.is_empty() || host.contains(char::is_whitespace) {
-        return None;
+        return;
     }
 
-    return Some(host);
+    match state {
+        FilterState::IGNORE => {}
+        FilterState::DENY => {
+            map.insert(line.to_owned(), (FilterType::HostName, FilterAction::Deny));
+        }
+        FilterState::ALLOW => {
+            map.insert(line.to_owned(), (FilterType::HostName, FilterAction::Allow));
+        }
+    };
 }
 
 /// Loads a generic host (file or single host) and adds them to the block list
@@ -318,105 +364,7 @@ fn load_item(
                 "Failed to open {}. Attempting to add as single host.",
                 host.data
             );
-            if let Err(error) = add_filter(controller, map, &host.state, &host.data) {
-                if let RuleDatabaseError::Interrupted = error {
-                    return Err(error);
-                }
-            }
-        }
-    };
-    return Ok(());
-}
-
-/// Adds a single filter to the block list
-fn add_filter(
-    controller: &RuleDatabaseController,
-    map: &mut HashMap<String, (FilterType, FilterAction), ahash::RandomState>,
-    state: &FilterState,
-    line: &str,
-) -> Result<(), RuleDatabaseError> {
-    if controller.get_should_stop() {
-        return Err(RuleDatabaseError::Interrupted);
-    }
-
-    match line.get(..2) {
-        Some(first_two_chars) => {
-            // Star pseudo-wildcard style e.g. *.example.com
-            if first_two_chars.chars().nth(0).unwrap() == '*' {
-                // Ignore the *. at the start of a pseudo-wildcard filter
-                return match line.get(2..line.len()) {
-                    Some(value) => {
-                        match state {
-                            FilterState::IGNORE => {}
-                            FilterState::DENY => {
-                                map.insert(
-                                    value.to_owned(),
-                                    (FilterType::Wildcard, FilterAction::Deny),
-                                );
-                            }
-                            FilterState::ALLOW => {
-                                map.insert(
-                                    value.to_owned(),
-                                    (FilterType::Wildcard, FilterAction::Allow),
-                                );
-                            }
-                        };
-                        Ok(())
-                    }
-                    None => Err(RuleDatabaseError::BadFilterFormat),
-                };
-            } else if first_two_chars == "||" {
-                // AdBlock Plus style pseudo-wildcard e.g. ||example.com^
-                match line.chars().last() {
-                    Some(last_char) => {
-                        if last_char == '^' {
-                            return match line.get(2..line.len() - 1) {
-                                Some(value) => {
-                                    match state {
-                                        FilterState::IGNORE => {}
-                                        FilterState::DENY => {
-                                            map.insert(
-                                                value.to_owned(),
-                                                (FilterType::Wildcard, FilterAction::Deny),
-                                            );
-                                        }
-                                        FilterState::ALLOW => {
-                                            map.insert(
-                                                value.to_owned(),
-                                                (FilterType::Wildcard, FilterAction::Allow),
-                                            );
-                                        }
-                                    };
-                                    Ok(())
-                                }
-                                None => Err(RuleDatabaseError::BadFilterFormat),
-                            };
-                        }
-                    }
-                    None => return Err(RuleDatabaseError::BadFilterFormat),
-                };
-                return Err(RuleDatabaseError::BadFilterFormat);
-            }
-        }
-        None => return Err(RuleDatabaseError::BadFilterFormat),
-    };
-
-    // Reject invalid characters in host name
-    if !line
-        .chars()
-        .all(|c| c.is_alphanumeric() || c == '.' || c == '-')
-    {
-        return Err(RuleDatabaseError::BadFilterFormat);
-    }
-
-    // Plain host name e.g. example.com
-    match state {
-        FilterState::IGNORE => {}
-        FilterState::DENY => {
-            map.insert(line.to_owned(), (FilterType::HostName, FilterAction::Deny));
-        }
-        FilterState::ALLOW => {
-            map.insert(line.to_owned(), (FilterType::HostName, FilterAction::Allow));
+            add_line(map, &host.state, &host.data);
         }
     };
     return Ok(());
@@ -431,15 +379,13 @@ fn load_file(
 ) -> Result<(), RuleDatabaseError> {
     let mut count = 0;
     for line in lines {
+        if controller.get_should_stop() {
+            return Err(RuleDatabaseError::Interrupted);
+        }
+
         match line {
             Ok(value) => {
-                if let Some(line) = parse_line(value.as_str()) {
-                    if let Err(error) = add_filter(controller, map, &filter.state, &line) {
-                        if let RuleDatabaseError::Interrupted = error {
-                            return Err(error);
-                        }
-                    }
-                }
+                add_line(map, &filter.state, &value);
                 count += 1;
             }
             Err(error) => {
