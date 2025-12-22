@@ -242,9 +242,14 @@ impl RuleDatabase {
     }
 }
 
-const IPV4_LOOPBACK: &'static str = "127.0.0.1";
-const IPV6_LOOPBACK: &'static str = "::1";
-const NO_ROUTE: &'static str = "0.0.0.0";
+const IPV4_LOOPBACK: &'static str = "127.0.0.1 ";
+const IPV6_LOOPBACK: &'static str = "::1 ";
+const NO_ROUTE: &'static str = "0.0.0.0 ";
+const WILDCARD: &'static str = "*.";
+const ABP_START: &'static str = "||";
+const ABP_END: &'static str = "^";
+const ABP_SPECIAL: &'static str = "##";
+const COMMENT: &'static str = "#";
 
 /// Parses a single line in a filter file and returns the filter if it's valid
 fn add_line(
@@ -256,24 +261,28 @@ fn add_line(
         return;
     }
 
-    let line_contains_whitespace = line.contains(char::is_whitespace);
-    if line.starts_with("||") && line.ends_with("^") && !line_contains_whitespace {
+    if line.starts_with(COMMENT) {
+        return;
+    }
+
+    if line.starts_with(ABP_START) && line.ends_with(ABP_END) {
         // AdBlock Plus style filter files use ## for extra functionality that we don't support
-        if line.contains("##") {
+        if line.contains(ABP_SPECIAL) {
             return;
         }
 
+        let abp_line = &line[2..line.len() - 1];
         match state {
             FilterState::IGNORE => {}
             FilterState::DENY => {
                 map.insert(
-                    line.to_owned(),
+                    abp_line.to_owned(),
                     (FilterType::Wildcard, FilterAction::Deny),
                 );
             }
             FilterState::ALLOW => {
                 map.insert(
-                    line.to_owned(),
+                    abp_line.to_owned(),
                     (FilterType::Wildcard, FilterAction::Allow),
                 );
             }
@@ -281,33 +290,25 @@ fn add_line(
         return;
     }
 
-    if line.starts_with("*.") && line.len() > 2 && !line_contains_whitespace {
+    if line.starts_with(WILDCARD) && line.len() > 2 && !line.contains(char::is_whitespace) {
+        let wildcard_line = &line[2..];
         match state {
             FilterState::IGNORE => {}
             FilterState::DENY => {
                 map.insert(
-                    line.to_owned(),
+                    wildcard_line.to_owned(),
                     (FilterType::Wildcard, FilterAction::Deny),
                 );
             }
             FilterState::ALLOW => {
                 map.insert(
-                    line.to_owned(),
+                    wildcard_line.to_owned(),
                     (FilterType::Wildcard, FilterAction::Allow),
                 );
             }
         };
         return;
     }
-
-    let end_of_line = match line.find('#') {
-        Some(index) => if index == 0 {
-            return;
-        } else {
-            index
-        },
-        None => line.len(),
-    };
 
     let start_of_filter = if line.starts_with(IPV4_LOOPBACK) {
         IPV4_LOOPBACK.len()
@@ -319,11 +320,7 @@ fn add_line(
         0
     };
 
-    if start_of_filter >= end_of_line {
-        return;
-    }
-
-    let host = (&line[start_of_filter..end_of_line]).trim();
+    let host = &line[start_of_filter..];
     if host.is_empty() || host.contains(char::is_whitespace) {
         return;
     }
