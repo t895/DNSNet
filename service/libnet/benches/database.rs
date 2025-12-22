@@ -39,6 +39,7 @@ fn criterion_bench_load_data(c: &mut Criterion) {
     group.bench_function("oisd ABP Load", |b| b.iter(|| load_files(vec!["./benches/test-data/oisd_big_abp.txt"])));
     group.bench_function("hagezi Wildcard Load", |b| b.iter(|| load_files(vec!["./benches/test-data/hagezi_ultimate_wildcard.txt"])));
     group.bench_function("Stevenblack Hosts Load", |b| b.iter(|| load_files(vec!["./benches/test-data/stevenblack_hosts.txt"])));
+    group.bench_function("All", |b| b.iter(|| load_files(vec!["./benches/test-data/oisd_big_abp.txt", "./benches/test-data/hagezi_ultimate_wildcard.txt", "./benches/test-data/stevenblack_hosts.txt"])));
 
     group.finish();
 }
