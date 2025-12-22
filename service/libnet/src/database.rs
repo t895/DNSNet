@@ -160,7 +160,7 @@ impl RuleDatabase {
                 &self.controller,
                 &mut map,
                 &single_filter.state,
-                single_filter.data.clone(),
+                &single_filter.data,
             ) {
                 if let RuleDatabaseError::Interrupted = error {
                     return Err(error);
@@ -256,7 +256,7 @@ const IPV6_LOOPBACK: &'static str = "::1";
 const NO_ROUTE: &'static str = "0.0.0.0";
 
 /// Parses a single line in a filter file and returns the filter if it's valid
-fn parse_line(line: &str) -> Option<String> {
+fn parse_line(line: &str) -> Option<&str> {
     if line.trim().is_empty() {
         return None;
     }
@@ -293,7 +293,7 @@ fn parse_line(line: &str) -> Option<String> {
         return None;
     }
 
-    let host = (&line[start_of_filter..end_of_line]).trim().to_lowercase();
+    let host = (&line[start_of_filter..end_of_line]).trim();
     if host.is_empty() || host.contains(char::is_whitespace) {
         return None;
     }
@@ -326,7 +326,7 @@ fn load_item(
                 "Failed to open {}. Attempting to add as single host.",
                 host.data
             );
-            if let Err(error) = add_filter(controller, map, &host.state, host.data.clone()) {
+            if let Err(error) = add_filter(controller, map, &host.state, &host.data) {
                 if let RuleDatabaseError::Interrupted = error {
                     return Err(error);
                 }
@@ -341,7 +341,7 @@ fn add_filter(
     controller: &RuleDatabaseController,
     map: &mut HashMap<String, (FilterType, FilterAction), ahash::RandomState>,
     state: &FilterState,
-    line: String,
+    line: &str,
 ) -> Result<(), RuleDatabaseError> {
     if controller.get_should_stop() {
         return Err(RuleDatabaseError::Interrupted);
@@ -421,10 +421,10 @@ fn add_filter(
     match state {
         FilterState::IGNORE => {}
         FilterState::DENY => {
-            map.insert(line, (FilterType::HostName, FilterAction::Deny));
+            map.insert(line.to_owned(), (FilterType::HostName, FilterAction::Deny));
         }
         FilterState::ALLOW => {
-            map.insert(line, (FilterType::HostName, FilterAction::Allow));
+            map.insert(line.to_owned(), (FilterType::HostName, FilterAction::Allow));
         }
     };
     return Ok(());
@@ -442,7 +442,7 @@ fn load_file(
         match line {
             Ok(value) => {
                 if let Some(line) = parse_line(value.as_str()) {
-                    if let Err(error) = add_filter(controller, map, &filter.state, line) {
+                    if let Err(error) = add_filter(controller, map, &filter.state, &line) {
                         if let RuleDatabaseError::Interrupted = error {
                             return Err(error);
                         }
