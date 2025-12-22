@@ -251,13 +251,19 @@ const ABP_END: &'static str = "^";
 const ABP_SPECIAL: &'static str = "##";
 const COMMENT: &'static str = "#";
 
-/// Parses a single line in a filter file and returns the filter if it's valid
+/// Parses a single line in a filter file and adds it to the map if it's valid
 fn add_line(
     map: &mut HashMap<String, (FilterType, FilterAction), ahash::RandomState>,
     state: &FilterState,
     line: &str,
 ) {
-    if line.trim().is_empty() {
+    let filter_action = match state {
+        FilterState::IGNORE => return,
+        FilterState::DENY => FilterAction::Deny,
+        FilterState::ALLOW => FilterAction::Allow,
+    };
+
+    if line.is_empty() {
         return;
     }
 
@@ -265,75 +271,35 @@ fn add_line(
         return;
     }
 
+    let mut start_of_line = 0;
+    let mut end_of_line = line.len();
+    let mut filter_type = FilterType::Wildcard;
     if line.starts_with(ABP_START) && line.ends_with(ABP_END) {
         // AdBlock Plus style filter files use ## for extra functionality that we don't support
         if line.contains(ABP_SPECIAL) {
             return;
         }
-
-        let abp_line = &line[2..line.len() - 1];
-        match state {
-            FilterState::IGNORE => {}
-            FilterState::DENY => {
-                map.insert(
-                    abp_line.to_owned(),
-                    (FilterType::Wildcard, FilterAction::Deny),
-                );
-            }
-            FilterState::ALLOW => {
-                map.insert(
-                    abp_line.to_owned(),
-                    (FilterType::Wildcard, FilterAction::Allow),
-                );
-            }
-        };
-        return;
-    }
-
-    if line.starts_with(WILDCARD) && line.len() > 2 && !line.contains(char::is_whitespace) {
-        let wildcard_line = &line[2..];
-        match state {
-            FilterState::IGNORE => {}
-            FilterState::DENY => {
-                map.insert(
-                    wildcard_line.to_owned(),
-                    (FilterType::Wildcard, FilterAction::Deny),
-                );
-            }
-            FilterState::ALLOW => {
-                map.insert(
-                    wildcard_line.to_owned(),
-                    (FilterType::Wildcard, FilterAction::Allow),
-                );
-            }
-        };
-        return;
-    }
-
-    let start_of_filter = if line.starts_with(IPV4_LOOPBACK) {
-        IPV4_LOOPBACK.len()
+        start_of_line = 2;
+        end_of_line -= 1;
+    } else if line.starts_with(WILDCARD) {
+        start_of_line = 2;
+    } else if line.starts_with(IPV4_LOOPBACK) {
+        start_of_line = IPV4_LOOPBACK.len();
+        filter_type = FilterType::HostName;
     } else if line.starts_with(IPV6_LOOPBACK) {
-        IPV6_LOOPBACK.len()
+        start_of_line = IPV6_LOOPBACK.len();
+        filter_type = FilterType::HostName;
     } else if line.starts_with(NO_ROUTE) {
-        NO_ROUTE.len()
-    } else {
-        0
-    };
+        start_of_line = NO_ROUTE.len();
+        filter_type = FilterType::HostName;
+    }
 
-    let host = &line[start_of_filter..];
-    if host.is_empty() || host.contains(char::is_whitespace) {
+    let host = &line[start_of_line..end_of_line];
+    if host.trim().is_empty() {
         return;
     }
 
-    match state {
-        FilterState::IGNORE => {}
-        FilterState::DENY => {
-            map.insert(line.to_owned(), (FilterType::HostName, FilterAction::Deny));
-        }
-        FilterState::ALLOW => {
-            map.insert(line.to_owned(), (FilterType::HostName, FilterAction::Allow));
-        }
-    };
+    map.insert(host.to_owned(), (filter_type, filter_action));
 }
 
 /// Loads a generic host (file or single host) and adds them to the block list
