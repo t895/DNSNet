@@ -154,10 +154,10 @@ impl<'a> DnsPacketProxy<'a> {
                 block_logger.log(dns_query_name.clone(), true);
             }
 
-            if let Some(cached_response) = dns_cache.get_packet(dns_packet) {
-                ad_vpn.handle_dns_response(Some(dns_cache), packet_data, &cached_response);
-                return Ok(());
-            }
+            // if let Some(cached_response) = dns_cache.get_packet(dns_packet) {
+            //     ad_vpn.handle_dns_response(Some(dns_cache), packet_data, &cached_response);
+            //     return Ok(());
+            // }
 
             if let Err(error) = backend.forward_packet(
                 &self.android_vpn_callback,

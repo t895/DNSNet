@@ -519,9 +519,9 @@ impl Vpn {
     ) {
         match build_response_packet(request_packet, response_payload) {
             Some(packet) => {
-                if let Some(dns_cache) = dns_cache {
-                    dns_cache.put_packet(response_payload);
-                }
+                // if let Some(dns_cache) = dns_cache {
+                //     dns_cache.put_packet(response_payload);
+                // }
                 self.device_writes.push_back(packet)
             }
             None => return,
