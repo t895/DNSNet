@@ -30,7 +30,7 @@ use mio::net::UdpSocket;
 use net::file::FileHelper;
 use vpn::{Vpn, VpnConfigurationResult, VpnError, VpnResultBinding};
 
-use crate::{cache::DnsCache, vpn::VpnControllerBinding};
+use crate::{cache::DnsCacheBinding, vpn::VpnControllerBinding};
 
 #[macro_use]
 extern crate log;
@@ -115,7 +115,7 @@ pub trait VpnCallback: Send + Sync {
     fn configure(
         &self,
         vpn_controller: Arc<VpnControllerBinding>,
-        dns_cache: Arc<DnsCache>,
+        dns_cache: Arc<DnsCacheBinding>,
     ) -> VpnConfigurationResult;
 
     fn protect_raw_socket_fd(&self, socket_fd: i32) -> bool;

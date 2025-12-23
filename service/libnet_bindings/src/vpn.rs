@@ -15,7 +15,7 @@ use std::{
 };
 
 use mio::{Events, Interest, Poll, Token, unix::SourceFd};
-use net::{controller::VpnController, vpn::VpnResult};
+use net::{cache::SerializableDnsCache, controller::VpnController, vpn::VpnResult};
 
 use crate::{
     AndroidFileHelper, BlockLoggerCallback, VpnCallback,
@@ -24,7 +24,7 @@ use crate::{
         doh3::{DoH3Backend, DoH3BackendError},
         standard::StandardDnsBackend,
     },
-    cache::{DnsCache, SerializableDnsCache},
+    cache::DnsCacheBinding,
     database::RuleDatabaseBinding,
     packet::build_response_packet,
     proxy::DnsPacketProxy,
@@ -243,9 +243,9 @@ impl Vpn {
         let dns_cache = match dns_cache_file {
             Some(ref mut dns_cache_file) => {
                 let serializable_cache = SerializableDnsCache::from(dns_cache_file);
-                Arc::new(DnsCache::from(serializable_cache))
+                Arc::new(DnsCacheBinding::from(serializable_cache))
             }
-            None => Arc::new(DnsCache::new()),
+            None => Arc::new(DnsCacheBinding::new()),
         };
 
         let (vpn_fd, dns_servers) =
@@ -375,7 +375,7 @@ impl Vpn {
         vpn_file: &mut File,
         backend: &mut Box<dyn DnsBackend>,
         dns_packet_proxy: &mut DnsPacketProxy,
-        dns_cache: Arc<DnsCache>,
+        dns_cache: Arc<DnsCacheBinding>,
         packet: &mut [u8],
     ) -> Result<VpnResultBinding, VpnError> {
         if let Err(error) = poll.registry().register(
@@ -486,7 +486,7 @@ impl Vpn {
         vpn_file: &mut File,
         backend: &mut Box<dyn DnsBackend>,
         dns_packet_proxy: &mut DnsPacketProxy,
-        dns_cache: Arc<DnsCache>,
+        dns_cache: Arc<DnsCacheBinding>,
         packet: &mut [u8],
     ) -> Result<(), VpnError> {
         let length = match vpn_file.read(packet) {
@@ -513,7 +513,7 @@ impl Vpn {
     /// Handles a DNS response and forwards it to the tunnel with the translated destination
     pub fn handle_dns_response(
         &mut self,
-        dns_cache: Option<Arc<DnsCache>>,
+        dns_cache: Option<Arc<DnsCacheBinding>>,
         request_packet: &[u8],
         response_payload: &[u8],
     ) {

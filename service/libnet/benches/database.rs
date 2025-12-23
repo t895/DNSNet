@@ -21,11 +21,14 @@ fn load_files(files: Vec<&str>) {
     let database = RuleDatabase::new(Arc::new(RuleDatabaseController::new()));
     if let Err(_) = database.initialize(
         BenchmarkFileHelper,
-        files.iter().map(|path| Filter {
-            title: String::from(""),
-            data: path.to_string(),
-            state: FilterState::DENY,
-        }).collect(),
+        files
+            .iter()
+            .map(|path| Filter {
+                title: String::from(""),
+                data: path.to_string(),
+                state: FilterState::DENY,
+            })
+            .collect(),
         vec![],
     ) {
         panic!("Failed to initialize database");
@@ -36,10 +39,24 @@ fn criterion_bench_load_data(c: &mut Criterion) {
     let mut group = c.benchmark_group("Load");
     group.measurement_time(Duration::from_secs(30));
 
-    group.bench_function("oisd ABP Load", |b| b.iter(|| load_files(vec!["./benches/test-data/oisd_big_abp.txt"])));
-    group.bench_function("hagezi Wildcard Load", |b| b.iter(|| load_files(vec!["./benches/test-data/hagezi_ultimate_wildcard.txt"])));
-    group.bench_function("Stevenblack Hosts Load", |b| b.iter(|| load_files(vec!["./benches/test-data/stevenblack_hosts.txt"])));
-    group.bench_function("All", |b| b.iter(|| load_files(vec!["./benches/test-data/oisd_big_abp.txt", "./benches/test-data/hagezi_ultimate_wildcard.txt", "./benches/test-data/stevenblack_hosts.txt"])));
+    group.bench_function("oisd ABP Load", |b| {
+        b.iter(|| load_files(vec!["./benches/test-data/oisd_big_abp.txt"]))
+    });
+    group.bench_function("hagezi Wildcard Load", |b| {
+        b.iter(|| load_files(vec!["./benches/test-data/hagezi_ultimate_wildcard.txt"]))
+    });
+    group.bench_function("Stevenblack Hosts Load", |b| {
+        b.iter(|| load_files(vec!["./benches/test-data/stevenblack_hosts.txt"]))
+    });
+    group.bench_function("All", |b| {
+        b.iter(|| {
+            load_files(vec![
+                "./benches/test-data/oisd_big_abp.txt",
+                "./benches/test-data/hagezi_ultimate_wildcard.txt",
+                "./benches/test-data/stevenblack_hosts.txt",
+            ])
+        })
+    });
 
     group.finish();
 }

@@ -13,7 +13,7 @@ use std::{sync::Arc, time::Duration};
 
 use mio::{Poll, event::Source};
 
-use crate::{Vpn, VpnCallback, cache::DnsCache};
+use crate::{Vpn, VpnCallback, cache::DnsCacheBinding};
 
 #[derive(Debug)]
 pub enum DnsBackendError {
@@ -47,7 +47,7 @@ pub trait DnsBackend {
     fn process_events(
         &mut self,
         ad_vpn: &mut Vpn,
-        dns_cache: Arc<DnsCache>,
+        dns_cache: Arc<DnsCacheBinding>,
         events: Vec<&mio::event::Event>,
     ) -> Result<Vec<Box<dyn Source>>, DnsBackendError>;
 }

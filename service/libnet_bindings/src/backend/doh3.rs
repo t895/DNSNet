@@ -20,7 +20,7 @@ use mio::{Interest, Poll, Token, event::Source, net::UdpSocket};
 use quiche::h3::NameValue;
 use quiche::{SendInfo, h3::Header};
 
-use crate::cache::DnsCache;
+use crate::cache::DnsCacheBinding;
 use crate::validation::{NativeDnsServer, NativeDnsServerType};
 use crate::{Vpn, VpnCallback};
 
@@ -473,7 +473,7 @@ impl DnsBackend for DoH3Backend {
     fn process_events(
         &mut self,
         vpn: &mut Vpn,
-        dns_cache: Arc<DnsCache>,
+        dns_cache: Arc<DnsCacheBinding>,
         _events: Vec<&mio::event::Event>,
     ) -> Result<Vec<Box<dyn Source>>, DnsBackendError> {
         let mut sources_to_remove = Vec::<Box<dyn Source>>::new();

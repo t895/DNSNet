@@ -16,7 +16,7 @@ use std::{
 
 use mio::{Interest, Poll, Token, event::Source, net::UdpSocket};
 
-use crate::cache::DnsCache;
+use crate::cache::DnsCacheBinding;
 use crate::get_epoch;
 use crate::{Vpn, VpnCallback, backend::DnsBackendError};
 
@@ -233,7 +233,7 @@ impl DnsBackend for StandardDnsBackend {
     fn process_events(
         &mut self,
         vpn: &mut Vpn,
-        dns_cache: Arc<DnsCache>,
+        dns_cache: Arc<DnsCacheBinding>,
         events: Vec<&mio::event::Event>,
     ) -> Result<Vec<Box<dyn Source>>, DnsBackendError> {
         let mut sources_to_remove = Vec::<Box<dyn Source>>::new();

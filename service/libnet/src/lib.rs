@@ -8,6 +8,7 @@
 
 extern crate log;
 
+pub mod cache;
 pub mod controller;
 pub mod database;
 pub mod file;

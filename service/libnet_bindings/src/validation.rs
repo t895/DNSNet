@@ -20,7 +20,7 @@ use mio::{
     unix::{SourceFd, pipe},
 };
 
-use crate::{VpnResultBinding, cache::DnsCache, vpn::VpnControllerBinding};
+use crate::{VpnResultBinding, cache::DnsCacheBinding, vpn::VpnControllerBinding};
 
 #[derive(uniffi::Enum, Clone)]
 pub enum NativeDnsServerType {
@@ -158,7 +158,7 @@ impl DnsRequester {
 #[uniffi::export]
 pub fn validate_dns_servers(
     vpn_controller: Arc<VpnControllerBinding>,
-    dns_cache: Arc<DnsCache>,
+    dns_cache: Arc<DnsCacheBinding>,
     ipv6_support: bool,
     user_servers: Vec<String>,
 ) -> Result<ValidateDnsResult, ValidateDnsError> {

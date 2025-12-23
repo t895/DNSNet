@@ -14,7 +14,7 @@ use simple_dns::{Name, PacketFlag, ResourceRecord, rdata::RData};
 use crate::{
     BlockLoggerCallback, RuleDatabaseBinding, Vpn, VpnCallback, VpnError,
     backend::{DnsBackend, DnsBackendError},
-    cache::DnsCache,
+    cache::DnsCacheBinding,
     packet::GenericIpPacket,
 };
 
@@ -72,7 +72,7 @@ impl<'a> DnsPacketProxy<'a> {
         &mut self,
         ad_vpn: &mut Vpn,
         backend: &mut Box<dyn DnsBackend>,
-        dns_cache: Arc<DnsCache>,
+        dns_cache: Arc<DnsCacheBinding>,
         packet_data: &[u8],
     ) -> Result<(), VpnError> {
         let packet = match GenericIpPacket::from_ip_packet(packet_data) {
