@@ -15,7 +15,10 @@ use std::{
 };
 
 use mio::{Events, Interest, Poll, Token, unix::SourceFd};
-use net::{cache::SerializableDnsCache, controller::VpnController, vpn::VpnResult};
+use net::{
+    cache::SerializableDnsCache, controller::VpnController, packet::build_response_packet,
+    vpn::VpnResult,
+};
 
 use crate::{
     AndroidFileHelper, BlockLoggerCallback, VpnCallback,
@@ -26,7 +29,6 @@ use crate::{
     },
     cache::DnsCacheBinding,
     database::RuleDatabaseBinding,
-    packet::build_response_packet,
     proxy::DnsPacketProxy,
     validation::{NativeDnsServer, NativeDnsServerType},
 };

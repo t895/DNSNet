@@ -9,6 +9,7 @@ name="net"
 [dependencies]
 ahash = { workspace = true }
 bincode = { workspace = true }
+etherparse = { workspace = true }
 mio = { workspace = true }
 log = { workspace = true }
 lru = { workspace = true }

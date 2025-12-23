@@ -9,13 +9,13 @@
 use core::str;
 use std::sync::Arc;
 
+use net::packet::GenericIpPacket;
 use simple_dns::{Name, PacketFlag, ResourceRecord, rdata::RData};
 
 use crate::{
     BlockLoggerCallback, RuleDatabaseBinding, Vpn, VpnCallback, VpnError,
     backend::{DnsBackend, DnsBackendError},
     cache::DnsCacheBinding,
-    packet::GenericIpPacket,
 };
 
 /// Handler for DNS packets that accepts or blocks them based on our [RuleDatabase]

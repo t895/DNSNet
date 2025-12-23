@@ -9,7 +9,6 @@
 mod backend;
 mod cache;
 mod database;
-mod packet;
 mod proxy;
 mod validation;
 mod vpn;

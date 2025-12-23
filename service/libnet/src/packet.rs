@@ -11,6 +11,8 @@ use etherparse::{
     PacketBuilderStep, SlicedPacket, TransportSlice, UdpSlice, ip_number,
 };
 
+use log::error;
+
 /// Basic abstraction over a packet that lets us get a slice of a IPv4 or IPv6 header or payload
 /// without doing extra allocations
 #[derive(Debug)]

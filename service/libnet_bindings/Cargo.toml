@@ -14,7 +14,6 @@ path = "uniffi-bindgen.rs"
 [dependencies]
 net = { path = "../libnet" }
 base64 = { workspace = true }
-etherparse = { workspace = true }
 getrandom = { workspace = true }
 log = { workspace = true }
 mio = { workspace = true }
