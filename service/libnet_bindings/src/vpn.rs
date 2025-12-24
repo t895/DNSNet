@@ -16,17 +16,11 @@ use std::{
 
 use mio::{Events, Interest, Poll, Token, unix::SourceFd};
 use net::{
-    cache::SerializableDnsCache, controller::VpnController, packet::build_response_packet,
-    vpn::VpnResult,
+    backend::{DnsBackend, DnsResponseHandler, DnsServer, doh3::{DoH3Backend, DoH3BackendError}, standard::StandardDnsBackend}, cache::SerializableDnsCache, controller::VpnController, packet::build_response_packet, vpn::VpnResult
 };
 
 use crate::{
     AndroidFileHelper, BlockLoggerCallback, VpnCallback,
-    backend::{
-        DnsBackend,
-        doh3::{DoH3Backend, DoH3BackendError},
-        standard::StandardDnsBackend,
-    },
     cache::DnsCacheBinding,
     database::RuleDatabaseBinding,
     proxy::DnsPacketProxy,
@@ -276,7 +270,11 @@ impl Vpn {
             NativeDnsServerType::Standard => false,
         });
         let mut backend: Box<dyn DnsBackend> = if is_doh3 {
-            match DoH3Backend::new(&dns_servers) {
+            match DoH3Backend::new(&dns_servers.iter().map(|server| {
+                DnsServer::new(server.get_address(), match server.get_type() {
+                    NativeDnsServerType::DoH3(server_name) => net::backend::DnsServerType::DoH3(server_name),
+                    NativeDnsServerType::Standard => net::backend::DnsServerType::Standard,
+                }) }).collect()) {
                 Ok(backend) => {
                     info!("run: Starting DoH3 backend");
                     Box::new(backend)
@@ -350,7 +348,7 @@ impl Vpn {
                 &mut vpn_file,
                 &mut backend,
                 &mut dns_packet_proxy,
-                dns_cache.clone(),
+                // dns_cache.clone(),
                 packet.as_mut_slice(),
             ) {
                 Ok(result) => match result {
@@ -377,7 +375,7 @@ impl Vpn {
         vpn_file: &mut File,
         backend: &mut Box<dyn DnsBackend>,
         dns_packet_proxy: &mut DnsPacketProxy,
-        dns_cache: Arc<DnsCacheBinding>,
+        // dns_cache: Arc<DnsCacheBinding>,
         packet: &mut [u8],
     ) -> Result<VpnResultBinding, VpnError> {
         if let Err(error) = poll.registry().register(
@@ -430,7 +428,8 @@ impl Vpn {
             }
         }
 
-        match backend.process_events(self, dns_cache.clone(), events_to_process) {
+        let mut response_handler = Box::from(self as &mut dyn DnsResponseHandler);
+        match backend.process_events(&mut response_handler, events_to_process) {
             Ok(mut sources_to_remove) => {
                 for source in sources_to_remove.iter_mut() {
                     if let Err(error) = poll.registry().deregister(source) {
@@ -449,7 +448,7 @@ impl Vpn {
         }
 
         if read_from_device {
-            self.read_packet_from_device(vpn_file, backend, dns_packet_proxy, dns_cache, packet)?;
+            self.read_packet_from_device(vpn_file, backend, dns_packet_proxy, packet)?;
         }
 
         if let Err(error) = poll
@@ -488,7 +487,7 @@ impl Vpn {
         vpn_file: &mut File,
         backend: &mut Box<dyn DnsBackend>,
         dns_packet_proxy: &mut DnsPacketProxy,
-        dns_cache: Arc<DnsCacheBinding>,
+        // dns_cache: Arc<DnsCacheBinding>,
         packet: &mut [u8],
     ) -> Result<(), VpnError> {
         let length = match vpn_file.read(packet) {
@@ -507,7 +506,8 @@ impl Vpn {
             return Result::Ok(());
         }
 
-        dns_packet_proxy.handle_dns_request(self, backend, dns_cache, &packet[..length])?;
+        let mut response_handler = Box::from(self as &mut dyn DnsResponseHandler);
+        dns_packet_proxy.handle_dns_request(&mut response_handler, backend, &packet[..length])?;
 
         return Result::Ok(());
     }
@@ -515,7 +515,7 @@ impl Vpn {
     /// Handles a DNS response and forwards it to the tunnel with the translated destination
     pub fn handle_dns_response(
         &mut self,
-        dns_cache: Option<Arc<DnsCacheBinding>>,
+        // dns_cache: Option<Arc<DnsCacheBinding>>,
         request_packet: &[u8],
         response_payload: &[u8],
     ) {
@@ -528,5 +528,11 @@ impl Vpn {
             }
             None => return,
         };
+    }
+}
+
+impl DnsResponseHandler for Vpn {
+    fn handle(&mut self, request_packet: &[u8], request_payload: &[u8]) {
+        self.handle_dns_response(request_packet, request_payload);
     }
 }

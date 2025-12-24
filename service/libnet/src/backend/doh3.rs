@@ -11,7 +11,6 @@ use std::str;
 use std::{
     collections::{HashMap, VecDeque},
     net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6},
-    sync::Arc,
     time::{Duration, Instant},
 };
 
@@ -20,9 +19,9 @@ use mio::{Interest, Poll, Token, event::Source, net::UdpSocket};
 use quiche::h3::NameValue;
 use quiche::{SendInfo, h3::Header};
 
-use crate::cache::DnsCacheBinding;
-use crate::validation::{NativeDnsServer, NativeDnsServerType};
-use crate::{Vpn, VpnCallback};
+use crate::backend::{DnsResponseHandler, DnsServer, DnsServerType, SocketProtector};
+
+use log::{debug, error, info, trace, warn};
 
 use super::{DnsBackend, DnsBackendError};
 
@@ -143,7 +142,7 @@ impl DoH3ServerConnectionContainer {
     fn start_session(
         &mut self,
         bind_address: SocketAddr,
-        android_vpn_service: &Box<dyn VpnCallback>,
+        socket_protector: &Box<&dyn SocketProtector>,
         output_buffer: &mut [u8],
     ) -> Result<(), DnsBackendError> {
         if let None = self.active_session {
@@ -159,7 +158,7 @@ impl DoH3ServerConnectionContainer {
                 }
             };
 
-            if !android_vpn_service.protect_raw_socket_fd(socket.as_raw_fd()) {
+            if !socket_protector.protect_fd(socket.as_raw_fd()) {
                 error!("forward_packet: Failed to protect socket fd!");
                 return Err(DnsBackendError::SocketFailure);
             }
@@ -288,12 +287,12 @@ impl DoH3Backend {
 
     /// Creates a new DoH3Backend with the provided servers. These servers are validated individually by
     /// resolving their addresses. If none of the servers are valid, an error is returned.
-    pub fn new(servers: &Vec<Arc<NativeDnsServer>>) -> Result<Self, DoH3BackendError> {
+    pub fn new(servers: &Vec<DnsServer>) -> Result<Self, DoH3BackendError> {
         let mut connections: HashMap<String, DoH3ServerConnectionContainer> = HashMap::new();
         for (index, server) in servers.iter().enumerate() {
-            let server_name = match &server.get_type() {
-                NativeDnsServerType::DoH3(server_name) => server_name.clone(),
-                NativeDnsServerType::Standard => {
+            let server_name = match &server.address_type {
+                DnsServerType::DoH3(server_name) => server_name.clone(),
+                DnsServerType::Standard => {
                     error!(
                         "new: DoH3 backend was given a standard DNS server! This should never happen!"
                     );
@@ -301,7 +300,7 @@ impl DoH3Backend {
                 }
             };
 
-            let address = server.get_address();
+            let address = server.address.clone();
             let resolved_socket_address: SocketAddr = if address.len() == 4 {
                 std::net::SocketAddr::V4(SocketAddrV4::new(
                     Ipv4Addr::from(TryInto::<[u8; 4]>::try_into(address).unwrap()),
@@ -427,7 +426,7 @@ impl DnsBackend for DoH3Backend {
 
     fn forward_packet(
         &mut self,
-        android_vpn_service: &Box<dyn VpnCallback>,
+        socket_protector: &Box<&dyn SocketProtector>,
         packet: &[u8],
         request_packet: &[u8],
         destination_address: Vec<u8>,
@@ -457,7 +456,7 @@ impl DnsBackend for DoH3Backend {
 
         connection.start_session(
             self.unspecified_bind_address,
-            android_vpn_service,
+            socket_protector,
             &mut self.output_buffer,
         )?;
 
@@ -472,8 +471,7 @@ impl DnsBackend for DoH3Backend {
 
     fn process_events(
         &mut self,
-        vpn: &mut Vpn,
-        dns_cache: Arc<DnsCacheBinding>,
+        response_handler: &mut Box<&mut dyn DnsResponseHandler>,
         _events: Vec<&mio::event::Event>,
     ) -> Result<Vec<Box<dyn Source>>, DnsBackendError> {
         let mut sources_to_remove = Vec::<Box<dyn Source>>::new();
@@ -726,8 +724,7 @@ impl DnsBackend for DoH3Backend {
 
                                     match connection.sent_request_streams.get(&stream_id) {
                                         Some(request) => {
-                                            vpn.handle_dns_response(
-                                                Some(dns_cache.clone()),
+                                            response_handler.handle(
                                                 &request.request_packet,
                                                 &self.input_buffer[..read],
                                             );

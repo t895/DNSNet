@@ -9,18 +9,16 @@
 use core::str;
 use std::sync::Arc;
 
-use net::packet::GenericIpPacket;
+use net::{backend::{DnsBackend, DnsBackendError, DnsResponseHandler, SocketProtector}, packet::GenericIpPacket};
 use simple_dns::{Name, PacketFlag, ResourceRecord, rdata::RData};
 
 use crate::{
-    BlockLoggerCallback, RuleDatabaseBinding, Vpn, VpnCallback, VpnError,
-    backend::{DnsBackend, DnsBackendError},
-    cache::DnsCacheBinding,
+    BlockLoggerCallback, RuleDatabaseBinding, VpnCallback, VpnError,
 };
 
 /// Handler for DNS packets that accepts or blocks them based on our [RuleDatabase]
 pub struct DnsPacketProxy<'a> {
-    android_vpn_callback: &'a Box<dyn VpnCallback>,
+    vpn_callback: &'a Box<dyn VpnCallback>,
     block_logger_callback: Option<Box<dyn BlockLoggerCallback>>,
     rule_database: Arc<RuleDatabaseBinding>,
     upstream_dns_servers: Vec<Vec<u8>>,
@@ -59,7 +57,7 @@ impl<'a> DnsPacketProxy<'a> {
             soa_record,
         );
         DnsPacketProxy {
-            android_vpn_callback,
+            vpn_callback: android_vpn_callback,
             block_logger_callback,
             rule_database,
             upstream_dns_servers,
@@ -70,9 +68,9 @@ impl<'a> DnsPacketProxy<'a> {
     /// Parses a packet, extracts a DNS request, and forwards it to the real DNS server if it's allowed
     pub fn handle_dns_request(
         &mut self,
-        ad_vpn: &mut Vpn,
+        response_handler: &mut Box<&mut dyn DnsResponseHandler>,
         backend: &mut Box<dyn DnsBackend>,
-        dns_cache: Arc<DnsCacheBinding>,
+        // dns_cache: Arc<DnsCacheBinding>,
         packet_data: &[u8],
     ) -> Result<(), VpnError> {
         let packet = match GenericIpPacket::from_ip_packet(packet_data) {
@@ -159,8 +157,9 @@ impl<'a> DnsPacketProxy<'a> {
             //     return Ok(());
             // }
 
+            let socket_protector = Box::from(self.vpn_callback as &dyn SocketProtector);
             if let Err(error) = backend.forward_packet(
-                &self.android_vpn_callback,
+                &socket_protector,
                 udp_packet.payload(),
                 packet_data,
                 translated_destination_address,
@@ -191,7 +190,7 @@ impl<'a> DnsPacketProxy<'a> {
                 return Ok(());
             }
 
-            ad_vpn.handle_dns_response(None, packet_data, &wire);
+            response_handler.handle(packet_data, &wire);
         }
         return Ok(());
     }

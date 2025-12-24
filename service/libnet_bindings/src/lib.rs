@@ -6,7 +6,6 @@
  * (at your option) any later version.
  */
 
-mod backend;
 mod cache;
 mod database;
 mod proxy;
@@ -19,14 +18,13 @@ use std::{
     os::fd::FromRawFd,
     str::FromStr,
     sync::Arc,
-    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 use android_logger::Config;
 use database::RuleDatabaseBinding;
 use log::LevelFilter;
 use mio::net::UdpSocket;
-use net::file::FileHelper;
+use net::{backend::SocketProtector, file::FileHelper};
 use vpn::{Vpn, VpnConfigurationResult, VpnError, VpnResultBinding};
 
 use crate::{cache::DnsCacheBinding, vpn::VpnControllerBinding};
@@ -103,11 +101,6 @@ pub fn network_has_ipv6_support() -> bool {
     return true;
 }
 
-/// Convenience function to get the [Duration] since the Unix epoch
-fn get_epoch() -> Duration {
-    SystemTime::now().duration_since(UNIX_EPOCH).unwrap()
-}
-
 /// Callback interface to be implemented by a Kotlin class and then passed into the main loop
 #[uniffi::export(callback_interface)]
 pub trait VpnCallback: Send + Sync {
@@ -120,6 +113,12 @@ pub trait VpnCallback: Send + Sync {
     fn protect_raw_socket_fd(&self, socket_fd: i32) -> bool;
 
     fn update_status(&self, native_status: i32);
+}
+
+impl SocketProtector for Box<dyn VpnCallback> {
+    fn protect_fd(&self, fd: i32) -> bool {
+        self.protect_raw_socket_fd(fd)
+    }
 }
 
 /// Callback interface for accessing our filter files from the Android system

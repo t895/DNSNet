@@ -8,11 +8,14 @@ name="net"
 
 [dependencies]
 ahash = { workspace = true }
+base64 = { workspace = true }
 bincode = { workspace = true }
 etherparse = { workspace = true }
+getrandom = { workspace = true }
 mio = { workspace = true }
 log = { workspace = true }
 lru = { workspace = true }
+quiche = { workspace = true }
 thiserror = { workspace = true }
 simple-dns = { workspace = true }
 

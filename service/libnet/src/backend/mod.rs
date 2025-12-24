@@ -9,11 +9,9 @@
 pub mod doh3;
 pub mod standard;
 
-use std::{sync::Arc, time::Duration};
+use std::time::Duration;
 
 use mio::{Poll, event::Source};
-
-use crate::{Vpn, VpnCallback, cache::DnsCacheBinding};
 
 #[derive(Debug)]
 pub enum DnsBackendError {
@@ -35,7 +33,7 @@ pub trait DnsBackend {
 
     fn forward_packet(
         &mut self,
-        android_vpn_service: &Box<dyn VpnCallback>,
+        socket_protector: &Box<&dyn SocketProtector>,
         packet: &[u8],
         request_packet: &[u8],
         destination_address: Vec<u8>,
@@ -46,8 +44,39 @@ pub trait DnsBackend {
     /// Return a [Source] if it should be removed from the poller and [None] if it should be kept.
     fn process_events(
         &mut self,
-        ad_vpn: &mut Vpn,
-        dns_cache: Arc<DnsCacheBinding>,
+        response_handler: &mut Box<&mut dyn DnsResponseHandler>,
         events: Vec<&mio::event::Event>,
     ) -> Result<Vec<Box<dyn Source>>, DnsBackendError>;
+}
+
+pub trait SocketProtector {
+    fn protect_fd(&self, fd: i32) -> bool;
+}
+
+pub trait DnsResponseHandler {
+    fn handle(&mut self, request_packet: &[u8], request_payload: &[u8]);
+}
+
+pub enum DnsServerType {
+    /// The DNS server is a DoH3 server (e.g. https://dns.google/dns-query).
+    ///
+    /// For convenience, the sanitized name (e.g. dns.google) is held in this enum.
+    DoH3(String),
+
+    /// The DNS server is a standard DNS server (e.g. 8.8.8.8)
+    Standard,
+}
+
+pub struct DnsServer {
+    address: Vec<u8>,
+    address_type: DnsServerType,
+}
+
+impl DnsServer {
+    pub fn new(address: Vec<u8>, address_type: DnsServerType) -> Self {
+        Self {
+            address,
+            address_type,
+        }
+    }
 }

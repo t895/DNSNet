@@ -8,7 +8,6 @@
 
 use std::collections::VecDeque;
 use std::os::fd::AsRawFd;
-use std::sync::Arc;
 use std::{
     net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6},
     time::Duration,
@@ -16,9 +15,11 @@ use std::{
 
 use mio::{Interest, Poll, Token, event::Source, net::UdpSocket};
 
-use crate::cache::DnsCacheBinding;
-use crate::get_epoch;
-use crate::{Vpn, VpnCallback, backend::DnsBackendError};
+use crate::backend::DnsBackendError;
+use crate::backend::{DnsResponseHandler, SocketProtector};
+use crate::util::get_epoch;
+
+use log::{debug, error, warn};
 
 use super::DnsBackend;
 
@@ -153,7 +154,7 @@ impl DnsBackend for StandardDnsBackend {
 
     fn forward_packet(
         &mut self,
-        android_vpn_service: &Box<dyn VpnCallback>,
+        socket_protector: &Box<&dyn SocketProtector>,
         packet: &[u8],
         request_packet: &[u8],
         destination_address: Vec<u8>,
@@ -168,7 +169,7 @@ impl DnsBackend for StandardDnsBackend {
         };
 
         // Packets to be sent to the real DNS server will need to be protected from the VPN
-        if !android_vpn_service.protect_raw_socket_fd(socket.as_raw_fd()) {
+        if !socket_protector.protect_fd(socket.as_raw_fd()) {
             error!("forward_packet: Failed for protect socket fd!");
             return Err(DnsBackendError::SocketFailure);
         }
@@ -232,8 +233,7 @@ impl DnsBackend for StandardDnsBackend {
 
     fn process_events(
         &mut self,
-        vpn: &mut Vpn,
-        dns_cache: Arc<DnsCacheBinding>,
+        response_handler: &mut Box<&mut dyn DnsResponseHandler>,
         events: Vec<&mio::event::Event>,
     ) -> Result<Vec<Box<dyn Source>>, DnsBackendError> {
         let mut sources_to_remove = Vec::<Box<dyn Source>>::new();
@@ -249,11 +249,8 @@ impl DnsBackend for StandardDnsBackend {
 
                     match wosp.socket.recv(&mut self.response_packet.as_mut_slice()) {
                         Ok(size) => {
-                            vpn.handle_dns_response(
-                                Some(dns_cache.clone()),
-                                &wosp.packet,
-                                &mut self.response_packet[..size],
-                            );
+                            response_handler
+                                .handle(&wosp.packet, &mut self.response_packet[..size]);
                         }
                         Err(error) => {
                             warn!(

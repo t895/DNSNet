@@ -19,6 +19,7 @@ use mio::{
     Events, Interest, Poll, Token,
     unix::{SourceFd, pipe},
 };
+use net::backend::{DnsServer, DnsServerType};
 
 use crate::{VpnResultBinding, cache::DnsCacheBinding, vpn::VpnControllerBinding};
 
@@ -31,6 +32,15 @@ pub enum NativeDnsServerType {
 
     /// The DNS server is a standard DNS server (e.g. 8.8.8.8)
     Standard,
+}
+
+impl Into<DnsServerType> for NativeDnsServerType {
+    fn into(self) -> DnsServerType {
+        match self {
+            NativeDnsServerType::DoH3(server_name) => DnsServerType::DoH3(server_name),
+            NativeDnsServerType::Standard => DnsServerType::Standard,
+        }
+    }
 }
 
 #[derive(uniffi::Object)]
@@ -55,6 +65,12 @@ impl NativeDnsServer {
 
     pub fn get_type(&self) -> NativeDnsServerType {
         self.address_type.clone()
+    }
+}
+
+impl Into<DnsServer> for NativeDnsServer {
+    fn into(self) -> DnsServer {
+        DnsServer::new(self.address, self.address_type.into())
     }
 }
 

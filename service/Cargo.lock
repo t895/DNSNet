@@ -753,12 +753,15 @@ name = "net"
 version = "1.0.0"
 dependencies = [
  "ahash",
+ "base64",
  "bincode",
  "criterion",
  "etherparse",
+ "getrandom",
  "log",
  "lru",
  "mio",
+ "quiche",
  "simple-dns",
  "thiserror",
 ]
@@ -768,12 +771,9 @@ name = "net_bindings"
 version = "1.0.0"
 dependencies = [
  "android_logger",
- "base64",
- "getrandom",
  "log",
  "mio",
  "net",
- "quiche",
  "simple-dns",
  "thiserror",
  "uniffi",
