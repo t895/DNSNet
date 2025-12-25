@@ -200,4 +200,6 @@
     <string name="skip_presets_description">Если вы пропустите этот шаг, вам нужно будет вручную настроить блокировку позже.</string>
     <string name="filter_field_hint">Фильтр</string>
     <string name="filter_update_error_item">Ошибка %1$d: %2$s</string>
+    <string name="address_not_reachable">Адрес недоступен</string>
+    <string name="activity_not_found">Не найдена активность</string>
 </resources>
