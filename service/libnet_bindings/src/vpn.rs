@@ -16,14 +16,26 @@ use std::{
 
 use mio::{Events, Interest, Poll, Token, unix::SourceFd};
 use net::{
-    backend::{DnsBackend, DnsResponseHandler, DnsServer, doh3::{DoH3Backend, DoH3BackendError}, standard::StandardDnsBackend}, cache::SerializableDnsCache, controller::VpnController, packet::build_response_packet, vpn::VpnResult
+    backend::{
+        DnsBackend, DnsResponseHandler, DnsServer, SocketProtector,
+        doh3::{DoH3Backend, DoH3BackendError},
+        standard::StandardDnsBackend,
+    },
+    cache::SerializableDnsCache,
+    controller::VpnController,
+    database::{Filter, FilterState},
+    log::BlockLogger,
+    packet::build_response_packet,
+    proxy::DnsPacketProxy,
+    vpn::{VpnError, VpnResult},
 };
 
+use log::{debug, error, info, warn};
+
 use crate::{
-    AndroidFileHelper, BlockLoggerCallback, VpnCallback,
+    BlockLoggerBinding, FileHelperBinding, VpnCallback,
     cache::DnsCacheBinding,
-    database::RuleDatabaseBinding,
-    proxy::DnsPacketProxy,
+    database::{FilterBinding, FilterStateBinding, RuleDatabaseBinding},
     validation::{NativeDnsServer, NativeDnsServerType},
 };
 
@@ -137,7 +149,7 @@ impl From<VpnResultBinding> for VpnResult {
 /// Represents the possible errors that can occur in the VPN and that will be passed back to Kotlin
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 #[uniffi(flat_error)]
-pub enum VpnError {
+pub enum VpnErrorBinding {
     #[error("Failed to set up polling for the tunnel file descriptor")]
     TunnelPollRegistrationFailure,
 
@@ -169,6 +181,48 @@ pub enum VpnError {
     ControllerFailure,
 }
 
+impl From<VpnError> for VpnErrorBinding {
+    fn from(value: VpnError) -> Self {
+        match value {
+            VpnError::TunnelPollRegistrationFailure => {
+                VpnErrorBinding::TunnelPollRegistrationFailure
+            }
+            VpnError::SourcePollRegistrationFailure => {
+                VpnErrorBinding::SourcePollRegistrationFailure
+            }
+            VpnError::TunnelWriteFailure => VpnErrorBinding::TunnelWriteFailure,
+            VpnError::TunnelReadFailure => VpnErrorBinding::TunnelReadFailure,
+            VpnError::PollFailure => VpnErrorBinding::PollFailure,
+            VpnError::NoNetwork => VpnErrorBinding::NoNetwork,
+            VpnError::ConfigurationFailure => VpnErrorBinding::ConfigurationFailure,
+            VpnError::InvalidDnsServers => VpnErrorBinding::InvalidDnsServers,
+            VpnError::SocketFailure => VpnErrorBinding::SocketFailure,
+            VpnError::ControllerFailure => VpnErrorBinding::ControllerFailure,
+        }
+    }
+}
+
+impl From<VpnErrorBinding> for VpnError {
+    fn from(value: VpnErrorBinding) -> Self {
+        match value {
+            VpnErrorBinding::TunnelPollRegistrationFailure => {
+                VpnError::TunnelPollRegistrationFailure
+            }
+            VpnErrorBinding::SourcePollRegistrationFailure => {
+                VpnError::SourcePollRegistrationFailure
+            }
+            VpnErrorBinding::TunnelWriteFailure => VpnError::TunnelWriteFailure,
+            VpnErrorBinding::TunnelReadFailure => VpnError::TunnelReadFailure,
+            VpnErrorBinding::PollFailure => VpnError::PollFailure,
+            VpnErrorBinding::NoNetwork => VpnError::NoNetwork,
+            VpnErrorBinding::ConfigurationFailure => VpnError::ConfigurationFailure,
+            VpnErrorBinding::InvalidDnsServers => VpnError::InvalidDnsServers,
+            VpnErrorBinding::SocketFailure => VpnError::SocketFailure,
+            VpnErrorBinding::ControllerFailure => VpnError::ControllerFailure,
+        }
+    }
+}
+
 #[derive(uniffi::Enum)]
 pub enum VpnConfigurationResult {
     // The device is not connected to any networks and should wait before establishing the VPN
@@ -191,6 +245,22 @@ pub enum VpnConfigurationResult {
 pub struct Vpn {
     vpn_controller: Arc<VpnControllerBinding>,
     device_writes: VecDeque<Vec<u8>>,
+}
+
+impl Into<FilterBinding> for &Filter {
+    fn into(self) -> FilterBinding {
+        FilterBinding::new(self.title.clone(), self.data.clone(), self.state.into())
+    }
+}
+
+impl Into<FilterStateBinding> for FilterState {
+    fn into(self) -> FilterStateBinding {
+        match self {
+            FilterState::IGNORE => FilterStateBinding::IGNORE,
+            FilterState::DENY => FilterStateBinding::DENY,
+            FilterState::ALLOW => FilterStateBinding::ALLOW,
+        }
+    }
 }
 
 impl Vpn {
@@ -218,14 +288,14 @@ impl Vpn {
     /// Alternatively, we may run into a problem during the loop where we'll return a [VpnError] which will appear as an exception in Kotlin.
     pub fn run(
         &mut self,
-        android_vpn_callback: Box<dyn VpnCallback>,
-        block_logger_callback: Option<Box<dyn BlockLoggerCallback>>,
+        vpn_callback: Box<dyn VpnCallback>,
+        block_logger: Option<Box<dyn BlockLoggerBinding>>,
         rule_database: Arc<RuleDatabaseBinding>,
-        android_file_helper: Box<dyn AndroidFileHelper>,
-    ) -> Result<VpnResultBinding, VpnError> {
+        file_helper: Box<dyn FileHelperBinding>,
+    ) -> Result<VpnResultBinding, VpnErrorBinding> {
         let mut packet = vec![0u8; i16::MAX as usize];
 
-        let mut dns_cache_file = match android_file_helper.get_dns_cache_file_fd() {
+        let mut dns_cache_file = match file_helper.get_dns_cache_file_fd() {
             Some(cache_fd) => {
                 // SAFETY: The descriptor is guaranteed to be valid by Android and detached from the Kotlin side
                 Some(unsafe { File::from_raw_fd(cache_fd) })
@@ -245,18 +315,18 @@ impl Vpn {
         };
 
         let (vpn_fd, dns_servers) =
-            match android_vpn_callback.configure(self.vpn_controller.clone(), dns_cache.clone()) {
+            match vpn_callback.configure(self.vpn_controller.clone(), dns_cache.clone()) {
                 VpnConfigurationResult::NoNetwork => {
                     error!("run: No network available");
-                    return Result::Err(VpnError::NoNetwork);
+                    return Result::Err(VpnErrorBinding::NoNetwork);
                 }
                 VpnConfigurationResult::BuilderFailure => {
                     error!("run: Failed to configure VPN");
-                    return Result::Err(VpnError::ConfigurationFailure);
+                    return Result::Err(VpnErrorBinding::ConfigurationFailure);
                 }
                 VpnConfigurationResult::InvalidDnsServers => {
                     error!("run: No valid DNS servers found");
-                    return Result::Err(VpnError::InvalidDnsServers);
+                    return Result::Err(VpnErrorBinding::InvalidDnsServers);
                 }
                 VpnConfigurationResult::Interrupted(result) => {
                     debug!("run: Interrupted");
@@ -270,18 +340,31 @@ impl Vpn {
             NativeDnsServerType::Standard => false,
         });
         let mut backend: Box<dyn DnsBackend> = if is_doh3 {
-            match DoH3Backend::new(&dns_servers.iter().map(|server| {
-                DnsServer::new(server.get_address(), match server.get_type() {
-                    NativeDnsServerType::DoH3(server_name) => net::backend::DnsServerType::DoH3(server_name),
-                    NativeDnsServerType::Standard => net::backend::DnsServerType::Standard,
-                }) }).collect()) {
+            match DoH3Backend::new(
+                &dns_servers
+                    .iter()
+                    .map(|server| {
+                        DnsServer::new(
+                            server.get_address(),
+                            match server.get_type() {
+                                NativeDnsServerType::DoH3(server_name) => {
+                                    net::backend::DnsServerType::DoH3(server_name)
+                                }
+                                NativeDnsServerType::Standard => {
+                                    net::backend::DnsServerType::Standard
+                                }
+                            },
+                        )
+                    })
+                    .collect(),
+            ) {
                 Ok(backend) => {
                     info!("run: Starting DoH3 backend");
                     Box::new(backend)
                 }
                 Err(error) => match error {
                     DoH3BackendError::ConfigurationFailure => {
-                        return Result::Err(VpnError::ConfigurationFailure);
+                        return Result::Err(VpnErrorBinding::ConfigurationFailure);
                     }
                 },
             }
@@ -293,9 +376,14 @@ impl Vpn {
         // SAFETY: The descriptor is guaranteed to be valid by Android and detached from the Kotlin side
         let mut vpn_file = unsafe { File::from_raw_fd(vpn_fd) };
 
+        let socket_protector = Box::from(&vpn_callback as &dyn SocketProtector);
+        let block_logger = match block_logger {
+            Some(ref value) => Some(Box::from(value as &dyn BlockLogger)),
+            None => None,
+        };
         let mut dns_packet_proxy = DnsPacketProxy::new(
-            &android_vpn_callback,
-            block_logger_callback,
+            &socket_protector,
+            block_logger,
             rule_database,
             dns_servers
                 .iter()
@@ -318,7 +406,7 @@ impl Vpn {
             Ok(value) => value,
             Err(error) => {
                 error!("do_one: Failed to create poller! - {:?}", error);
-                return Result::Err(VpnError::TunnelPollRegistrationFailure);
+                return Result::Err(VpnErrorBinding::TunnelPollRegistrationFailure);
             }
         };
 
@@ -326,7 +414,7 @@ impl Vpn {
             Some(fd) => fd,
             None => {
                 error!("run: Failed to get event fd from controller!");
-                return Result::Err(VpnError::ControllerFailure);
+                return Result::Err(VpnErrorBinding::ControllerFailure);
             }
         };
 
@@ -336,11 +424,11 @@ impl Vpn {
             Interest::READABLE,
         ) {
             error!("run: Failed to register signal descriptor! - {:?}", error);
-            return Result::Err(VpnError::TunnelPollRegistrationFailure);
+            return Result::Err(VpnErrorBinding::TunnelPollRegistrationFailure);
         }
         let mut events = Events::with_capacity(backend.get_max_events_count() + 2);
 
-        android_vpn_callback.update_status(VpnStatus::Running as i32);
+        vpn_callback.update_status(VpnStatus::Running as i32);
         loop {
             match self.do_one(
                 &mut poll,
@@ -377,7 +465,7 @@ impl Vpn {
         dns_packet_proxy: &mut DnsPacketProxy,
         // dns_cache: Arc<DnsCacheBinding>,
         packet: &mut [u8],
-    ) -> Result<VpnResultBinding, VpnError> {
+    ) -> Result<VpnResultBinding, VpnErrorBinding> {
         if let Err(error) = poll.registry().register(
             &mut SourceFd(&vpn_file.as_raw_fd()),
             Self::VPN_TOKEN,
@@ -391,7 +479,7 @@ impl Vpn {
                 "do_one: Failed to add VPN descriptor to poller! - {:?}",
                 error
             );
-            return Result::Err(VpnError::TunnelPollRegistrationFailure);
+            return Result::Err(VpnErrorBinding::TunnelPollRegistrationFailure);
         }
 
         let backend_sources = backend.register_sources(poll);
@@ -404,7 +492,7 @@ impl Vpn {
         if let Err(error) = poll.poll(events, backend.get_poll_timeout()) {
             if error.kind() != io::ErrorKind::Interrupted {
                 error!("do_one: Got error when polling sockets! - {:?}", error);
-                return Result::Err(VpnError::PollFailure);
+                return Result::Err(VpnErrorBinding::PollFailure);
             }
         }
 
@@ -439,7 +527,7 @@ impl Vpn {
             }
             Err(error) => {
                 error!("do_one: Failed to process DnsBackend event - {:?}", error);
-                return Result::Err(VpnError::SourcePollRegistrationFailure);
+                return Result::Err(VpnErrorBinding::SourcePollRegistrationFailure);
             }
         }
 
@@ -456,19 +544,19 @@ impl Vpn {
             .deregister(&mut SourceFd(&vpn_file.as_raw_fd()))
         {
             error!("do_one: Failed to remove VPN FD from poller! - {:?}", error);
-            return Result::Err(VpnError::TunnelPollRegistrationFailure);
+            return Result::Err(VpnErrorBinding::TunnelPollRegistrationFailure);
         }
 
         return Result::Ok(VpnResultBinding::Continuing);
     }
 
     /// Writes a packet to the tunnel from the device_writes queue
-    fn write_to_device(&mut self, vpn_file: &mut File) -> Result<(), VpnError> {
+    fn write_to_device(&mut self, vpn_file: &mut File) -> Result<(), VpnErrorBinding> {
         let device_write = match self.device_writes.pop_front() {
             Some(value) => value,
             None => {
                 error!("write_to_device: device_writes is empty! This should be impossible");
-                return Result::Err(VpnError::TunnelWriteFailure);
+                return Result::Err(VpnErrorBinding::TunnelWriteFailure);
             }
         };
 
@@ -476,7 +564,7 @@ impl Vpn {
             Ok(_) => Result::Ok(()),
             Err(error) => {
                 error!("write_to_device: Failed writing - {:?}", error);
-                Result::Err(VpnError::TunnelWriteFailure)
+                Result::Err(VpnErrorBinding::TunnelWriteFailure)
             }
         }
     }
@@ -489,7 +577,7 @@ impl Vpn {
         dns_packet_proxy: &mut DnsPacketProxy,
         // dns_cache: Arc<DnsCacheBinding>,
         packet: &mut [u8],
-    ) -> Result<(), VpnError> {
+    ) -> Result<(), VpnErrorBinding> {
         let length = match vpn_file.read(packet) {
             Ok(value) => value,
             Err(error) => {
@@ -497,7 +585,7 @@ impl Vpn {
                     "read_packet_from_device: Cannot read from device - {:?}",
                     error
                 );
-                return Result::Err(VpnError::TunnelReadFailure);
+                return Result::Err(VpnErrorBinding::TunnelReadFailure);
             }
         };
 
@@ -507,7 +595,9 @@ impl Vpn {
         }
 
         let mut response_handler = Box::from(self as &mut dyn DnsResponseHandler);
-        dns_packet_proxy.handle_dns_request(&mut response_handler, backend, &packet[..length])?;
+        dns_packet_proxy
+            .handle_dns_request(&mut response_handler, backend, &packet[..length])
+            .map_err(|error: VpnError| <VpnErrorBinding as From<VpnError>>::from(error))?;
 
         return Result::Ok(());
     }

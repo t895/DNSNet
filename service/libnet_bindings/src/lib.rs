@@ -8,7 +8,6 @@
 
 mod cache;
 mod database;
-mod proxy;
 mod validation;
 mod vpn;
 
@@ -22,16 +21,15 @@ use std::{
 
 use android_logger::Config;
 use database::RuleDatabaseBinding;
-use log::LevelFilter;
+use log::{LevelFilter, debug, error, info};
 use mio::net::UdpSocket;
-use net::{backend::SocketProtector, file::FileHelper};
-use vpn::{Vpn, VpnConfigurationResult, VpnError, VpnResultBinding};
+use net::{backend::SocketProtector, file::FileHelper, log::BlockLogger};
+use vpn::{Vpn, VpnConfigurationResult, VpnResultBinding};
 
-use crate::{cache::DnsCacheBinding, vpn::VpnControllerBinding};
-
-#[macro_use]
-extern crate log;
-extern crate android_logger;
+use crate::{
+    cache::DnsCacheBinding,
+    vpn::{VpnControllerBinding, VpnErrorBinding},
+};
 
 uniffi::setup_scaffolding!();
 
@@ -58,11 +56,11 @@ pub fn rust_init(debug: bool) {
 #[uniffi::export]
 pub fn run_vpn_native(
     ad_vpn_callback: Box<dyn VpnCallback>,
-    block_logger_callback: Option<Box<dyn BlockLoggerCallback>>,
+    block_logger_callback: Option<Box<dyn BlockLoggerBinding>>,
     vpn_controller: Arc<VpnControllerBinding>,
     rule_database: Arc<RuleDatabaseBinding>,
-    android_file_helper: Box<dyn AndroidFileHelper>,
-) -> Result<VpnResultBinding, VpnError> {
+    android_file_helper: Box<dyn FileHelperBinding>,
+) -> Result<VpnResultBinding, VpnErrorBinding> {
     let mut vpn = Vpn::new(vpn_controller);
     let result = vpn.run(
         ad_vpn_callback,
@@ -123,12 +121,12 @@ impl SocketProtector for Box<dyn VpnCallback> {
 
 /// Callback interface for accessing our filter files from the Android system
 #[uniffi::export(callback_interface)]
-pub trait AndroidFileHelper {
+pub trait FileHelperBinding {
     fn get_fd(&self, path: String) -> Option<i32>;
     fn get_dns_cache_file_fd(&self) -> Option<i32>;
 }
 
-impl FileHelper for Box<dyn AndroidFileHelper> {
+impl FileHelper for &Box<dyn FileHelperBinding> {
     fn get_file(&self, path: String) -> Option<File> {
         let fd = self.get_fd(path)?;
         return Some(unsafe { File::from_raw_fd(fd) });
@@ -137,6 +135,12 @@ impl FileHelper for Box<dyn AndroidFileHelper> {
 
 /// Callback interface for logging connections that we've blocked for the block logger
 #[uniffi::export(callback_interface)]
-pub trait BlockLoggerCallback: Send + Sync {
-    fn log(&self, connection_name: String, allowed: bool);
+pub trait BlockLoggerBinding: Send + Sync {
+    fn log_connection(&self, connection_name: String, allowed: bool);
+}
+
+impl BlockLogger for Box<dyn BlockLoggerBinding> {
+    fn log(&self, connection_name: String, allowed: bool) {
+        self.log_connection(connection_name, allowed);
+    }
 }

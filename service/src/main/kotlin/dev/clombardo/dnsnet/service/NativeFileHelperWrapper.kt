@@ -11,10 +11,10 @@ package dev.clombardo.dnsnet.service
 import android.content.Context
 import android.os.ParcelFileDescriptor
 import dev.clombardo.dnsnet.common.FileHelper
-import uniffi.net_bindings.AndroidFileHelper
+import uniffi.net_bindings.FileHelperBinding
 import java.io.File
 
-class NativeFileHelperWrapper(private val context: Context) : AndroidFileHelper {
+class NativeFileHelperWrapper(private val context: Context) : FileHelperBinding {
     override fun getFd(path: String): Int? = FileHelper.getDetachedFd(context, path)
 
     override fun getDnsCacheFileFd(): Int? =

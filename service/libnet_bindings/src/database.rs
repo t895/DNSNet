@@ -8,9 +8,15 @@
 
 use std::sync::Arc;
 
-use net::database::{Filter, FilterState, RuleDatabase, RuleDatabaseController, RuleDatabaseError};
+use net::{
+    database::{
+        Filter, FilterState, RuleDatabase, RuleDatabaseController, RuleDatabaseError,
+        RuleDatabaseImpl,
+    },
+    file::FileHelper,
+};
 
-use crate::AndroidFileHelper;
+use crate::FileHelperBinding;
 
 /// Holds a few flags to tell the [RuleDatabase] what to do from the Kotlin side
 #[derive(uniffi::Object)]
@@ -62,6 +68,12 @@ pub struct FilterBinding {
     state: FilterStateBinding,
 }
 
+impl FilterBinding {
+    pub fn new(title: String, data: String, state: FilterStateBinding) -> Self {
+        Self { title, data, state }
+    }
+}
+
 impl Into<Filter> for &FilterBinding {
     fn into(self) -> Filter {
         Filter {
@@ -74,7 +86,7 @@ impl Into<Filter> for &FilterBinding {
 
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 #[uniffi(flat_error)]
-enum RuleDatabaseErrorBinding {
+pub enum RuleDatabaseErrorBinding {
     #[error("Bad filter format")]
     BadFilterFormat,
 
@@ -85,9 +97,19 @@ enum RuleDatabaseErrorBinding {
     LockError,
 }
 
-impl Into<RuleDatabaseErrorBinding> for RuleDatabaseError {
-    fn into(self) -> RuleDatabaseErrorBinding {
-        match self {
+impl From<RuleDatabaseErrorBinding> for RuleDatabaseError {
+    fn from(value: RuleDatabaseErrorBinding) -> Self {
+        match value {
+            RuleDatabaseErrorBinding::BadFilterFormat => RuleDatabaseError::BadFilterFormat,
+            RuleDatabaseErrorBinding::Interrupted => RuleDatabaseError::Interrupted,
+            RuleDatabaseErrorBinding::LockError => RuleDatabaseError::LockError,
+        }
+    }
+}
+
+impl From<RuleDatabaseError> for RuleDatabaseErrorBinding {
+    fn from(value: RuleDatabaseError) -> Self {
+        match value {
             RuleDatabaseError::BadFilterFormat => RuleDatabaseErrorBinding::BadFilterFormat,
             RuleDatabaseError::Interrupted => RuleDatabaseErrorBinding::Interrupted,
             RuleDatabaseError::LockError => RuleDatabaseErrorBinding::LockError,
@@ -98,7 +120,7 @@ impl Into<RuleDatabaseErrorBinding> for RuleDatabaseError {
 /// Holds the block list and manages the loading of the block list
 #[derive(uniffi::Object)]
 pub struct RuleDatabaseBinding {
-    rule_database: RuleDatabase,
+    rule_database: RuleDatabaseImpl,
 }
 
 #[uniffi::export]
@@ -106,34 +128,46 @@ impl RuleDatabaseBinding {
     #[uniffi::constructor]
     fn new(controller: Arc<RuleDatabaseControllerBinding>) -> Self {
         RuleDatabaseBinding {
-            rule_database: RuleDatabase::new(controller.rule_database_controller.clone()),
+            rule_database: RuleDatabaseImpl::new(controller.rule_database_controller.clone()),
         }
     }
 
-    /// Initializes the block list with the given filter files and single filters
-    fn initialize(
+    pub fn initialize(
         &self,
-        android_file_helper: Box<dyn AndroidFileHelper>,
+        file_helper: &Box<dyn FileHelperBinding>,
         filter_files: Vec<FilterBinding>,
         single_filters: Vec<FilterBinding>,
     ) -> Result<(), RuleDatabaseErrorBinding> {
-        return match self.rule_database.initialize(
-            android_file_helper,
-            filter_files.iter().map(|filter| filter.into()).collect(),
-            single_filters.iter().map(|filter| filter.into()).collect(),
-        ) {
-            Ok(_) => Ok(()),
-            Err(error) => Err(error.into()),
-        };
+        let file_helper = Box::from(&file_helper as &dyn FileHelper);
+        self.rule_database
+            .initialize(&file_helper, filter_files.iter().map(|filter| filter.into()).collect(), single_filters.iter().map(|filter| filter.into()).collect()).map_err(From::from)
     }
 
-    /// Blocks the current thread until the database has been reloaded or told to stop
+    pub fn wait_on_init(&self) {
+        self.rule_database.wait_on_init();
+    }
+
+    pub fn is_blocked(&self, host_name: &str) -> bool {
+        self.rule_database.is_blocked(host_name)
+    }
+}
+
+impl RuleDatabase for RuleDatabaseBinding {
+    fn initialize(
+        &self,
+        file_helper: &Box<&dyn FileHelper>,
+        filter_files: Vec<Filter>,
+        single_filters: Vec<Filter>,
+    ) -> Result<(), RuleDatabaseError> {
+        self.rule_database
+            .initialize(file_helper, filter_files, single_filters)
+    }
+
     fn wait_on_init(&self) {
         self.rule_database.wait_on_init();
     }
 
-    /// Checks if a host name is blocked
-    pub fn is_blocked(&self, host_name: &str) -> bool {
+    fn is_blocked(&self, host_name: &str) -> bool {
         self.rule_database.is_blocked(host_name)
     }
 }

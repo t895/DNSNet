@@ -9,18 +9,23 @@
 use core::str;
 use std::sync::Arc;
 
-use net::{backend::{DnsBackend, DnsBackendError, DnsResponseHandler, SocketProtector}, packet::GenericIpPacket};
 use simple_dns::{Name, PacketFlag, ResourceRecord, rdata::RData};
 
+use log::{debug, error, info, warn};
+
 use crate::{
-    BlockLoggerCallback, RuleDatabaseBinding, VpnCallback, VpnError,
+    backend::{DnsBackend, DnsBackendError, DnsResponseHandler, SocketProtector},
+    database::RuleDatabase,
+    log::BlockLogger,
+    packet::GenericIpPacket,
+    vpn::VpnError,
 };
 
 /// Handler for DNS packets that accepts or blocks them based on our [RuleDatabase]
 pub struct DnsPacketProxy<'a> {
-    vpn_callback: &'a Box<dyn VpnCallback>,
-    block_logger_callback: Option<Box<dyn BlockLoggerCallback>>,
-    rule_database: Arc<RuleDatabaseBinding>,
+    socket_protector: &'a Box<&'a dyn SocketProtector>,
+    block_logger: Option<Box<&'a dyn BlockLogger>>,
+    rule_database: Arc<dyn RuleDatabase>,
     upstream_dns_servers: Vec<Vec<u8>>,
     negative_cache_record: ResourceRecord<'a>,
 }
@@ -30,9 +35,9 @@ impl<'a> DnsPacketProxy<'a> {
     const NEGATIVE_CACHE_TTL_SECONDS: u32 = 5;
 
     pub fn new(
-        android_vpn_callback: &'a Box<dyn VpnCallback>,
-        block_logger_callback: Option<Box<dyn BlockLoggerCallback>>,
-        rule_database: Arc<RuleDatabaseBinding>,
+        socket_protector: &'a Box<&'a dyn SocketProtector>,
+        block_logger_callback: Option<Box<&'a dyn BlockLogger>>,
+        rule_database: Arc<dyn RuleDatabase>,
         upstream_dns_servers: Vec<Vec<u8>>,
     ) -> Self {
         let name = match Name::new(Self::INVALID_HOST_NAME) {
@@ -57,8 +62,8 @@ impl<'a> DnsPacketProxy<'a> {
             soa_record,
         );
         DnsPacketProxy {
-            vpn_callback: android_vpn_callback,
-            block_logger_callback,
+            socket_protector,
+            block_logger: block_logger_callback,
             rule_database,
             upstream_dns_servers,
             negative_cache_record,
@@ -148,7 +153,7 @@ impl<'a> DnsPacketProxy<'a> {
                 str::from_utf8(&translated_destination_address),
             );
 
-            if let Some(block_logger) = &self.block_logger_callback {
+            if let Some(block_logger) = &self.block_logger {
                 block_logger.log(dns_query_name.clone(), true);
             }
 
@@ -157,9 +162,8 @@ impl<'a> DnsPacketProxy<'a> {
             //     return Ok(());
             // }
 
-            let socket_protector = Box::from(self.vpn_callback as &dyn SocketProtector);
             if let Err(error) = backend.forward_packet(
-                &socket_protector,
+                self.socket_protector,
                 udp_packet.payload(),
                 packet_data,
                 translated_destination_address,
@@ -174,7 +178,7 @@ impl<'a> DnsPacketProxy<'a> {
         } else {
             info!("handle_dns_request: DNS Name {} blocked!", dns_query_name);
 
-            if let Some(block_logger) = &self.block_logger_callback {
+            if let Some(block_logger) = &self.block_logger {
                 block_logger.log(dns_query_name.clone(), false);
             }
 

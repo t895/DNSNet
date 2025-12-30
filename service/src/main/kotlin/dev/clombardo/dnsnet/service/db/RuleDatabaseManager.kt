@@ -38,7 +38,7 @@ class RuleDatabaseManager(
     private suspend fun initialize() = withContext(Dispatchers.IO) {
         try {
             ruleDatabase.initialize(
-                androidFileHelper = NativeFileHelperWrapper(context),
+                fileHelper = NativeFileHelperWrapper(context),
                 filterFiles = configuration.read { this.filters.files.map { it.toNative() } },
                 singleFilters = configuration.read { filters.singleFilters.map { it.toNative() } },
             )

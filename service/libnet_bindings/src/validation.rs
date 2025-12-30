@@ -15,6 +15,7 @@ use std::{
     time::Duration,
 };
 
+use log::{debug, error, info, trace, warn};
 use mio::{
     Events, Interest, Poll, Token,
     unix::{SourceFd, pipe},

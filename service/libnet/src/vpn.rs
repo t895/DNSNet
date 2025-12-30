@@ -18,3 +18,37 @@ pub enum VpnResult {
     // Loop should stop, the VPN should be reconfigured, and then the loop should start again
     Reconnecting,
 }
+
+/// Represents the possible errors that can occur in the VPN and that will be passed back to Kotlin
+#[derive(Debug, thiserror::Error)]
+pub enum VpnError {
+    #[error("Failed to set up polling for the tunnel file descriptor")]
+    TunnelPollRegistrationFailure,
+
+    #[error("Failed to set up polling for a source")]
+    SourcePollRegistrationFailure,
+
+    #[error("Failed to write to the tunnel file descriptor")]
+    TunnelWriteFailure,
+
+    #[error("Failed to read from the tunnel file descriptor")]
+    TunnelReadFailure,
+
+    #[error("Poll returned an error")]
+    PollFailure,
+
+    #[error("Not connected to a network")]
+    NoNetwork,
+
+    #[error("Failed to create the tunnel file descriptor")]
+    ConfigurationFailure,
+
+    #[error("All DNS servers provided were invalid")]
+    InvalidDnsServers,
+
+    #[error("Failed to send/receive data on a socket")]
+    SocketFailure,
+
+    #[error("Failed to get event fd from controller")]
+    ControllerFailure,
+}

@@ -73,7 +73,7 @@ enum FilterType {
     Wildcard,
 }
 
-#[derive(PartialEq, PartialOrd, Debug)]
+#[derive(PartialEq, PartialOrd, Debug, Clone, Copy)]
 pub enum FilterState {
     IGNORE,
     DENY,
@@ -99,14 +99,29 @@ pub enum RuleDatabaseError {
     LockError,
 }
 
-pub struct RuleDatabase {
+pub trait RuleDatabase {
+    /// Initializes the block list with the given filter files and single filters
+    fn initialize(
+        &self,
+        file_helper: &Box<&dyn FileHelper>,
+        filter_files: Vec<Filter>,
+        single_filters: Vec<Filter>,
+    ) -> Result<(), RuleDatabaseError>;
+
+    /// Blocks the current thread until the database has been reloaded or told to stop
+    fn wait_on_init(&self);
+
+    fn is_blocked(&self, host_name: &str) -> bool;
+}
+
+pub struct RuleDatabaseImpl {
     controller: Arc<RuleDatabaseController>,
     map: RwLock<HashMap<String, (FilterType, FilterAction), ahash::RandomState>>,
 }
 
-impl RuleDatabase {
+impl RuleDatabaseImpl {
     pub fn new(controller: Arc<RuleDatabaseController>) -> Self {
-        RuleDatabase {
+        RuleDatabaseImpl {
             controller,
             map: RwLock::new(HashMap::default()),
         }
@@ -115,7 +130,7 @@ impl RuleDatabase {
     /// Initializes the block list with the given filter files and single filters
     pub fn initialize(
         &self,
-        file_helper: impl FileHelper,
+        file_helper: &Box<&dyn FileHelper>,
         filter_files: Vec<Filter>,
         single_filters: Vec<Filter>,
     ) -> Result<(), RuleDatabaseError> {
@@ -142,7 +157,7 @@ impl RuleDatabase {
         sorted_filter_files.sort_by(|a, b| a.state.partial_cmp(&b.state).unwrap());
 
         for item in sorted_filter_files.iter() {
-            if let Err(database_error) = load_item(&file_helper, &self.controller, &mut map, item) {
+            if let Err(database_error) = load_item(file_helper, &self.controller, &mut map, item) {
                 if let RuleDatabaseError::Interrupted = database_error {
                     return Err(database_error);
                 }
@@ -242,6 +257,25 @@ impl RuleDatabase {
     }
 }
 
+impl RuleDatabase for RuleDatabaseImpl {
+    fn initialize(
+        &self,
+        file_helper: &Box<&dyn FileHelper>,
+        filter_files: Vec<Filter>,
+        single_filters: Vec<Filter>,
+    ) -> Result<(), RuleDatabaseError> {
+        self.initialize(file_helper, filter_files, single_filters)
+    }
+
+    fn wait_on_init(&self) {
+        self.wait_on_init();
+    }
+
+    fn is_blocked(&self, host_name: &str) -> bool {
+        self.is_blocked(host_name)
+    }
+}
+
 const IPV4_LOOPBACK: &'static str = "127.0.0.1 ";
 const IPV6_LOOPBACK: &'static str = "::1 ";
 const NO_ROUTE: &'static str = "0.0.0.0 ";
@@ -304,7 +338,7 @@ fn add_line(
 
 /// Loads a generic host (file or single host) and adds them to the block list
 fn load_item(
-    file_helper: &impl FileHelper,
+    file_helper: &Box<&dyn FileHelper>,
     controller: &RuleDatabaseController,
     map: &mut HashMap<String, (FilterType, FilterAction), ahash::RandomState>,
     host: &Filter,
@@ -378,7 +412,7 @@ mod tests {
 
     #[test]
     fn test_rules() {
-        let database = RuleDatabase::new(Arc::new(RuleDatabaseController::new()));
+        let database = RuleDatabaseImpl::new(Arc::new(RuleDatabaseController::new()));
 
         let single_filters = vec![
             // Single host denied test
@@ -434,7 +468,8 @@ mod tests {
             },
         ];
 
-        if let Err(error) = database.initialize(DummyFileHelper, vec![], single_filters) {
+        let file_helper: Box<&dyn FileHelper> = Box::from(&DummyFileHelper as &dyn FileHelper);
+        if let Err(error) = database.initialize(&file_helper, vec![], single_filters) {
             panic!("Failed to initialize database! - {:?}", error)
         }
 

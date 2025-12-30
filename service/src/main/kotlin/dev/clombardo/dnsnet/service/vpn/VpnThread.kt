@@ -22,16 +22,16 @@ import dev.clombardo.dnsnet.common.logInfo
 import dev.clombardo.dnsnet.common.logWarning
 import dev.clombardo.dnsnet.service.NativeFileHelperWrapper
 import dev.clombardo.dnsnet.service.db.RuleDatabaseManager
-import uniffi.net_bindings.BlockLoggerCallback
+import uniffi.net_bindings.BlockLoggerBinding
 import uniffi.net_bindings.VpnControllerBinding
-import uniffi.net_bindings.VpnException
+import uniffi.net_bindings.VpnErrorBinding
 import uniffi.net_bindings.VpnResultBinding
 import uniffi.net_bindings.runVpnNative
 
 class VpnThread(
     private val dnsNetVpnService: DnsNetVpnService,
     private val notify: (VpnStatus) -> Unit,
-    private val blockLoggerCallback: BlockLoggerCallback?,
+    private val blockLoggerBinding: BlockLoggerBinding?,
     private val ruleDatabaseManager: RuleDatabaseManager,
     private val context: Context
 ) : Runnable {
@@ -110,16 +110,16 @@ class VpnThread(
                         break
                     }
                 }
-            } catch (e: VpnException) {
+            } catch (e: VpnErrorBinding) {
                 reloadOnInterrupt = true
                 when (e) {
-                    is VpnException.NoNetwork -> {
+                    is VpnErrorBinding.NoNetwork -> {
                         logError("No active network found. Waiting.", e)
                         notify(VpnStatus.WAITING_FOR_NETWORK)
                     }
 
-                    is VpnException.SocketFailure,
-                    is VpnException.InvalidDnsServers -> {
+                    is VpnErrorBinding.SocketFailure,
+                    is VpnErrorBinding.InvalidDnsServers -> {
                         notify(VpnStatus.RECONNECTING)
                         if (immediateRetryCount < MAX_IMMEDIATE_RETRIES) {
                             logError("Minor error occurred. Retrying immediately.", e)
@@ -161,12 +161,12 @@ class VpnThread(
         logInfo("Exiting")
     }
 
-    @Throws(VpnException::class)
+    @Throws(VpnErrorBinding::class)
     private fun runVpn(context: Context): VpnResultBinding {
         // Authenticate and configure the virtual network interface.
         return runVpnNative(
             adVpnCallback = dnsNetVpnService,
-            blockLoggerCallback = blockLoggerCallback,
+            blockLoggerCallback = blockLoggerBinding,
             vpnController = vpnController,
             ruleDatabase = ruleDatabaseManager.ruleDatabase,
             androidFileHelper = NativeFileHelperWrapper(context)

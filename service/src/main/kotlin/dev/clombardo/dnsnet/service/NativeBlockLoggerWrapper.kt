@@ -9,9 +9,9 @@
 package dev.clombardo.dnsnet.service
 
 import dev.clombardo.dnsnet.blocklogger.BlockLogger
-import uniffi.net_bindings.BlockLoggerCallback
+import uniffi.net_bindings.BlockLoggerBinding
 
-class NativeBlockLoggerWrapper(private val logger: BlockLogger): BlockLoggerCallback {
-    override fun log(connectionName: String, allowed: Boolean) =
+class NativeBlockLoggerWrapper(private val logger: BlockLogger): BlockLoggerBinding {
+    override fun logConnection(connectionName: String, allowed: Boolean) =
         logger.newConnection(connectionName, allowed)
 }

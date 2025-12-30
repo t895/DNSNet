@@ -6,13 +6,13 @@
  * (at your option) any later version.
  */
 
-extern crate log;
-
 pub mod backend;
 pub mod cache;
 pub mod controller;
 pub mod database;
 pub mod file;
+pub mod log;
 pub mod packet;
+pub mod proxy;
 mod util;
 pub mod vpn;

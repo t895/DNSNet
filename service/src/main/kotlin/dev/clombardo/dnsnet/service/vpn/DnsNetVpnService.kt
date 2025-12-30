@@ -582,7 +582,7 @@ class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
         vpnThread = VpnThread(
             dnsNetVpnService = this,
             notify = { status -> updateStatus(status.ordinal) },
-            blockLoggerCallback = if (configuration.read { blockLogging }) {
+            blockLoggerBinding = if (configuration.read { blockLogging }) {
                 NativeBlockLoggerWrapper(blockLogger)
             } else {
                 null

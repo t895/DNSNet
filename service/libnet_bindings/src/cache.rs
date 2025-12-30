@@ -8,6 +8,7 @@
 
 use std::sync::RwLock;
 
+use log::error;
 use net::cache::{DnsCache, DnsCacheEntry, SerializableDnsCache};
 use simple_dns::Packet;
 

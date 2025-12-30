@@ -2,7 +2,7 @@ use std::{fs::File, sync::Arc, time::Duration};
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use net::{
-    database::{Filter, FilterState, RuleDatabase, RuleDatabaseController},
+    database::{Filter, FilterState, RuleDatabaseController, RuleDatabaseImpl},
     file::FileHelper,
 };
 
@@ -18,9 +18,10 @@ impl FileHelper for BenchmarkFileHelper {
 }
 
 fn load_files(files: Vec<&str>) {
-    let database = RuleDatabase::new(Arc::new(RuleDatabaseController::new()));
+    let database = RuleDatabaseImpl::new(Arc::new(RuleDatabaseController::new()));
+    let file_helper: Box<&dyn FileHelper> = Box::from(&BenchmarkFileHelper as &dyn FileHelper);
     if let Err(_) = database.initialize(
-        BenchmarkFileHelper,
+        &file_helper,
         files
             .iter()
             .map(|path| Filter {
