@@ -140,7 +140,12 @@ impl RuleDatabaseBinding {
     ) -> Result<(), RuleDatabaseErrorBinding> {
         let file_helper = Box::from(&file_helper as &dyn FileHelper);
         self.rule_database
-            .initialize(&file_helper, filter_files.iter().map(|filter| filter.into()).collect(), single_filters.iter().map(|filter| filter.into()).collect()).map_err(From::from)
+            .initialize(
+                &file_helper,
+                filter_files.iter().map(|filter| filter.into()).collect(),
+                single_filters.iter().map(|filter| filter.into()).collect(),
+            )
+            .map_err(From::from)
     }
 
     pub fn wait_on_init(&self) {
