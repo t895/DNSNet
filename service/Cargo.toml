@@ -3,7 +3,7 @@ resolver = "3"
 members = ["libnet_bindings", "libnet"]
 
 [profile.release]
-lto = "fat"
+lto = "thin"
 
 [workspace.dependencies]
 ahash = "0.8.12"
