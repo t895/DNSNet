@@ -12,6 +12,7 @@ name = "uniffi-bindgen"
 path = "uniffi-bindgen.rs"
 
 [dependencies]
+android_logger = { workspace = true }
 net = { path = "../libnet" }
 log = { workspace = true }
 mio = { workspace = true }
@@ -19,6 +20,3 @@ thiserror = { workspace = true }
 uniffi = { workspace = true }
 url = { workspace = true }
 simple-dns = { workspace = true }
-
-[target.'cfg(target_os = "android")'.dependencies]
-android_logger = "0.15.1"
