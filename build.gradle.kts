@@ -33,5 +33,5 @@ plugins {
     alias(libs.plugins.dnsnet.atomicfu) apply false
 }
 
-val versionCode by extra { 63 }
-val versionName by extra { "1.3.4" }
+val versionCode by extra { 64 }
+val versionName by extra { "1.3.5" }
