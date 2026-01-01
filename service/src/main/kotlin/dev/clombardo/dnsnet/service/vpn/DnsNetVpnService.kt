@@ -33,16 +33,13 @@ import android.system.OsConstants
 import androidx.annotation.StringRes
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
-import dagger.hilt.EntryPoint
-import dagger.hilt.InstallIn
-import dagger.hilt.android.EntryPointAccessors
-import dagger.hilt.components.SingletonComponent
+import dagger.hilt.android.AndroidEntryPoint
 import dev.clombardo.dnsnet.blocklogger.BlockLogger
+import dev.clombardo.dnsnet.common.NotificationChannels
 import dev.clombardo.dnsnet.common.logDebug
 import dev.clombardo.dnsnet.common.logError
 import dev.clombardo.dnsnet.common.logInfo
 import dev.clombardo.dnsnet.common.logWarning
-import dev.clombardo.dnsnet.common.NotificationChannels
 import dev.clombardo.dnsnet.resources.R
 import dev.clombardo.dnsnet.service.NativeBlockLoggerWrapper
 import dev.clombardo.dnsnet.service.NetworkState
@@ -56,9 +53,9 @@ import dev.clombardo.dnsnet.ui.common.FabState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import uniffi.net_bindings.DnsCacheBinding
-import uniffi.net_bindings.VpnCallback
 import uniffi.net_bindings.ValidateDnsException
 import uniffi.net_bindings.ValidateDnsResult
+import uniffi.net_bindings.VpnCallback
 import uniffi.net_bindings.VpnConfigurationResult
 import uniffi.net_bindings.VpnControllerBinding
 import uniffi.net_bindings.networkHasIpv6Support
@@ -66,6 +63,7 @@ import uniffi.net_bindings.validateDnsServers
 import java.net.Inet4Address
 import java.net.Inet6Address
 import java.net.InetAddress
+import javax.inject.Inject
 
 enum class VpnStatus(val value: Int) {
     /**
@@ -234,6 +232,7 @@ enum class Command {
 }
 
 @SuppressLint("VpnServicePolicy")
+@AndroidEntryPoint
 class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
     companion object {
         const val SERVICE_RUNNING_NOTIFICATION_ID = 1
@@ -390,18 +389,13 @@ class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
         )
     }
 
-    @EntryPoint
-    @InstallIn(SingletonComponent::class)
-    interface VpnServiceEntryPoint {
-        fun configuration(): ConfigurationManager
-        fun preferences(): Preferences
-        fun blockLogger(): BlockLogger
-    }
-
+    @Inject
     lateinit var configuration: ConfigurationManager
 
+    @Inject
     lateinit var preferences: Preferences
 
+    @Inject
     lateinit var blockLogger: BlockLogger
 
     private val handler = Handler(Looper.myLooper()!!, this)
@@ -483,16 +477,6 @@ class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
 
     override fun onCreate() {
         super.onCreate()
-
-        // We needed to create a custom entry point and access our dependencies
-        // from onCreate because applicationContext is not valid in the constructor
-        val accessor = EntryPointAccessors.fromApplication(
-            applicationContext,
-            VpnServiceEntryPoint::class.java
-        )
-        configuration = accessor.configuration()
-        preferences = accessor.preferences()
-        blockLogger = accessor.blockLogger()
 
         ruleDatabaseManager = RuleDatabaseManager(
             context = applicationContext,
