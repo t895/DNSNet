@@ -1,0 +1,10 @@
+version: 2
+updates:
+  - package-ecosystem: "gradle"
+    directory: "/gradle"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "cargo"
+    directory: "/service"
+    schedule:
+      interval: "weekly"
