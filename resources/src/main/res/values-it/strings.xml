@@ -91,7 +91,7 @@
     <string name="stevenblack_hosts_nsfw">StevenBlack - Esplicito</string>
     <string name="oisd_description">Aumenta la privacy riducendo gli annunci e il malware. Privilegia la stabilità rispetto al blocco.</string>
     <string name="oisd_big_description">Elenco completo che richiede una quantità significativa di memoria di sistema. Se non sapete cosa significa, selezionate invece l\'elenco piccolo.</string>
-    <string name="oisd_small_description">Versione ridotta del grande elenco, più facile da usare per la memoria di sistema.</string>
+    <string name="oisd_small_description">Versione più leggera dell\'elenco, meno esigente per la memoria del sistema.</string>
     <string name="export_description">Crea una copia di backup della tua configurazione</string>
     <string name="import_description">Carica un file di impostazioni di backup</string>
     <string name="load_defaults_description">Riporta tutte le impostazioni ai valori predefiniti</string>
@@ -176,4 +176,28 @@
     <string name="use_dns_servers_from_active_network">Utilizzare i server della rete attiva</string>
     <string name="use_dns_servers_from_active_network_description">Applica i server della rete a cui si è connessi, oltre ai propri</string>
     <string name="hagezi_dns_blocklists_description">Liste di blocco aggregate con dimensioni variabili. Bloccano pubblicità, tracciamento, metriche e malware.</string>
+    <string name="filters_tab">Filtri</string>
+    <string name="filter_field_hint">Filtro</string>
+    <string name="missing_filter_files_message">Alcuni dei file filtro configurati (non ignorati) sono mancanti.\n\nUsa il bottone refresh nella scheda filtri per scaricarli.\n\nVuoi continuare comunque?</string>
+    <string name="missing_filter_files_title">File filtro mancante</string>
+    <string name="address">Indirizzo</string>
+    <string name="filter_update_error_item">Errore %1$d: %2$s</string>
+    <string name="updating_filter_files">Aggiornamento file filtro</string>
+    <string name="could_not_update_all_filter_files">Impossibile aggiornare tutti i file filtro</string>
+    <string name="updating_n_filter_files">Aggiornamento di %1$d file filtro</string>
+    <string name="address_not_reachable">Indirizzo non raggiungibile</string>
+    <string name="add_filter_file">Aggiungi file di filtro</string>
+    <string name="edit_filter_file">Modifica file di filtro</string>
+    <string name="add_filter">Aggiungi filtro</string>
+    <string name="edit_filter">Modifica filtro</string>
+    <string name="supported_formats">Formati supportati</string>
+    <string name="supported_formats_host_name">Nomi host (es. example.com)</string>
+    <string name="supported_formats_wildcard">Wildcard (es. *.example.com)</string>
+    <string name="supported_formats_adblock_plus">Adblock Plus (es. ||example.com^)</string>
+    <string name="activity_not_found">Attività non trovata</string>
+    <string name="doh3">DNS su HTTP/3</string>
+    <string name="doh3_description">Invia le tue richieste DNS in modo sicuro. Usa URL come \"https://example.com/dns-query\".</string>
+    <string name="doh3_warning">Selezionare almeno un server</string>
+    <string name="skip_this_step">Salta questo passaggio</string>
+    <string name="skip_presets_description">Se salti questo passaggio, dovrai impostare manualmente il blocco contenuti più tardi.</string>
 </resources>
