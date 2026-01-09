@@ -18,10 +18,15 @@ lru = { workspace = true }
 quiche = { workspace = true }
 thiserror = { workspace = true }
 simple-dns = { workspace = true }
+simple_logger = { workspace = true }
 
 [dev-dependencies]
 criterion = { workspace = true }
 
 [[bench]]
 name = "database"
+harness = false
+
+[[bench]]
+name = "backend"
 harness = false

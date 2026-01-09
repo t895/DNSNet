@@ -208,22 +208,30 @@ impl DoH3ServerConnectionContainer {
                 hex_dump(&scid),
             );
 
-            let (write, send_info) = match client_connection.send(output_buffer) {
-                Ok(value) => value,
-                Err(error) => {
-                    error!("forward_packet: Failed to write handshake! - {:?}", error);
+            loop {
+                let (write, send_info) = match client_connection.send(output_buffer) {
+                    Ok(value) => value,
+
+                    Err(quiche::Error::Done) => {
+                        trace!("start_session: Done writing");
+                        break;
+                    }
+
+                    Err(error) => {
+                        error!("forward_packet: Failed to write handshake! - {:?}", error);
+                        return Err(DnsBackendError::SocketFailure);
+                    }
+                };
+    
+                while let Err(error) = socket.send_to(&output_buffer[..write], send_info.to) {
+                    if error.kind() == std::io::ErrorKind::WouldBlock {
+                        debug!("forward_packet: send() would block");
+                        continue;
+                    }
+    
+                    error!("forward_packet: Failed to send handshake! - {:?} - {:?}", error, send_info.to);
                     return Err(DnsBackendError::SocketFailure);
                 }
-            };
-
-            while let Err(error) = socket.send_to(&output_buffer[..write], send_info.to) {
-                if error.kind() == std::io::ErrorKind::WouldBlock {
-                    debug!("forward_packet: send() would block");
-                    continue;
-                }
-
-                error!("forward_packet: Failed to send handshake! - {:?}", error);
-                return Err(DnsBackendError::SocketFailure);
             }
 
             self.active_session = Some(DoH3ServerSession {
@@ -363,7 +371,7 @@ fn hex_dump(buffer: &[u8]) -> String {
 
 impl DnsBackend for DoH3Backend {
     fn get_max_events_count(&self) -> usize {
-        return self.connections.len() * 1024;
+        self.connections.len()
     }
 
     fn get_poll_timeout(&self) -> Option<Duration> {
@@ -427,7 +435,7 @@ impl DnsBackend for DoH3Backend {
     fn forward_packet(
         &mut self,
         socket_protector: &Box<&dyn SocketProtector>,
-        packet: &[u8],
+        dns_payload: &[u8],
         request_packet: &[u8],
         destination_address: Vec<u8>,
         _: u16,
@@ -463,7 +471,7 @@ impl DnsBackend for DoH3Backend {
         connection.request_queue.push_back(DoH3Request::new(
             &connection.server.domain_name,
             request_packet,
-            packet,
+            dns_payload,
         ));
 
         return Ok(());

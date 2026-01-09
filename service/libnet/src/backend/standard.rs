@@ -155,7 +155,7 @@ impl DnsBackend for StandardDnsBackend {
     fn forward_packet(
         &mut self,
         socket_protector: &Box<&dyn SocketProtector>,
-        packet: &[u8],
+        dns_payload: &[u8],
         request_packet: &[u8],
         destination_address: Vec<u8>,
         destination_port: u16,
@@ -218,7 +218,7 @@ impl DnsBackend for StandardDnsBackend {
             return Ok(());
         };
 
-        return match socket.send_to(packet, destination_socket_address) {
+        return match socket.send_to(dns_payload, destination_socket_address) {
             Ok(_) => {
                 self.wosp_list
                     .add(WaitingOnSocketPacket::new(socket, request_packet.to_vec()));

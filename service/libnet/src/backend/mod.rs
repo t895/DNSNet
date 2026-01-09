@@ -34,7 +34,7 @@ pub trait DnsBackend {
     fn forward_packet(
         &mut self,
         socket_protector: &Box<&dyn SocketProtector>,
-        packet: &[u8],
+        dns_payload: &[u8],
         request_packet: &[u8],
         destination_address: Vec<u8>,
         destination_port: u16,
