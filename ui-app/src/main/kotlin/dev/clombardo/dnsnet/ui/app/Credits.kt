@@ -62,6 +62,7 @@ fun LicenseListItem(
             clip = true,
             interactionSource = remember { MutableInteractionSource() },
             role = Role.Button,
+            onClickLabel = title,
             onClick = { uriHandler.tryOpenUri(context, licenseLink.toUri()) },
         ),
         title = title,

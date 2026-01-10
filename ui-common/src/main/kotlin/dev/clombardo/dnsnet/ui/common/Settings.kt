@@ -60,7 +60,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
@@ -69,6 +68,7 @@ import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -86,6 +86,7 @@ fun Modifier.clickable(
     interactionSource: MutableInteractionSource?,
     role: Role,
     clip: Boolean = false,
+    onClickLabel: String,
     onClick: () -> Unit,
 ) = this
     .then(
@@ -102,6 +103,9 @@ fun Modifier.clickable(
         indication = ripple(),
         role = role,
     )
+    .semantics {
+        this.onClick(label = onClickLabel, action = null)
+    }
     .padding(clickablePadding)
 
 @Composable
@@ -285,6 +289,7 @@ fun SplitContentSetting(
             .clickable(
                 enabled = enabled,
                 onClick = onBodyClick,
+                onClickLabel = title,
                 interactionSource = interactionSource,
                 role = Role.Button,
                 clip = clip,
@@ -370,6 +375,7 @@ private fun ClickableSetting(
             .clickable(
                 enabled = enabled,
                 onClick = onClick,
+                onClickLabel = title,
                 clip = clip,
                 interactionSource = sharedInteractionSource,
                 role = role,
