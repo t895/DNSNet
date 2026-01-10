@@ -54,6 +54,7 @@ val uniffiBindgen = tasks.register<Exec>("uniffiBindgen") {
             .dir("arm64-v8a").file("libnet_bindings.so").asFile.path,
         "--language",
         "kotlin",
+        "--no-format",
         "--out-dir",
         project.layout.buildDirectory.get().dir("generated").dir("kotlin").asFile.path
     )
