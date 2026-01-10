@@ -375,12 +375,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "460fbee9c2c2f33933d720630a6a0bac33ba7053db5344fac858d4b8952d77d5"
 
 [[package]]
-name = "debug_panic"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9377eb110cece2e9431deb8d7d2ec8c116510b896741f9f2bf02b352147aa2a6"
-
-[[package]]
 name = "deranged"
 version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -917,12 +911,11 @@ dependencies = [
 
 [[package]]
 name = "quiche"
-version = "0.24.6"
+version = "0.24.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "187c95c7080b7e9e0202b428acdd24f97eaa9cc65e023673b307d5f171e17a7a"
+checksum = "8d1f2a6de780807c776efd108d1f9b9970496a49bf602103d62645df246e204c"
 dependencies = [
  "cmake",
- "debug_panic",
  "either",
  "enum_dispatch",
  "intrusive-collections",
