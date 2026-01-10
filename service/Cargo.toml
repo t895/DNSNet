@@ -14,7 +14,7 @@ criterion = { version = "0.7.0", features = ["html_reports"] }
 etherparse = "0.19.0"
 getrandom = "0.3.4"
 log = "0.4.29"
-lru = "0.16.2"
+lru = "0.16.3"
 mio = { version="1.1.1", features=["net","os-poll","os-ext"] }
 quiche = "0.24.6"
 simple-dns = "0.11.0"
