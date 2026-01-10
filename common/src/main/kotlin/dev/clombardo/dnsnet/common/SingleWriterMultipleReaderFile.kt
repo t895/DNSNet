@@ -31,8 +31,8 @@ import java.io.InputStream
  * one, causing it to replace that atomically.
  */
 class SingleWriterMultipleReaderFile(file: File) {
-    val activeFile = file.absoluteFile
-    val workFile = File(activeFile.absolutePath + ".dnsnet-new")
+    private val activeFile = file.absoluteFile
+    private val workFile = File(activeFile.absolutePath + ".dnsnet-new")
 
     /**
      * Opens the known-good file for reading.
@@ -47,7 +47,7 @@ class SingleWriterMultipleReaderFile(file: File) {
      * @return A writable stream.
      * @throws IOException If the work file cannot be replaced or opened for writing.
      */
-    @Throws(IOException::class)
+    @Throws(IOException::class, FileNotFoundException::class)
     fun startWrite(): FileOutputStream {
         if (workFile.exists() && !workFile.delete()) {
             throw IOException("startWrite: Cannot delete working file")

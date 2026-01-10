@@ -142,4 +142,5 @@ dependencies {
     implementation(project(":resources"))
     implementation(project(":settings"))
     implementation(project(":blocklogger"))
+    implementation(project(":network"))
 }

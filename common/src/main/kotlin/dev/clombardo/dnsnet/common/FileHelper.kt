@@ -12,9 +12,10 @@
 package dev.clombardo.dnsnet.common
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.ParcelFileDescriptor
-import android.system.ErrnoException
-import android.system.Os
+import androidx.core.net.toUri
 import java.io.Closeable
 import java.io.File
 import java.io.FileDescriptor
@@ -25,7 +26,6 @@ import java.io.InputStreamReader
 import java.io.OutputStream
 import java.io.UnsupportedEncodingException
 import java.net.URLEncoder
-import androidx.core.net.toUri
 
 /**
  * Utility object for working with files.
@@ -80,7 +80,7 @@ object FileHelper {
             null
         }
 
-    private fun isDownloadable(path: String): Boolean =
+    fun isDownloadable(path: String): Boolean =
         path.startsWith("https://") || path.startsWith("http://")
 
     @Throws(FileNotFoundException::class)
@@ -88,34 +88,19 @@ object FileHelper {
         return if (path.startsWith("content://")) {
             try {
                 InputStreamReader(context.contentResolver.openInputStream(path.toUri()))
-            } catch (e: SecurityException) {
+            } catch (_: SecurityException) {
                 null
             }
         } else {
             val file = getLocalFileForRemoteUrl(context, path) ?: return null
-            InputStreamReader(
-                SingleWriterMultipleReaderFile(file).openRead()
-            )
+            InputStreamReader(file.inputStream())
         }
-    }
-
-    fun closeOrWarn(fd: FileDescriptor?, message: String): FileDescriptor? {
-        try {
-            if (fd != null) {
-                Os.close(fd)
-            }
-        } catch (e: ErrnoException) {
-            logError("closeOrWarn: $message", e)
-        }
-
-        // Always return null
-        return null
     }
 
     fun <T : Closeable?> closeOrWarn(fd: T, message: String): FileDescriptor? {
         try {
             fd?.close()
-        } catch (e: java.lang.Exception) {
+        } catch (e: Exception) {
             logError("closeOrWarn: $message", e)
         }
 
@@ -152,8 +137,17 @@ object FileHelper {
                 ParcelFileDescriptor.open(file, mode).detachFd()
             }
         } catch (e: Exception) {
-            logError("getDetachedReadOnlyFd: $path", e)
+            logError("getDetachedFd: $path", e)
             null
         }
+    }
+
+    @Throws(SecurityException::class, FileNotFoundException::class, IOException::class)
+    fun testContentUriReadPermissions(context: Context, uri: Uri) {
+        context.contentResolver.takePersistableUriPermission(
+            uri,
+            Intent.FLAG_GRANT_READ_URI_PERMISSION
+        )
+        context.contentResolver.openInputStream(uri)?.close()
     }
 }

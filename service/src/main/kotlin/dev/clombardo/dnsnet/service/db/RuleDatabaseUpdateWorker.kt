@@ -30,10 +30,12 @@ import dev.clombardo.dnsnet.common.logDebug
 import dev.clombardo.dnsnet.common.logInfo
 import dev.clombardo.dnsnet.common.logVerbose
 import dev.clombardo.dnsnet.common.NotificationChannels
+import dev.clombardo.dnsnet.network.NetworkRepository
 import dev.clombardo.dnsnet.resources.R
 import dev.clombardo.dnsnet.service.vpn.DnsNetVpnService
 import dev.clombardo.dnsnet.settings.ConfigurationManager
 import dev.clombardo.dnsnet.settings.Filter
+import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
@@ -49,6 +51,7 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
     @Assisted private val context: Context,
     @Assisted params: WorkerParameters,
     private val configuration: ConfigurationManager,
+    private val networkRepository: NetworkRepository,
 ) : CoroutineWorker(context, params) {
     companion object {
         private const val UPDATE_NOTIFICATION_ID = 42
@@ -63,10 +66,11 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
             context.getSystemService<NotificationManager>()?.cancel(UPDATE_NOTIFICATION_ID)
         }
 
-        private const val DATABASE_UPDATE_TIMEOUT = 3600000L
+        private const val DATABASE_UPDATE_TIMEOUT_MILLIS = 3600000L
 
         private val _isRefreshing = MutableStateFlow(false)
         val isRefreshing = _isRefreshing.asStateFlow()
+        private val isRefreshingInternal = atomic(false)
 
         fun runNow(context: Context) {
             val workRequest = OneTimeWorkRequestBuilder<RuleDatabaseUpdateWorker>()
@@ -89,24 +93,37 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         logDebug("doWork: Begin")
+        if (isRefreshingInternal.getAndSet(true)) {
+            return@withContext Result.retry()
+        }
         _isRefreshing.value = true
+
         val start = System.currentTimeMillis()
         val jobs = mutableListOf<Deferred<Unit>>()
-        configuration.edit {
-            filters.files.forEach {
-                val update = RuleDatabaseItemUpdate(context, this@RuleDatabaseUpdateWorker, it)
-                if (update.shouldDownload()) {
-                    val job = async(context = coroutineContext) { update.run() }
-                    job.start()
-                    jobs.add(job)
-                }
+        val onBegin = { filter: Filter -> addBegin(filter) }
+        val onError = { filter: Filter, message: String -> addError(filter, message) }
+        val onDone = { filter: Filter -> addDone(filter) }
+        configuration.read {
+            for (filterFile in filters.files.distinctBy { it.data.lowercase() }) {
+                val update = RuleDatabaseItemUpdate.new(
+                    context = context,
+                    networkRepository = networkRepository,
+                    filterFile = filterFile,
+                    onBegin = onBegin,
+                    onError = onError,
+                    onDone = onDone,
+                ) ?: continue
+
+                val job = async(context = coroutineContext) { update.run() }
+                job.start()
+                jobs.add(job)
             }
         }
 
         releaseGarbagePermissions()
 
         try {
-            withTimeout(DATABASE_UPDATE_TIMEOUT) {
+            withTimeout(DATABASE_UPDATE_TIMEOUT_MILLIS) {
                 jobs.awaitAll()
             }
         } catch (_: TimeoutCancellationException) {
@@ -118,6 +135,8 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
 
         postExecute()
 
+        _isRefreshing.value = false
+        isRefreshingInternal.getAndSet(false)
         Result.success()
     }
 
@@ -184,7 +203,6 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
     /**
      * Clears the notifications or updates it for viewing errors.
      */
-    @Synchronized
     private fun postExecute() {
         logDebug("postExecute: Sending notification")
         if (_lastErrors.value.isEmpty()) {
@@ -210,7 +228,6 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
                 .setAutoCancel(true)
             notificationManager.notify(UPDATE_NOTIFICATION_ID, notificationBuilder.build())
         }
-        _isRefreshing.value = false
     }
 
     /**
@@ -243,7 +260,4 @@ class RuleDatabaseUpdateWorker @AssistedInject constructor(
         pending.add(item.title)
         updateProgressNotification()
     }
-
-    @Synchronized
-    fun pendingCount(): Int = pending.size
 }

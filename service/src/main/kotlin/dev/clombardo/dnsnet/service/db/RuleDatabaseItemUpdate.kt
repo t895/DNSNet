@@ -12,240 +12,130 @@
 package dev.clombardo.dnsnet.service.db
 
 import android.content.Context
-import android.content.Intent
 import androidx.core.net.toUri
-import dev.clombardo.dnsnet.resources.R
 import dev.clombardo.dnsnet.common.FileHelper
 import dev.clombardo.dnsnet.common.SingleWriterMultipleReaderFile
 import dev.clombardo.dnsnet.common.logDebug
+import dev.clombardo.dnsnet.network.NetworkRepository
+import dev.clombardo.dnsnet.network.Response
+import dev.clombardo.dnsnet.resources.R
+import dev.clombardo.dnsnet.settings.Filter
 import dev.clombardo.dnsnet.settings.FilterFile
-import java.io.File
 import java.io.FileNotFoundException
-import java.io.FileOutputStream
 import java.io.IOException
-import java.io.InputStream
 import java.io.OutputStream
-import java.net.HttpURLConnection
 import java.net.MalformedURLException
-import java.net.SocketTimeoutException
 import java.net.URL
-import java.util.Date
-import javax.net.ssl.HttpsURLConnection
 
 /**
  * Updates a single item.
  */
-class RuleDatabaseItemUpdate(
+class RuleDatabaseItemUpdate private constructor(
     private val context: Context,
-    private val worker: RuleDatabaseUpdateWorker,
-    private val item: FilterFile,
+    private val networkRepository: NetworkRepository,
+    private val filterFile: FilterFile,
+    private val file: SingleWriterMultipleReaderFile,
+    private val onBegin: (filter: Filter) -> Unit,
+    private val onError: (filter: Filter, message: String) -> Unit,
+    private val onDone: (filter: Filter) -> Unit,
 ) {
     companion object {
-        private const val CONNECT_TIMEOUT_MILLIS = 3000
-        private const val READ_TIMEOUT_MILLIS = 10000
-    }
+        fun new(
+            context: Context,
+            networkRepository: NetworkRepository,
+            filterFile: FilterFile,
+            onBegin: (filter: Filter) -> Unit,
+            onError: (filter: Filter, message: String) -> Unit,
+            onDone: (filter: Filter) -> Unit,
+        ): RuleDatabaseItemUpdate? {
+            if (filterFile.data.startsWith("content://")) {
+                try {
+                    FileHelper.testContentUriReadPermissions(context, filterFile.data.toUri())
+                } catch (e: SecurityException) {
+                    logDebug("run: Error taking permission", e)
+                    onError(filterFile, context.getString(R.string.permission_denied))
+                } catch (e: FileNotFoundException) {
+                    logDebug("run: File not found", e)
+                    onError(filterFile, context.getString(R.string.file_not_found))
+                } catch (e: IOException) {
+                    onError(
+                        filterFile,
+                        context.getString(R.string.unknown_error_s, e.localizedMessage)
+                    )
+                }
+                return null
+            }
 
-    private lateinit var url: URL
-    private var file: File? = null
+            val file = FileHelper.getLocalFileForRemoteUrl(context, filterFile.data) ?: return null
 
-    fun shouldDownload(): Boolean {
-        // Not sure if that is slow or not
-        if (item.data.startsWith("content://")) {
-            return true
+            try {
+                URL(filterFile.data)
+            } catch (_: MalformedURLException) {
+                onError(filterFile, context.getString(R.string.invalid_url_s, filterFile.data))
+                return null
+            }
+
+            return RuleDatabaseItemUpdate(
+                context = context,
+                networkRepository = networkRepository,
+                filterFile = filterFile,
+                file = SingleWriterMultipleReaderFile(file),
+                onBegin = onBegin,
+                onError = onError,
+                onDone = onDone,
+            )
         }
-
-        file = FileHelper.getLocalFileForRemoteUrl(context, item.data)
-        if (file == null || !item.isDownloadable()) {
-            return false
-        }
-
-        try {
-            url = URL(item.data)
-        } catch (e: MalformedURLException) {
-            worker.addError(item, context.getString(R.string.invalid_url_s, item.data))
-            return false
-        }
-
-        return true
     }
 
     /**
-     * Runs the item download, and marks it as done when finished.getLocalizedMessage
+     * Runs the item download, and marks it as done when finished
      */
-    fun run() {
-        if (item.data.startsWith("content://")) {
-            try {
-                val uri = item.data.toUri()
-                context.contentResolver.takePersistableUriPermission(
-                    uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
+    suspend fun run() {
+        onBegin(filterFile)
 
-                context.contentResolver.openInputStream(uri)?.close()
-                logDebug("run: Permission requested for ${item.data}")
-            } catch (e: SecurityException) {
-                logDebug("run: Error taking permission", e)
-                worker.addError(item, context.getString(R.string.permission_denied))
-            } catch (e: FileNotFoundException) {
-                logDebug("run: File not found", e)
-                worker.addError(item, context.getString(R.string.file_not_found))
-            } catch (e: IOException) {
-                worker.addError(
-                    item,
-                    context.getString(R.string.unknown_error_s, e.localizedMessage)
-                )
-            }
+        val outputStream: OutputStream
+        try {
+            outputStream = file.startWrite()
+        } catch (e: Exception) {
+            onError(filterFile, context.getString(R.string.unknown_error_s, e.localizedMessage ?: ""))
             return
         }
 
-        val singleWriterMultipleReaderFile = SingleWriterMultipleReaderFile(file!!)
-        var connection: HttpURLConnection? = null
-        worker.addBegin(item)
-        try {
-            connection = getHttpURLConnection(file!!, singleWriterMultipleReaderFile, url)
+        val response = networkRepository.downloadBodyToFile(filterFile.data, outputStream)
+        file.finishWrite(outputStream)
 
-            if (!validateResponse(connection)) {
-                return
-            }
-            downloadFile(file!!, singleWriterMultipleReaderFile, connection)
-        } catch (_: SocketTimeoutException) {
-            worker.addError(item, context.getString(R.string.requested_timed_out))
-        } catch (e: IOException) {
-            worker.addError(item, context.getString(R.string.unknown_error_s, e.toString()))
-        } catch (e: NullPointerException) {
-            worker.addError(item, context.getString(R.string.unknown_error_s, e.toString()))
-        } finally {
-            worker.addDone(item)
-            connection?.disconnect()
+        if (!checkForResponseErrors(response)) {
+            return
         }
+
+        onDone(filterFile)
     }
 
     /**
-     * Opens a new HTTP connection.
+     * Runs [onError] for any failed response codes.
      *
-     * @param file                           Target file
-     * @param singleWriterMultipleReaderFile Target file
-     * @param url                            URL to download from
-     * @return An initialized HTTP connection.
-     * @throws IOException
-     */
-    @Throws(IOException::class)
-    fun getHttpURLConnection(
-        file: File,
-        singleWriterMultipleReaderFile: SingleWriterMultipleReaderFile,
-        url: URL
-    ): HttpURLConnection {
-        val connection = internalOpenHttpConnection(url)
-        connection.apply {
-            instanceFollowRedirects = true
-            connectTimeout = CONNECT_TIMEOUT_MILLIS
-            readTimeout = READ_TIMEOUT_MILLIS
-        }
-
-        try {
-            singleWriterMultipleReaderFile.openRead().close()
-            connection.ifModifiedSince = file.lastModified()
-        } catch (_: IOException) {
-        }
-
-        connection.connect()
-        return connection
-    }
-
-    // Internal helper for testing.
-    @Throws(IOException::class)
-    fun internalOpenHttpConnection(url: URL): HttpURLConnection =
-        url.openConnection() as HttpsURLConnection
-
-    /**
-     * Checks if we should read from the URL.
-     *
-     * @param connection The connection that was established.
      * @return true if there was no problem.
-     * @throws IOException If an I/O Exception occured.
      */
-    @Throws(IOException::class)
-    fun validateResponse(connection: HttpURLConnection): Boolean {
-        logDebug(
-            """
-                validateResponse: ${item.title}
-                local = ${Date(connection.ifModifiedSince)}
-                remote = ${Date(connection.lastModified)}
-            """.trimIndent()
-        )
-        if (connection.responseCode != 200) {
-            logDebug(
-                """
-                    validateResponse: ${item.title}: Skipping
-                    Server responded with ${connection.responseCode} for ${item.data}"
-                """.trimIndent()
-            )
+    fun checkForResponseErrors(response: Response): Boolean {
+        logDebug("Server responded with ${response.code} for ${filterFile.data}")
+        if ((200..299).contains(response.code)) {
+            return true
+        }
 
-            if (connection.responseCode == 404) {
-                worker.addError(item, context.getString(R.string.file_not_found))
-            } else if (connection.responseCode != 304) {
-                context.resources.getString(R.string.filter_update_error_item)
-                worker.addError(
-                    item,
+        when (response.code) {
+            404 -> onError(filterFile, context.getString(R.string.file_not_found))
+            408 -> onError(filterFile, context.getString(R.string.requested_timed_out))
+            else -> {
+                onError(
+                    filterFile,
                     context.resources.getString(
                         R.string.filter_update_error_item,
-                        connection.getResponseCode(),
-                        connection.getResponseMessage()
+                        response.code,
+                        response.description,
                     )
                 )
             }
-            return false
         }
-        return true
-    }
-
-    /**
-     * Downloads a file from a connection to an singleWriterMultipleReaderFile.
-     *
-     * @param file                           The file to write to
-     * @param singleWriterMultipleReaderFile The atomic file for the destination file
-     * @param connection                     The connection to read from
-     * @throws IOException I/O exceptions.
-     */
-    @Throws(IOException::class)
-    fun downloadFile(
-        file: File,
-        singleWriterMultipleReaderFile: SingleWriterMultipleReaderFile,
-        connection: HttpURLConnection
-    ) {
-        val inStream = connection.inputStream
-        var outStream: FileOutputStream? = singleWriterMultipleReaderFile.startWrite()
-        try {
-            copyStream(inStream, outStream!!)
-
-            singleWriterMultipleReaderFile.finishWrite(outStream)
-            outStream = null
-
-            // Write has started, set modification time
-            if (connection.lastModified == 0L || !file.setLastModified(connection.lastModified)) {
-                logDebug("downloadFile: Could not set last modified")
-            }
-        } finally {
-            if (outStream != null) {
-                singleWriterMultipleReaderFile.failWrite(outStream)
-            }
-        }
-    }
-
-    /**
-     * Copies one stream to another.
-     *
-     * @param inStream  Input stream
-     * @param outStream Output stream
-     * @throws IOException If an exception occured.
-     */
-    @Throws(IOException::class)
-    fun copyStream(inStream: InputStream, outStream: OutputStream) {
-        val buffer = ByteArray(4096)
-        var rc = inStream.read(buffer)
-        while (rc != -1) {
-            outStream.write(buffer, 0, rc)
-            rc = inStream.read(buffer)
-        }
+        return false
     }
 }

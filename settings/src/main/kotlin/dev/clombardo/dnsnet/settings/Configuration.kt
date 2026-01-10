@@ -341,10 +341,7 @@ data class FilterFile(
     override var title: String = "",
     @SerialName("location") override var data: String = "",
     override var state: FilterState = FilterState.IGNORE,
-) : Filter {
-    fun isDownloadable(): Boolean =
-        data.startsWith("https://") || data.startsWith("http://")
-}
+) : Filter
 
 @Parcelize
 @Serializable

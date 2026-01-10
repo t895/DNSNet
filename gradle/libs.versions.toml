@@ -44,6 +44,7 @@ aboutLibraries = "13.1.0"
 graphicsShapes = "1.1.0"
 material3 = "1.5.0-alpha11"
 runtimeAndroid = "1.10.0"
+ktor = "3.3.3"
 
 [libraries]
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistPermissions" }
@@ -89,6 +90,8 @@ androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navig
 aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref = "aboutLibraries" }
 aboutlibraries-compose-core = { module = "com.mikepenz:aboutlibraries-compose-core", version.ref = "aboutLibraries" }
 androidx-runtime-android = { group = "androidx.compose.runtime", name = "runtime-android", version.ref = "runtimeAndroid" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 
 # build-logic dependencies
 android-gradle-api = { group = "com.android.tools.build", name = "gradle-api", version.ref = "agp" }
