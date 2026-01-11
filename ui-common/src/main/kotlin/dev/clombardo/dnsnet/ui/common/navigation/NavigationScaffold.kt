@@ -15,7 +15,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -44,8 +46,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.tooling.preview.Preview
 import dev.clombardo.dnsnet.ui.common.plus
+import dev.clombardo.dnsnet.ui.common.rememberFocusRequester
 import dev.clombardo.dnsnet.ui.common.theme.DnsNetTheme
 
 enum class LayoutType {
@@ -79,67 +86,63 @@ object NavigationScaffold {
 fun NavigationScaffold(
     modifier: Modifier = Modifier,
     layoutType: LayoutType,
+    firstItemFocusRequester: FocusRequester,
     windowInsets: WindowInsets = NavigationScaffoldDefaults.windowInsets,
     navigationItems: NavigationScope.() -> Unit,
+    fabFocusRequester: FocusRequester? = null,
     floatingActionButton: (@Composable () -> Unit)? = null,
     content: @Composable (contentPadding: PaddingValues) -> Unit,
 ) {
     val paddingValues = windowInsets.asPaddingValues()
     CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
-        Box(modifier = modifier) {
+        Box(modifier = modifier.fillMaxSize()) {
             when (layoutType) {
                 LayoutType.NavigationBar -> {
                     val navigationBarPadding =
                         paddingValues + PaddingValues(bottom = NavigationBar.height)
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        content(navigationBarPadding)
-                    }
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.BottomCenter,
+                    content(navigationBarPadding)
+                    Column(
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                        horizontalAlignment = Alignment.End,
                     ) {
+                        if (floatingActionButton != null) {
+                            floatingActionButton()
+                        }
+
                         NavigationBar(
+                            modifier = Modifier
+                                .focusProperties {
+                                    up = fabFocusRequester ?: firstItemFocusRequester
+                                },
                             windowInsets = windowInsets,
                             content = navigationItems,
                         )
-
-                        if (floatingActionButton != null) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(navigationBarPadding),
-                                contentAlignment = Alignment.BottomEnd,
-                            ) {
-                                floatingActionButton()
-                            }
-                        }
                     }
                 }
 
                 LayoutType.NavigationRail -> {
                     val navigationBarPadding =
                         paddingValues + PaddingValues(start = NavigationRail.width)
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        content(navigationBarPadding)
-                    }
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.CenterStart,
-                    ) {
-                        NavigationRail(
-                            windowInsets = windowInsets,
-                            content = navigationItems,
-                        )
+                    content(navigationBarPadding)
 
-                        if (floatingActionButton != null) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(navigationBarPadding),
-                                contentAlignment = Alignment.BottomEnd,
-                            ) {
-                                floatingActionButton()
-                            }
+                    NavigationRail(
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .focusProperties {
+                                end = fabFocusRequester ?: firstItemFocusRequester
+                            },
+                        windowInsets = windowInsets,
+                        content = navigationItems,
+                    )
+
+                    if (floatingActionButton != null) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(navigationBarPadding),
+                            contentAlignment = Alignment.BottomEnd,
+                        ) {
+                            floatingActionButton()
                         }
                     }
                 }
@@ -175,6 +178,7 @@ private fun NavigationScaffoldPreview(layoutType: LayoutType) {
                     onClick = { selectedIndex = 2 },
                 )
             },
+            firstItemFocusRequester = rememberFocusRequester(),
             floatingActionButton = {
                 FloatingActionButton(onClick = {}) {
                     Icon(
@@ -185,7 +189,7 @@ private fun NavigationScaffoldPreview(layoutType: LayoutType) {
             },
         ) { contentPadding ->
             Text(
-                modifier = Modifier.padding(contentPadding),
+                modifier = Modifier.fillMaxSize().padding(contentPadding),
                 text = "some screen",
             )
         }

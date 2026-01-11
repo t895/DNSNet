@@ -41,6 +41,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringArrayResource
@@ -71,6 +72,7 @@ import dev.clombardo.dnsnet.ui.common.TabLayoutContent
 import dev.clombardo.dnsnet.ui.common.isSmallScreen
 import dev.clombardo.dnsnet.ui.common.navigation.NavigationBar
 import dev.clombardo.dnsnet.ui.common.plus
+import dev.clombardo.dnsnet.ui.common.rememberFocusRequester
 import dev.clombardo.dnsnet.ui.common.theme.DnsNetTheme
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -86,6 +88,7 @@ fun AppsScreen(
     onBypassSelection: (AllowListMode) -> Unit,
     apps: List<AppData> = emptyList(),
     onAppClick: (AppData, Boolean) -> Unit,
+    firstItemFocusRequester: FocusRequester,
 ) {
     val pullToRefreshState = rememberPullToRefreshState()
 
@@ -122,6 +125,7 @@ fun AppsScreen(
                         var expanded by rememberSaveable { mutableStateOf(false) }
                         val bypassOptions = stringArrayResource(R.array.allowlist_defaults)
                         ExpandableOptionsItem(
+                            baseFocusRequester = firstItemFocusRequester,
                             expanded = expanded,
                             title = stringResource(R.string.allowlist_defaults_title),
                             details = bypassOptions[bypassSelection.ordinal],
@@ -279,6 +283,7 @@ private fun AppsScreenPreview() {
             onAppClick = { _, _ -> },
             bypassSelection = AllowListMode.ON_VPN,
             onBypassSelection = {},
+            firstItemFocusRequester = rememberFocusRequester(),
         )
     }
 }

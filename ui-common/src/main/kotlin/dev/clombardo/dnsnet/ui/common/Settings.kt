@@ -60,6 +60,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
@@ -473,8 +476,8 @@ private fun CheckboxListItemPreview() {
 fun SplitCheckboxListItem(
     checked: Boolean,
     title: String,
-    outlineColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     modifier: Modifier = Modifier,
+    outlineColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     bodyEnabled: Boolean = true,
     checkboxEnabled: Boolean = true,
     details: String = "",
@@ -484,8 +487,14 @@ fun SplitCheckboxListItem(
     onCheckedChange: (Boolean) -> Unit,
     startContent: @Composable (BoxScope.() -> Unit)? = null,
 ) {
+    val contentFocusRequester = rememberFocusRequester()
+    val checkboxFocusRequester = rememberFocusRequester()
     SplitContentSetting(
-        modifier = modifier,
+        modifier = modifier
+            .focusRequester(contentFocusRequester)
+            .focusProperties {
+                end = checkboxFocusRequester
+            },
         title = title,
         details = details,
         maxDetailLines = maxDetailLines,
@@ -496,7 +505,12 @@ fun SplitCheckboxListItem(
         startContent = startContent,
         endContent = {
             Checkbox(
-                modifier = Modifier.semantics { contentDescription = title },
+                modifier = Modifier
+                    .semantics { contentDescription = title }
+                    .focusRequester(checkboxFocusRequester)
+                    .focusProperties {
+                        start = contentFocusRequester
+                    },
                 enabled = checkboxEnabled,
                 checked = checked,
                 onCheckedChange = onCheckedChange,
@@ -587,8 +601,8 @@ private fun SwitchListItemPreview() {
 fun SplitSwitchListItem(
     checked: Boolean,
     title: String,
-    outlineColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     modifier: Modifier = Modifier,
+    outlineColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     bodyEnabled: Boolean = true,
     switchEnabled: Boolean = true,
     details: String = "",
@@ -597,8 +611,14 @@ fun SplitSwitchListItem(
     onCheckedChange: (Boolean) -> Unit,
     startContent: @Composable (BoxScope.() -> Unit)? = null
 ) {
+    val contentFocusRequester = rememberFocusRequester()
+    val switchFocusRequester = rememberFocusRequester()
     SplitContentSetting(
-        modifier = modifier,
+        modifier = modifier
+            .focusRequester(contentFocusRequester)
+            .focusProperties {
+                end = switchFocusRequester
+            },
         title = title,
         details = details,
         maxDetailLines = maxDetailLines,
@@ -608,7 +628,12 @@ fun SplitSwitchListItem(
         startContent = startContent,
         endContent = {
             MaterialSwitch(
-                modifier = Modifier.semantics { contentDescription = title },
+                modifier = Modifier
+                    .semantics { contentDescription = title }
+                    .focusRequester(switchFocusRequester)
+                    .focusProperties {
+                        start = contentFocusRequester
+                    },
                 enabled = switchEnabled,
                 checked = checked,
                 onCheckedChange = onCheckedChange,
@@ -696,12 +721,14 @@ fun ExpandableOptionsItem(
     clip: Boolean = false,
     title: String = "",
     details: String = "",
+    baseFocusRequester: FocusRequester = rememberFocusRequester(),
     sharedInteractionSource: MutableInteractionSource? = null,
     onExpandClick: () -> Unit,
     options: @Composable ColumnScope.() -> Unit,
 ) {
     Column(modifier = modifier) {
         ClickableSetting(
+            modifier = Modifier.focusRequester(baseFocusRequester),
             title = title,
             role = Role.DropdownList,
             details = details,

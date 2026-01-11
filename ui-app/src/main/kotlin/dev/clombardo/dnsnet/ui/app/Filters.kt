@@ -62,6 +62,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
@@ -85,6 +87,7 @@ import dev.clombardo.dnsnet.ui.common.SwitchListItem
 import dev.clombardo.dnsnet.ui.common.TooltipIconButton
 import dev.clombardo.dnsnet.ui.common.plus
 import dev.clombardo.dnsnet.ui.common.rememberAtTop
+import dev.clombardo.dnsnet.ui.common.rememberFocusRequester
 import dev.clombardo.dnsnet.ui.common.theme.Animation
 import dev.clombardo.dnsnet.ui.common.theme.DefaultFabSize
 import dev.clombardo.dnsnet.ui.common.theme.DnsNetTheme
@@ -129,6 +132,7 @@ fun FiltersScreen(
     isRefreshingFilters: Boolean,
     onRefreshFilters: () -> Unit,
     onOpenPresets: () -> Unit,
+    firstItemFocusRequester: FocusRequester,
 ) {
     val itemStateStrings = stringArrayResource(R.array.item_states)
     val getStateString = { state: FilterState ->
@@ -189,6 +193,7 @@ fun FiltersScreen(
 
                 item {
                     SwitchListItem(
+                        modifier = Modifier.focusRequester(firstItemFocusRequester),
                         title = stringResource(id = R.string.automatic_refresh),
                         details = stringResource(id = R.string.automatic_refresh_description),
                         checked = refreshDaily,
@@ -355,6 +360,7 @@ private fun FiltersScreenPreview() {
             isRefreshingFilters = isRefreshingFilters,
             onRefreshFilters = { isRefreshingFilters = !isRefreshingFilters },
             onOpenPresets = {},
+            firstItemFocusRequester = rememberFocusRequester(),
         )
     }
 }
@@ -375,6 +381,7 @@ private fun FiltersScreenNoBlockItemsPreview() {
             isRefreshingFilters = isRefreshingFilterFiles,
             onRefreshFilters = { isRefreshingFilterFiles = !isRefreshingFilterFiles },
             onOpenPresets = {},
+            firstItemFocusRequester = rememberFocusRequester(),
         )
     }
 }
