@@ -41,6 +41,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -54,6 +58,7 @@ import dev.clombardo.dnsnet.ui.common.TriStateFab
 import dev.clombardo.dnsnet.ui.common.isSmallScreen
 import dev.clombardo.dnsnet.ui.common.navigation.NavigationBar
 import dev.clombardo.dnsnet.ui.common.plus
+import dev.clombardo.dnsnet.ui.common.rememberFocusRequester
 import dev.clombardo.dnsnet.ui.common.theme.Animation
 import dev.clombardo.dnsnet.ui.common.theme.DnsNetTheme
 import dev.clombardo.dnsnet.ui.common.theme.FabPadding
@@ -82,9 +87,20 @@ fun StartScreen(
     onOpenAbout: () -> Unit,
     state: FabState,
     onChangeVpnStatusClick: () -> Unit,
+    startButtonFocusRequester: FocusRequester,
 ) {
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .focusProperties {
+                onEnter = {
+                    startButtonFocusRequester.requestFocus()
+                }
+            }
+    ) {
+        val columnFocusRequester = rememberFocusRequester()
         LazyColumn(
+            modifier = Modifier.focusRequester(columnFocusRequester),
             state = listState,
             contentPadding = contentPadding + PaddingValues(ListPadding) +
                     PaddingValues(bottom = TriStateFab.size + FabPadding),
@@ -213,7 +229,11 @@ fun StartScreen(
                             Modifier.padding(TriStateFab.safeInsets.asPaddingValues())
                         }
                     )
-                    .padding(FabPadding),
+                    .padding(FabPadding)
+                    .focusRequester(startButtonFocusRequester)
+                    .focusProperties {
+                        up = columnFocusRequester
+                    },
                 state = state,
                 onClick = onChangeVpnStatusClick,
             )
@@ -240,6 +260,7 @@ private fun StartScreenPreview() {
             onShareLogcat = {},
             onResetSettings = {},
             onOpenAbout = {},
+            startButtonFocusRequester = rememberFocusRequester(),
         )
     }
 }

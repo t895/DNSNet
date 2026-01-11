@@ -47,6 +47,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -64,6 +66,7 @@ import dev.clombardo.dnsnet.ui.common.SplitCheckboxListItem
 import dev.clombardo.dnsnet.ui.common.SwitchListItem
 import dev.clombardo.dnsnet.ui.common.TooltipIconButton
 import dev.clombardo.dnsnet.ui.common.rememberAtTop
+import dev.clombardo.dnsnet.ui.common.rememberFocusRequester
 import dev.clombardo.dnsnet.ui.common.rememberMutableStateListOf
 import dev.clombardo.dnsnet.ui.common.theme.DnsNetTheme
 import dev.clombardo.dnsnet.ui.common.theme.ListPadding
@@ -85,6 +88,7 @@ fun DnsScreen(
     onDoh3SupportClick: () -> Unit,
     onItemClick: (DnsServer) -> Unit,
     onItemCheckClicked: (DnsServer) -> Unit,
+    firstItemFocusRequester: FocusRequester,
 ) {
     val serversState = servers.filter {
         it.type == if (doh3Support) {
@@ -102,6 +106,7 @@ fun DnsScreen(
             ListSettingsContainer {
                 item {
                     SwitchListItem(
+                        modifier = Modifier.focusRequester(firstItemFocusRequester),
                         title = stringResource(R.string.custom_dns),
                         details = stringResource(R.string.dns_description),
                         checked = customDnsServers,
@@ -194,6 +199,7 @@ private fun DnsScreenPreview() {
             onItemCheckClicked = {},
             doh3Support = false,
             onDoh3SupportClick = {},
+            firstItemFocusRequester = rememberFocusRequester(),
         )
     }
 }

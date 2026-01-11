@@ -53,11 +53,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
@@ -85,6 +87,7 @@ import dev.clombardo.dnsnet.ui.common.isSmallScreen
 import dev.clombardo.dnsnet.ui.common.navigation.LayoutType
 import dev.clombardo.dnsnet.ui.common.navigation.NavigationScaffold
 import dev.clombardo.dnsnet.ui.common.plus
+import dev.clombardo.dnsnet.ui.common.rememberFocusRequester
 import dev.clombardo.dnsnet.ui.common.theme.DefaultFabSize
 import dev.clombardo.dnsnet.ui.common.theme.FabPadding
 import dev.clombardo.dnsnet.ui.common.theme.ListPadding
@@ -590,7 +593,9 @@ fun HomeScreen(
         }
     }
 
-    val context = LocalContext.current
+    val resources = LocalResources.current
+    val firstItemFocusRequester = rememberFocusRequester()
+    val fabFocusRequester = rememberFocusRequester()
     NavigationScaffold(
         modifier = modifier,
         layoutType = if (isSmallScreen()) {
@@ -600,7 +605,7 @@ fun HomeScreen(
         },
         navigationItems = {
             HomeDestinations.entries.forEach {
-                val label = context.getString(it.labelResId)
+                val label = resources.getString(it.labelResId)
                 item(
                     modifier = Modifier.testTag("homeNavigation:$label"),
                     selected = it == currentDestination,
@@ -609,6 +614,14 @@ fun HomeScreen(
                     text = label,
                 )
             }
+        },
+        firstItemFocusRequester = firstItemFocusRequester,
+        fabFocusRequester = if (currentDestination == HomeDestinations.Filters ||
+            currentDestination == HomeDestinations.DNS
+        ) {
+            fabFocusRequester
+        } else {
+            null
         },
         floatingActionButton = {
             AnimatedVisibility(
@@ -627,6 +640,11 @@ fun HomeScreen(
                     expanded = expanded,
                     button = {
                         ToggleFloatingActionButton(
+                            modifier = Modifier
+                                .focusRequester(fabFocusRequester)
+                                .focusProperties {
+                                    up = firstItemFocusRequester
+                                },
                             checked = expanded,
                             onCheckedChange = {
                                 if (currentDestination == HomeDestinations.Filters) {
@@ -776,6 +794,7 @@ fun HomeScreen(
                     onOpenAbout = { topLevelNavController.navigate(TopLevelDestination.About) },
                     state = state,
                     onChangeVpnStatusClick = onTryToggleService,
+                    startButtonFocusRequester = firstItemFocusRequester,
                 )
             }
             composable<HomeDestinations.Filters> {
@@ -806,6 +825,7 @@ fun HomeScreen(
                             TopLevelDestination.Presets(canGoBack = true)
                         )
                     },
+                    firstItemFocusRequester = firstItemFocusRequester,
                 )
             }
 
@@ -830,6 +850,7 @@ fun HomeScreen(
                         vm.onToggleApp(app, enabled)
                         vm.onReloadVpn()
                     },
+                    firstItemFocusRequester = firstItemFocusRequester,
                 )
             }
 
@@ -872,6 +893,7 @@ fun HomeScreen(
                             vm.onReloadVpn()
                         }
                     },
+                    firstItemFocusRequester = firstItemFocusRequester,
                 )
             }
         }
