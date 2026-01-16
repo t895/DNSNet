@@ -19,7 +19,7 @@ use mio::{Interest, Poll, Token, event::Source, net::UdpSocket};
 use quiche::h3::NameValue;
 use quiche::{SendInfo, h3::Header};
 
-use crate::backend::{DnsResponseHandler, DnsServer, DnsServerType, SocketProtector};
+use crate::backend::{DnsResponseHandler, DnsServer, SocketProtector};
 
 use log::{debug, error, info, trace, warn};
 
@@ -33,7 +33,8 @@ pub enum DoH3BackendError {
 
 #[derive(Debug, Clone)]
 struct DoH3Server {
-    domain_name: String,
+    host_name: String,
+    path: Option<String>,
     resolved_address: SocketAddr,
 }
 
@@ -45,23 +46,33 @@ struct DoH3Request {
 }
 
 impl DoH3Request {
-    pub fn new(server_name: &str, request_packet: &[u8], payload: &[u8]) -> Self {
+    pub fn new(server: &DoH3Server, request_packet: &[u8], payload: &[u8]) -> Self {
         Self {
             creation_time: std::time::Instant::now(),
             request_packet: request_packet.to_vec(),
-            payload: Self::make_dns_request_header(server_name, &payload),
+            payload: Self::make_dns_request_header(server, &payload),
         }
     }
 
-    fn make_dns_request_header(server_name: &str, dns_payload: &[u8]) -> Vec<Header> {
+    fn make_dns_request_header(server: &DoH3Server, dns_payload: &[u8]) -> Vec<Header> {
+        let path = format!(
+                    "{}/dns-query?dns={}",
+                    server.path.clone().unwrap_or("".to_string()),
+                    BASE64_STANDARD_NO_PAD.encode(dns_payload)
+                );
+        error!("path - {path}");
         vec![
             Header::new(b":method", b"GET"),
             Header::new(b":scheme", b"https"),
-            Header::new(b":authority", server_name.as_bytes()),
+            Header::new(b":authority", server.host_name.as_bytes()),
             Header::new(
                 b":path",
-                ("/dns-query?dns=".to_owned() + &BASE64_STANDARD_NO_PAD.encode(dns_payload))
-                    .as_bytes(),
+                format!(
+                    "{}/dns-query?dns={}",
+                    server.path.clone().unwrap_or("".to_string()),
+                    BASE64_STANDARD_NO_PAD.encode(dns_payload)
+                )
+                .as_bytes(),
             ),
             Header::new(b"accept", b"application/dns-message"),
         ]
@@ -148,7 +159,7 @@ impl DoH3ServerConnectionContainer {
         if let None = self.active_session {
             info!(
                 "forward_packet: Starting new session for {}",
-                self.server.domain_name
+                self.server.host_name
             );
             let socket = match UdpSocket::bind(bind_address) {
                 Ok(value) => value,
@@ -163,7 +174,7 @@ impl DoH3ServerConnectionContainer {
                 return Err(DnsBackendError::SocketFailure);
             }
 
-            let server_name = Some(self.server.domain_name.as_str());
+            let server_name = Some(self.server.host_name.as_str());
 
             // Generate a random source connection ID for the connection.
             let mut scid = [0; quiche::MAX_CONN_ID_LEN];
@@ -222,14 +233,17 @@ impl DoH3ServerConnectionContainer {
                         return Err(DnsBackendError::SocketFailure);
                     }
                 };
-    
+
                 while let Err(error) = socket.send_to(&output_buffer[..write], send_info.to) {
                     if error.kind() == std::io::ErrorKind::WouldBlock {
                         debug!("forward_packet: send() would block");
                         continue;
                     }
-    
-                    error!("forward_packet: Failed to send handshake! - {:?} - {:?}", error, send_info.to);
+
+                    error!(
+                        "forward_packet: Failed to send handshake! - {:?} - {:?}",
+                        error, send_info.to
+                    );
                     return Err(DnsBackendError::SocketFailure);
                 }
             }
@@ -248,7 +262,7 @@ impl DoH3ServerConnectionContainer {
     fn end_session(&mut self, sources_to_remove: &mut Vec<Box<dyn Source>>) {
         info!(
             "process_events: Ending session for {}",
-            self.server.domain_name
+            self.server.host_name
         );
         if let Some(mut session) = self.active_session.take() {
             if let Some(socket) = session.socket.take() {
@@ -256,7 +270,7 @@ impl DoH3ServerConnectionContainer {
             } else {
                 warn!(
                     "end_session: No socket to remove for {}",
-                    self.server.domain_name
+                    self.server.host_name
                 );
             }
         }
@@ -298,9 +312,9 @@ impl DoH3Backend {
     pub fn new(servers: &Vec<DnsServer>) -> Result<Self, DoH3BackendError> {
         let mut connections: HashMap<String, DoH3ServerConnectionContainer> = HashMap::new();
         for (index, server) in servers.iter().enumerate() {
-            let server_name = match &server.address_type {
-                DnsServerType::DoH3(server_name) => server_name.clone(),
-                DnsServerType::Standard => {
+            let (address, host_name, path) = match &server {
+                DnsServer::DoH3(address, host_name, path) => (address, host_name, path),
+                DnsServer::Standard(_) => {
                     error!(
                         "new: DoH3 backend was given a standard DNS server! This should never happen!"
                     );
@@ -308,7 +322,7 @@ impl DoH3Backend {
                 }
             };
 
-            let address = server.address.clone();
+            let address = address.clone();
             let resolved_socket_address: SocketAddr = if address.len() == 4 {
                 std::net::SocketAddr::V4(SocketAddrV4::new(
                     Ipv4Addr::from(TryInto::<[u8; 4]>::try_into(address).unwrap()),
@@ -332,7 +346,8 @@ impl DoH3Backend {
 
             let connection = match DoH3ServerConnectionContainer::new(
                 DoH3Server {
-                    domain_name: server_name.clone(),
+                    host_name: host_name.clone(),
+                    path: path.clone(),
                     resolved_address: resolved_socket_address,
                 },
                 Token(index as usize),
@@ -344,7 +359,7 @@ impl DoH3Backend {
                 }
             };
 
-            connections.insert(server_name, connection);
+            connections.insert(host_name.clone(), connection);
         }
 
         if connections.is_empty() {
@@ -469,7 +484,7 @@ impl DnsBackend for DoH3Backend {
         )?;
 
         connection.request_queue.push_back(DoH3Request::new(
-            &connection.server.domain_name,
+            &connection.server,
             request_packet,
             dns_payload,
         ));
@@ -502,7 +517,7 @@ impl DnsBackend for DoH3Backend {
                 });
             trace!(
                 "{} has {} requests in queue, {} packets in queue, and {} active requests",
-                connection.server.domain_name,
+                connection.server.host_name,
                 connection.request_queue.len(),
                 connection.queued_packets.len(),
                 connection.sent_request_streams.len()
@@ -518,7 +533,7 @@ impl DnsBackend for DoH3Backend {
                         if timeout.is_zero() {
                             debug!(
                                 "process_event: Connection to {} timed out, closing...",
-                                connection.server.domain_name
+                                connection.server.host_name
                             );
                             session.client_connection.on_timeout();
                             break 'read;
@@ -895,7 +910,7 @@ impl DnsBackend for DoH3Backend {
                 if session.client_connection.is_closed() {
                     info!(
                         "process_events: Client connection closed. Ending session for server - {}",
-                        connection.server.domain_name
+                        connection.server.host_name
                     );
                     connection.end_session(&mut sources_to_remove);
                     continue 'main;

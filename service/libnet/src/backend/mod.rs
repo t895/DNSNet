@@ -57,26 +57,14 @@ pub trait DnsResponseHandler {
     fn handle(&mut self, request_packet: &[u8], request_payload: &[u8]);
 }
 
-pub enum DnsServerType {
+pub enum DnsServer {
     /// The DNS server is a DoH3 server (e.g. https://dns.google/dns-query).
     ///
-    /// For convenience, the sanitized name (e.g. dns.google) is held in this enum.
-    DoH3(String),
+    /// The resolved address, host name (e.g. dns.google), and an optional path respectively are held in this enum.
+    DoH3(Vec<u8>, String, Option<String>),
 
     /// The DNS server is a standard DNS server (e.g. 8.8.8.8)
-    Standard,
-}
-
-pub struct DnsServer {
-    address: Vec<u8>,
-    address_type: DnsServerType,
-}
-
-impl DnsServer {
-    pub fn new(address: Vec<u8>, address_type: DnsServerType) -> Self {
-        Self {
-            address,
-            address_type,
-        }
-    }
+    ///
+    /// The address is held in this enum.
+    Standard(Vec<u8>),
 }

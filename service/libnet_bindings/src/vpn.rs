@@ -36,7 +36,7 @@ use crate::{
     BlockLoggerBinding, FileHelperBinding, VpnCallback,
     cache::DnsCacheBinding,
     database::{FilterBinding, FilterStateBinding, RuleDatabaseBinding},
-    validation::{NativeDnsServer, NativeDnsServerType},
+    validation::{NativeDnsServer, NativeDnsServerContainer},
 };
 
 /// Holds an event file descriptor and flag to meant to interrupt the VPN loop
@@ -238,7 +238,7 @@ pub enum VpnConfigurationResult {
     Interrupted(VpnResultBinding),
 
     // The VpnService was established correctly with a valid file descriptor
-    Success(i32, Vec<Arc<NativeDnsServer>>),
+    Success(i32, Vec<Arc<NativeDnsServerContainer>>),
 }
 
 /// Main struct that holds the state of the VPN and runs the main loop
@@ -335,43 +335,37 @@ impl Vpn {
                 VpnConfigurationResult::Success(fd, servers) => (fd, servers),
             };
 
-        let is_doh3 = dns_servers.iter().any(|server| match server.get_type() {
-            NativeDnsServerType::DoH3(_) => true,
-            NativeDnsServerType::Standard => false,
+        let is_doh3 = dns_servers.iter().any(|container| match container.server {
+            NativeDnsServer::DoH3(_, _, _) => true,
+            NativeDnsServer::Standard(_) => false,
         });
-        let mut backend: Box<dyn DnsBackend> = if is_doh3 {
-            match DoH3Backend::new(
-                &dns_servers
-                    .iter()
-                    .map(|server| {
-                        DnsServer::new(
-                            server.get_address(),
-                            match server.get_type() {
-                                NativeDnsServerType::DoH3(server_name) => {
-                                    net::backend::DnsServerType::DoH3(server_name)
-                                }
-                                NativeDnsServerType::Standard => {
-                                    net::backend::DnsServerType::Standard
-                                }
-                            },
-                        )
-                    })
-                    .collect(),
-            ) {
-                Ok(backend) => {
-                    info!("run: Starting DoH3 backend");
-                    Box::new(backend)
-                }
-                Err(error) => match error {
-                    DoH3BackendError::ConfigurationFailure => {
-                        return Result::Err(VpnErrorBinding::ConfigurationFailure);
+        let mut backend: Box<dyn DnsBackend> =
+            if is_doh3 {
+                match DoH3Backend::new(
+                    &dns_servers
+                        .iter()
+                        .filter_map(|container| match &container.server {
+                            NativeDnsServer::DoH3(address, host_name, path) => Some(
+                                DnsServer::DoH3(address.clone(), host_name.clone(), path.clone()),
+                            ),
+                            NativeDnsServer::Standard(_) => None,
+                        })
+                        .collect(),
+                ) {
+                    Ok(backend) => {
+                        info!("run: Starting DoH3 backend");
+                        Box::new(backend)
                     }
-                },
-            }
-        } else {
-            info!("run: Starting standard backend");
-            Box::new(StandardDnsBackend::new())
-        };
+                    Err(error) => match error {
+                        DoH3BackendError::ConfigurationFailure => {
+                            return Result::Err(VpnErrorBinding::ConfigurationFailure);
+                        }
+                    },
+                }
+            } else {
+                info!("run: Starting standard backend");
+                Box::new(StandardDnsBackend::new())
+            };
 
         // SAFETY: The descriptor is guaranteed to be valid by Android and detached from the Kotlin side
         let mut vpn_file = unsafe { File::from_raw_fd(vpn_fd) };
@@ -387,16 +381,20 @@ impl Vpn {
             rule_database,
             dns_servers
                 .iter()
-                .filter_map(|server| {
-                    if is_doh3 {
-                        match &server.get_type() {
-                            NativeDnsServerType::DoH3(server_name) => {
-                                Some(server_name.clone().into_bytes())
-                            }
-                            NativeDnsServerType::Standard => None,
+                .filter_map(|container| match &container.server {
+                    NativeDnsServer::DoH3(_, host_name, _) => {
+                        if is_doh3 {
+                            Some(host_name.clone().into_bytes())
+                        } else {
+                            None
                         }
-                    } else {
-                        Some(server.get_address())
+                    }
+                    NativeDnsServer::Standard(address) => {
+                        if is_doh3 {
+                            None
+                        } else {
+                            Some(address.clone())
+                        }
                     }
                 })
                 .collect(),

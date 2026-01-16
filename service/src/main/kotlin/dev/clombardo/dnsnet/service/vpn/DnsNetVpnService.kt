@@ -798,8 +798,7 @@ class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
             try {
                 // Optimally we'd allow either one, but the forwarder checks if upstream size is empty, so
                 // we really need to acquire both an ipv6 and an ipv4 subnet.
-                val address = InetAddress.getByAddress(server.getAddress())
-                when (address) {
+                when (val address = InetAddress.getByAddress(server.getAddress())) {
                     is Inet4Address -> {
                         if (format == null) {
                             logInfo("configure: Ignoring DNS server $address")

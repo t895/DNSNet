@@ -20,58 +20,44 @@ use mio::{
     Events, Interest, Poll, Token,
     unix::{SourceFd, pipe},
 };
-use net::backend::{DnsServer, DnsServerType};
+use net::backend::DnsServer;
 
 use crate::{VpnResultBinding, cache::DnsCacheBinding, vpn::VpnControllerBinding};
 
 #[derive(uniffi::Enum, Clone)]
-pub enum NativeDnsServerType {
-    /// The DNS server is a DoH3 server (e.g. https://dns.google/dns-query).
-    ///
-    /// For convenience, the sanitized name (e.g. dns.google) is held in this enum.
-    DoH3(String),
-
-    /// The DNS server is a standard DNS server (e.g. 8.8.8.8)
-    Standard,
-}
-
-impl Into<DnsServerType> for NativeDnsServerType {
-    fn into(self) -> DnsServerType {
-        match self {
-            NativeDnsServerType::DoH3(server_name) => DnsServerType::DoH3(server_name),
-            NativeDnsServerType::Standard => DnsServerType::Standard,
-        }
-    }
+pub enum NativeDnsServer {
+    DoH3(Vec<u8>, String, Option<String>),
+    Standard(Vec<u8>),
 }
 
 #[derive(uniffi::Object)]
-pub struct NativeDnsServer {
-    address: Vec<u8>,
-    address_type: NativeDnsServerType,
+pub struct NativeDnsServerContainer {
+    pub server: NativeDnsServer,
 }
 
 #[uniffi::export]
-impl NativeDnsServer {
+impl NativeDnsServerContainer {
     #[uniffi::constructor]
-    pub fn new(address: Vec<u8>, address_type: NativeDnsServerType) -> Self {
-        Self {
-            address,
-            address_type,
-        }
+    pub fn new(server: NativeDnsServer) -> Self {
+        Self { server }
     }
 
     pub fn get_address(&self) -> Vec<u8> {
-        self.address.clone()
-    }
-
-    pub fn get_type(&self) -> NativeDnsServerType {
-        self.address_type.clone()
+        match &self.server {
+            NativeDnsServer::DoH3(address, _, _) => address,
+            NativeDnsServer::Standard(address) => address,
+        }.clone()
     }
 }
 
 impl Into<DnsServer> for NativeDnsServer {
     fn into(self) -> DnsServer {
-        DnsServer::new(self.address, self.address_type.into())
+        match self {
+            NativeDnsServer::DoH3(address, host_name, path) => {
+                DnsServer::DoH3(address, host_name, path)
+            }
+            NativeDnsServer::Standard(address) => DnsServer::Standard(address),
+        }
     }
 }
 
@@ -90,27 +76,34 @@ pub enum ValidateDnsError {
 
 #[derive(uniffi::Enum)]
 pub enum ValidateDnsResult {
-    Success(Vec<Arc<NativeDnsServer>>),
+    Success(Vec<Arc<NativeDnsServerContainer>>),
     Interrupted(VpnResultBinding),
 }
 
 struct DnsRequester {
-    server_name: String,
+    host_name: String,
+    path: Option<String>,
     resolved_address: Option<Vec<u8>>,
     result_id: u8,
 }
 
 impl DnsRequester {
-    fn new(server_name: String, pipe: Arc<RwLock<pipe::Sender>>, result_id: u8) -> Self {
+    fn new(
+        host_name: String,
+        path: Option<String>,
+        pipe: Arc<RwLock<pipe::Sender>>,
+        result_id: u8,
+    ) -> Self {
         let requester = DnsRequester {
-            server_name: server_name.to_string(),
+            host_name: host_name.to_string(),
+            path,
             resolved_address: None,
             result_id,
         };
 
         thread::spawn(move || {
             let failure_buffer = vec![0; 8];
-            let url = match url::Url::parse(format!("https://{server_name}").as_str()) {
+            let url = match url::Url::parse(format!("https://{host_name}").as_str()) {
                 Ok(value) => value,
                 Err(error) => {
                     error!("new: Failed to parse URL! - {:?}", error);
@@ -179,7 +172,7 @@ pub fn validate_dns_servers(
     ipv6_support: bool,
     user_servers: Vec<String>,
 ) -> Result<ValidateDnsResult, ValidateDnsError> {
-    let mut validated_servers = Vec::<Arc<NativeDnsServer>>::new();
+    let mut validated_servers = Vec::<Arc<NativeDnsServerContainer>>::new();
     let mut dns_requesters = Vec::<DnsRequester>::new();
     let (sender_pipe, mut receiver_pipe) = match pipe::new() {
         Ok(value) => value,
@@ -195,17 +188,15 @@ pub fn validate_dns_servers(
                 match value {
                     IpAddr::V4(ipv4_addr) => {
                         debug!("validate_dns_server: Validated {}", ipv4_addr);
-                        validated_servers.push(Arc::new(NativeDnsServer::new(
-                            ipv4_addr.octets().to_vec(),
-                            NativeDnsServerType::Standard,
+                        validated_servers.push(Arc::new(NativeDnsServerContainer::new(
+                            NativeDnsServer::Standard(ipv4_addr.octets().to_vec()),
                         )));
                     }
                     IpAddr::V6(ipv6_addr) => {
                         if ipv6_support {
                             debug!("validate_dns_server: Validated {}", ipv6_addr);
-                            validated_servers.push(Arc::new(NativeDnsServer::new(
-                                ipv6_addr.octets().to_vec(),
-                                NativeDnsServerType::Standard,
+                            validated_servers.push(Arc::new(NativeDnsServerContainer::new(
+                                NativeDnsServer::Standard(ipv6_addr.octets().to_vec()),
                             )));
                         }
                     }
@@ -218,14 +209,9 @@ pub fn validate_dns_servers(
             ),
         };
 
-        let stripped_prefix_server = unvalidated_server
+        let stripped_server = unvalidated_server
             .strip_prefix("https://")
             .unwrap_or(&unvalidated_server);
-        let stripped_server = if let Some(index) = stripped_prefix_server.find("/") {
-            &stripped_prefix_server[..index]
-        } else {
-            stripped_prefix_server
-        };
 
         if stripped_server.is_empty() {
             error!(
@@ -234,18 +220,29 @@ pub fn validate_dns_servers(
             continue;
         }
 
+        let path = match stripped_server.find("/") {
+            Some(index) => Some(stripped_server[index..].to_string()),
+            None => None,
+        };
+
         if let Some(entry) = dns_cache.get(stripped_server) {
             match entry.ip_record {
                 IpAddr::V4(ipv4_addr) => {
-                    validated_servers.push(Arc::new(NativeDnsServer::new(
-                        ipv4_addr.octets().to_vec(),
-                        NativeDnsServerType::DoH3(stripped_server.to_string()),
+                    validated_servers.push(Arc::new(NativeDnsServerContainer::new(
+                        NativeDnsServer::DoH3(
+                            ipv4_addr.octets().to_vec(),
+                            stripped_server.to_string(),
+                            path,
+                        ),
                     )));
                 }
                 IpAddr::V6(ipv6_addr) => {
-                    validated_servers.push(Arc::new(NativeDnsServer::new(
-                        ipv6_addr.octets().to_vec(),
-                        NativeDnsServerType::DoH3(stripped_server.to_string()),
+                    validated_servers.push(Arc::new(NativeDnsServerContainer::new(
+                        NativeDnsServer::DoH3(
+                            ipv6_addr.octets().to_vec(),
+                            stripped_server.to_string(),
+                            path,
+                        ),
                     )));
                 }
             }
@@ -254,6 +251,7 @@ pub fn validate_dns_servers(
 
         let dns_requester = DnsRequester::new(
             stripped_server.to_owned(),
+            path,
             sender_holder.clone(),
             index as u8,
         );
@@ -420,15 +418,18 @@ pub fn validate_dns_servers(
 
     for dns_requester in dns_requesters.iter_mut() {
         if let Some(address) = dns_requester.resolved_address.take() {
-            dns_cache.put_answer(&dns_requester.server_name, &address);
-            validated_servers.push(Arc::new(NativeDnsServer::new(
-                address,
-                NativeDnsServerType::DoH3(dns_requester.server_name.clone()),
+            dns_cache.put_answer(&dns_requester.host_name, &address);
+            validated_servers.push(Arc::new(NativeDnsServerContainer::new(
+                NativeDnsServer::DoH3(
+                    address,
+                    dns_requester.host_name.clone(),
+                    dns_requester.path.clone(),
+                ),
             )));
         } else {
             trace!(
                 "validate_dns_servers: No resolved address for {}",
-                dns_requester.server_name
+                dns_requester.host_name
             );
         }
     }
