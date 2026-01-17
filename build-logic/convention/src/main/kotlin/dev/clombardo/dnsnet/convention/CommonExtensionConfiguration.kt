@@ -16,7 +16,7 @@ import com.android.build.api.dsl.LibraryExtension
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.findByType
 
-internal fun Project.configureCommon(action: CommonExtension<*, *, *, *, *, *>.() -> Unit) {
+internal fun Project.configureCommon(action: CommonExtension.() -> Unit) {
     val extension =
         extensions.findByType<ApplicationExtension>() ?: extensions.findByType<LibraryExtension>()
         ?: throw IllegalStateException("Module does not contain library nor application")

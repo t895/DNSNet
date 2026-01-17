@@ -115,8 +115,8 @@ android {
 
     sourceSets {
         getByName("main") {
-            java.srcDir("build/generated/kotlin")
-            jniLibs.srcDir("build/rustJniLibs")
+            kotlin.directories.add("build/generated/kotlin")
+            jniLibs.directories.add("build/rustJniLibs")
         }
     }
 }

@@ -45,7 +45,7 @@ class VpnThread(
         private const val RETRY_RESET_SEC: Long = 60
     }
 
-    private val threadLock = Object()
+    private val threadLock = Any()
     private val thread = Thread(this, "VpnThread")
     private val vpnController = VpnControllerBinding()
     private var userStop = false

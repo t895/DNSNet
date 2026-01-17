@@ -46,7 +46,7 @@ class ConfigurationManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val preferences: Preferences,
 ) {
-    private val configLock = Object()
+    private val configLock = Any()
     private var configuration = Configuration.load(context, preferences, replaced = false)
 
     private val savers = 1

@@ -430,7 +430,7 @@ class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
         logDebug(networkState.toString())
     }
 
-    private var connectivityLock = Object()
+    private var connectivityLock = Any()
     private var connectivityChangedCallbackRegistered = false
     private val connectivityChangedCallback =
         VpnNetworkCallback(networkState, ::onDefaultNetworkChanged)

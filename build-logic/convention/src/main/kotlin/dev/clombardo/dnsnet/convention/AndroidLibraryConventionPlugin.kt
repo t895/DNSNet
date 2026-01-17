@@ -17,9 +17,9 @@ import org.gradle.kotlin.dsl.apply
 abstract class AndroidLibraryConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
         apply(plugin = "com.android.library")
-        configureKotlinAndroid()
+        configureKotlin()
         configureCommon {
-            buildTypes {
+            buildTypes.apply {
                 create("benchmark")
             }
             configureAndroid(this)

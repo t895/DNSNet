@@ -16,11 +16,11 @@ import org.gradle.internal.extensions.core.extra
 import org.gradle.kotlin.dsl.provideDelegate
 
 internal fun Project.configureAndroid(
-    commonExtension: CommonExtension<*, *, *, *, *, *>,
+    commonExtension: CommonExtension,
 ) = with(commonExtension) {
     compileSdk = libs.findVersion("compileSdk").get().toString().toInt()
 
-    defaultConfig {
+    defaultConfig.apply {
         minSdk = libs.findVersion("minSdk").get().toString().toInt()
 
         val versionName: String by rootProject.extra
@@ -31,7 +31,8 @@ internal fun Project.configureAndroid(
         )
     }
 
-    buildFeatures {
+    buildFeatures.apply {
         buildConfig = true
+        resValues = true
     }
 }

@@ -19,7 +19,7 @@ data class NetworkState(
     private var defaultNetwork: NetworkDetails? = null,
     private val connectedNetworks: MutableMap<String, NetworkDetails> = mutableMapOf(),
 ) {
-    private val networkLock = Object()
+    private val networkLock = Any()
 
     fun removeNetwork(networkDetails: NetworkDetails) {
         synchronized(networkLock) {

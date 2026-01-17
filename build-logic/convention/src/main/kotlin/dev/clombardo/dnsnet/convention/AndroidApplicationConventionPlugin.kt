@@ -21,7 +21,7 @@ abstract class AndroidApplicationConventionPlugin : Plugin<Project> {
         apply(plugin = "com.android.application")
         extensions.configure<ApplicationExtension> {
             defaultConfig.targetSdk = libs.findVersion("targetSdk").get().toString().toInt()
-            configureKotlinAndroid()
+            configureKotlin()
             configureAndroid(this)
         }
     }

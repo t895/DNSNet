@@ -11,16 +11,10 @@
 package dev.clombardo.dnsnet.convention
 
 import org.gradle.api.Project
-import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.configure
 import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 
-internal fun Project.configureKotlinAndroid() {
-    apply(plugin = "org.jetbrains.kotlin.android")
-    configureKotlin()
-}
-
-private fun Project.configureKotlin() = configure<KotlinAndroidProjectExtension> {
+fun Project.configureKotlin() = configure<KotlinAndroidProjectExtension> {
     jvmToolchain(libs.findVersion("java").get().toString().toInt())
     compilerOptions.apply {
         freeCompilerArgs.add("-Xannotation-default-target=param-property")

@@ -19,7 +19,7 @@ abstract class ComposeConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
         apply(plugin = "org.jetbrains.kotlin.plugin.compose")
         configureCommon {
-            buildFeatures {
+            buildFeatures.apply {
                 compose = true
             }
 
