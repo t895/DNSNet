@@ -13,10 +13,12 @@ package dev.clombardo.dnsnet.convention
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
 import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 fun Project.configureKotlin() = configure<KotlinAndroidProjectExtension> {
     jvmToolchain(libs.findVersion("java").get().toString().toInt())
     compilerOptions.apply {
+        languageVersion.set(KotlinVersion.KOTLIN_2_3)
         freeCompilerArgs.add("-Xannotation-default-target=param-property")
     }
 }
