@@ -10,9 +10,12 @@
 
 package dev.clombardo.dnsnet.convention
 
+import com.android.build.api.dsl.LibraryExtension
+import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.apply
+import org.gradle.kotlin.dsl.configure
 
 abstract class AndroidLibraryConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
@@ -24,5 +27,11 @@ abstract class AndroidLibraryConventionPlugin : Plugin<Project> {
             }
             configureAndroid(this)
         }
+    }
+}
+
+fun Project.androidLibrary(block: LibraryExtension.() -> Unit) {
+    extensions.configure<LibraryAndroidComponentsExtension> {
+        finalizeDsl { it.apply(block) }
     }
 }

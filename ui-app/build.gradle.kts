@@ -6,6 +6,8 @@
  * (at your option) any later version.
  */
 
+import dev.clombardo.dnsnet.convention.androidLibrary
+
 plugins {
     alias(libs.plugins.dnsnet.android.library)
     alias(libs.plugins.dnsnet.compose)
@@ -17,7 +19,7 @@ plugins {
     alias(libs.plugins.dnsnet.hilt)
 }
 
-android {
+androidLibrary {
     namespace = "dev.clombardo.dnsnet.ui.app"
 
     defaultConfig {

@@ -7,6 +7,7 @@
  */
 
 import com.github.triplet.gradle.androidpublisher.ReleaseStatus
+import dev.clombardo.dnsnet.convention.androidApplication
 
 plugins {
     alias(libs.plugins.dnsnet.android.application)
@@ -20,7 +21,7 @@ plugins {
     alias(libs.plugins.gradle.play.publisher)
 }
 
-android {
+androidApplication {
     namespace = "dev.clombardo.dnsnet"
 
     defaultConfig {

@@ -6,11 +6,13 @@
  * (at your option) any later version.
  */
 
+import dev.clombardo.dnsnet.convention.androidLibrary
+
 plugins {
     alias(libs.plugins.dnsnet.android.library)
 }
 
-android {
+androidLibrary {
     namespace = "dev.clombardo.dnsnet.common"
 
     defaultConfig {

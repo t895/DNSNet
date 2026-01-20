@@ -6,6 +6,8 @@
  * (at your option) any later version.
  */
 
+import dev.clombardo.dnsnet.convention.androidTest
+
 plugins {
     alias(libs.plugins.android.test)
     alias(libs.plugins.androidx.baselineprofile)
@@ -15,7 +17,7 @@ kotlin {
     jvmToolchain(libs.versions.java.get().toInt())
 }
 
-android {
+androidTest {
     namespace = "dev.clombardo.baselineprofile"
     compileSdk = libs.versions.compileSdk.get().toInt()
 

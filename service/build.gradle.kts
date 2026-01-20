@@ -8,6 +8,7 @@
 
 import com.android.build.gradle.tasks.MergeSourceSetFolders
 import com.nishtahir.CargoBuildTask
+import dev.clombardo.dnsnet.convention.androidLibrary
 
 plugins {
     alias(libs.plugins.dnsnet.android.library)
@@ -100,7 +101,7 @@ tasks.getByName("clean") {
     dependsOn(CleanRustTarget.NAME)
 }
 
-android {
+androidLibrary {
     namespace = "dev.clombardo.dnsnet.service"
 
     defaultConfig {

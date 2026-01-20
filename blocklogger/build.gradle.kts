@@ -6,13 +6,15 @@
  * (at your option) any later version.
  */
 
+import dev.clombardo.dnsnet.convention.androidLibrary
+
 plugins {
     alias(libs.plugins.dnsnet.android.library)
     alias(libs.plugins.dnsnet.hilt)
     alias(libs.plugins.dnsnet.kotlin.json)
 }
 
-android {
+androidLibrary {
     namespace = "dev.clombardo.dnsnet.blocklogger"
 
     defaultConfig {

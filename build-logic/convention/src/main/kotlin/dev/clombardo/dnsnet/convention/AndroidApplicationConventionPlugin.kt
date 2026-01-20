@@ -11,6 +11,7 @@
 package dev.clombardo.dnsnet.convention
 
 import com.android.build.api.dsl.ApplicationExtension
+import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.apply
@@ -24,5 +25,11 @@ abstract class AndroidApplicationConventionPlugin : Plugin<Project> {
             configureKotlin()
             configureAndroid(this)
         }
+    }
+}
+
+fun Project.androidApplication(block: ApplicationExtension.() -> Unit) {
+    extensions.configure<ApplicationAndroidComponentsExtension> {
+        finalizeDsl { it.apply(block) }
     }
 }
