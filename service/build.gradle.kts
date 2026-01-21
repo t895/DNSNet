@@ -7,7 +7,6 @@
  */
 
 import com.android.build.gradle.tasks.MergeSourceSetFolders
-import com.nishtahir.CargoBuildTask
 import dev.clombardo.dnsnet.convention.androidLibrary
 
 plugins {
@@ -62,16 +61,13 @@ val uniffiBindgen = tasks.register<Exec>("uniffiBindgen") {
 }
 
 uniffiBindgen.configure {
-    dependsOn.add(tasks.withType(CargoBuildTask::class.java))
+    dependsOn("cargoBuild")
 }
 
 project.afterEvaluate {
-    tasks.withType(CargoBuildTask::class)
-        .forEach { buildTask ->
-            tasks.withType(MergeSourceSetFolders::class)
-                .configureEach {
-                    dependsOn(buildTask)
-                }
+    tasks.withType(MergeSourceSetFolders::class)
+        .configureEach {
+            dependsOn("cargoBuild")
         }
 }
 
