@@ -13,6 +13,9 @@ pluginManagement {
         maven {
             url = uri("https://plugins.gradle.org/m2/")
         }
+        maven {
+            setUrl("https://central.sonatype.com/repository/maven-snapshots/")
+        }
     }
     includeBuild("./rust-android-gradle")
     includeBuild("./build-logic")
