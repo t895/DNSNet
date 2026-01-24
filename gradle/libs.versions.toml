@@ -2,7 +2,7 @@
 accompanistPermissions = "0.37.3"
 activityCompose = "1.12.2"
 appcompat = "1.7.1"
-atomicfu = "0.29.0"
+atomicfu = "0.31.0"
 coilCompose = "3.3.0"
 coreSplashscreen = "1.2.0"
 detekt = "1.23.8"
