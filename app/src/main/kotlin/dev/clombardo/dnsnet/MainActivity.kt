@@ -166,11 +166,13 @@ class MainActivity : AppCompatActivity() {
 
                     val status by DnsNetVpnService.status.collectAsState()
                     val isDatabaseRefreshing by RuleDatabaseUpdateWorker.isRefreshing.collectAsState()
+                    val totalFilters by DnsNetVpnService.totalFilters.collectAsState()
                     App(
                         modifier = Modifier.hazeSource(hazeState),
                         vm = vm,
                         state = status.toFabState(),
                         isDatabaseRefreshing = isDatabaseRefreshing,
+                        totalFilters = totalFilters,
                         onRefreshFilters = { RuleDatabaseUpdateWorker.runNow(this@MainActivity) },
                         onImport = { importLauncher.safeLaunch(arrayOf("*/*")) },
                         onExport = { exportLauncher.safeLaunch("dnsnet.json") },

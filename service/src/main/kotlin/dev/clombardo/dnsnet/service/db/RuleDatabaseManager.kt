@@ -27,6 +27,7 @@ import uniffi.net_bindings.RuleDatabaseErrorBinding
 class RuleDatabaseManager(
     private val context: Context,
     private val configuration: ConfigurationManager,
+    private val onLoadedFiltersChanged: (ULong) -> Unit,
 ) {
     private val reloadLock = Semaphore(1)
     private val pendingReloadLock = Semaphore(1)
@@ -37,11 +38,12 @@ class RuleDatabaseManager(
 
     private suspend fun initialize() = withContext(Dispatchers.IO) {
         try {
-            ruleDatabase.initialize(
+            val totalFilters = ruleDatabase.initialize(
                 fileHelper = NativeFileHelperWrapper(context),
                 filterFiles = configuration.read { this.filters.files.map { it.toNative() } },
                 singleFilters = configuration.read { filters.singleFilters.map { it.toNative() } },
             )
+            onLoadedFiltersChanged(totalFilters)
         } catch (e: RuleDatabaseErrorBinding) {
             when (e) {
                 is RuleDatabaseErrorBinding.Interrupted -> logInfo("Interrupted", e)
@@ -87,6 +89,7 @@ class RuleDatabaseManager(
     fun setShouldStop(shouldStop: Boolean) = ruleDatabaseController.setShouldStop(shouldStop)
 
     fun destroy() {
+        onLoadedFiltersChanged(0UL)
         destroyed = true
         waitOnInit()
         ruleDatabase.destroy()

@@ -13,6 +13,12 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -54,6 +60,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -70,12 +77,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import dev.clombardo.dnsnet.settings.Filter
 import dev.clombardo.dnsnet.settings.SingleFilter
 import dev.clombardo.dnsnet.settings.FilterFile
 import dev.clombardo.dnsnet.settings.FilterState
+import dev.clombardo.dnsnet.ui.app.util.NumberFormatterCompat
 import dev.clombardo.dnsnet.ui.common.BasicTooltipButton
 import dev.clombardo.dnsnet.ui.common.BasicTooltipIconButton
 import dev.clombardo.dnsnet.ui.common.FloatingTopActions
@@ -93,6 +102,7 @@ import dev.clombardo.dnsnet.ui.common.theme.DefaultFabSize
 import dev.clombardo.dnsnet.ui.common.theme.DnsNetTheme
 import dev.clombardo.dnsnet.ui.common.theme.FabPadding
 import dev.clombardo.dnsnet.ui.common.theme.ListPadding
+import kotlinx.coroutines.delay
 
 @Composable
 private fun IconText(
@@ -133,6 +143,7 @@ fun FiltersScreen(
     onRefreshFilters: () -> Unit,
     onOpenPresets: () -> Unit,
     firstItemFocusRequester: FocusRequester,
+    totalFilters: ULong,
 ) {
     val itemStateStrings = stringArrayResource(R.array.item_states)
     val getStateString = { state: FilterState ->
@@ -149,12 +160,42 @@ fun FiltersScreen(
         }
     }
 
+    var initialFilterAnimationDelay by remember { mutableStateOf(true) }
     LazyColumn(
         modifier = modifier,
         contentPadding = contentPadding + PaddingValues(ListPadding) +
                 PaddingValues(bottom = DefaultFabSize + FabPadding),
         state = listState,
     ) {
+        item {
+            AnimatedVisibility(
+                visible = totalFilters > 0UL,
+                enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
+                exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut(),
+            ) {
+                LaunchedEffect(Unit) {
+                    delay(50)
+                    initialFilterAnimationDelay = false
+                }
+                val totalFiltersAnimated by animateIntAsState(
+                    targetValue = if (initialFilterAnimationDelay) 0 else totalFilters.toInt(),
+                    animationSpec = tween(durationMillis = 1_000),
+                )
+                Text(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    text = stringResource(
+                        R.string.x_filters_loaded,
+                        NumberFormatterCompat.formatWithSeparators(totalFiltersAnimated)
+                    ),
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
+        }
+
         item {
             ListSettingsContainer {
                 item {
@@ -361,6 +402,7 @@ private fun FiltersScreenPreview() {
             onRefreshFilters = { isRefreshingFilters = !isRefreshingFilters },
             onOpenPresets = {},
             firstItemFocusRequester = rememberFocusRequester(),
+            totalFilters = 200000UL,
         )
     }
 }
@@ -382,6 +424,7 @@ private fun FiltersScreenNoBlockItemsPreview() {
             onRefreshFilters = { isRefreshingFilterFiles = !isRefreshingFilterFiles },
             onOpenPresets = {},
             firstItemFocusRequester = rememberFocusRequester(),
+            totalFilters = 0UL,
         )
     }
 }

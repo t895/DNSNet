@@ -221,6 +221,7 @@ fun App(
     vm: HomeViewModel,
     state: FabState,
     isDatabaseRefreshing: Boolean,
+    totalFilters: ULong,
     onRefreshFilters: () -> Unit,
     onImport: () -> Unit,
     onExport: () -> Unit,
@@ -392,6 +393,7 @@ fun App(
                         topLevelNavController = navController,
                         state = state,
                         isDatabaseRefreshing = isDatabaseRefreshing,
+                        totalFilters = totalFilters,
                         onRefreshFilters = onRefreshFilters,
                         onImport = onImport,
                         onExport = onExport,
@@ -573,6 +575,7 @@ fun HomeScreen(
     topLevelNavController: NavHostController,
     state: FabState,
     isDatabaseRefreshing: Boolean,
+    totalFilters: ULong,
     onRefreshFilters: () -> Unit,
     onImport: () -> Unit,
     onExport: () -> Unit,
@@ -826,6 +829,7 @@ fun HomeScreen(
                         )
                     },
                     firstItemFocusRequester = firstItemFocusRequester,
+                    totalFilters = totalFilters,
                 )
             }
 

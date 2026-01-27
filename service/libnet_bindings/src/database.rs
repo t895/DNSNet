@@ -137,7 +137,7 @@ impl RuleDatabaseBinding {
         file_helper: &Box<dyn FileHelperBinding>,
         filter_files: Vec<FilterBinding>,
         single_filters: Vec<FilterBinding>,
-    ) -> Result<(), RuleDatabaseErrorBinding> {
+    ) -> Result<u64, RuleDatabaseErrorBinding> {
         let file_helper = Box::from(&file_helper as &dyn FileHelper);
         self.rule_database
             .initialize(
@@ -163,7 +163,7 @@ impl RuleDatabase for RuleDatabaseBinding {
         file_helper: &Box<&dyn FileHelper>,
         filter_files: Vec<Filter>,
         single_filters: Vec<Filter>,
-    ) -> Result<(), RuleDatabaseError> {
+    ) -> Result<u64, RuleDatabaseError> {
         self.rule_database
             .initialize(file_helper, filter_files, single_filters)
     }

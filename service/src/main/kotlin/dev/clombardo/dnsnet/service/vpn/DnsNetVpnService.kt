@@ -250,6 +250,9 @@ class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
         private val _status = MutableStateFlow(VpnStatus.STOPPED)
         val status = _status.asStateFlow()
 
+        private val _totalFilters = MutableStateFlow(0UL)
+        val totalFilters = _totalFilters.asStateFlow()
+
         private const val PREFIX_LENGTH = 24
 
         /**
@@ -481,6 +484,7 @@ class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
         ruleDatabaseManager = RuleDatabaseManager(
             context = applicationContext,
             configuration = configuration,
+            onLoadedFiltersChanged = { _totalFilters.value = it },
         )
         ruleDatabaseManager.reload()
 

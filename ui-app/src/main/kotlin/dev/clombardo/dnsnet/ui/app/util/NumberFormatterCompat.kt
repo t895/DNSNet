@@ -12,6 +12,7 @@ import android.icu.number.Notation
 import android.icu.number.NumberFormatter
 import android.icu.number.Precision
 import android.icu.text.CompactDecimalFormat
+import android.icu.text.NumberFormat
 import android.icu.util.ULocale
 import android.os.Build
 
@@ -26,5 +27,18 @@ object NumberFormatterCompat {
                 .toString()
         } else {
             CompactDecimalFormat.getInstance().format(value)
+        }
+
+    fun formatWithSeparators(value: Int): String =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            NumberFormatter.with()
+                .notation(Notation.simple())
+                .locale(ULocale.getDefault())
+                .format(value)
+                .toString()
+        } else {
+            NumberFormat.getNumberInstance(ULocale.getDefault()).apply {
+                isGroupingUsed = true
+            }.format(value).toString()
         }
 }

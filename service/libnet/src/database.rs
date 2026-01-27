@@ -106,7 +106,7 @@ pub trait RuleDatabase {
         file_helper: &Box<&dyn FileHelper>,
         filter_files: Vec<Filter>,
         single_filters: Vec<Filter>,
-    ) -> Result<(), RuleDatabaseError>;
+    ) -> Result<u64, RuleDatabaseError>;
 
     /// Blocks the current thread until the database has been reloaded or told to stop
     fn wait_on_init(&self);
@@ -133,14 +133,14 @@ impl RuleDatabaseImpl {
         file_helper: &Box<&dyn FileHelper>,
         filter_files: Vec<Filter>,
         single_filters: Vec<Filter>,
-    ) -> Result<(), RuleDatabaseError> {
+    ) -> Result<u64, RuleDatabaseError> {
         if self.controller.is_reloading() {
             info!("initialize: Already reloading, skipping");
-            return Ok(());
+            return Ok(0);
         }
         if self.controller.get_should_stop() {
             info!("initialize: Told to stop, skipping");
-            return Ok(());
+            return Ok(0);
         }
         info!(
             "initialize: Loading block list with {} filters and {} exceptions",
@@ -193,7 +193,7 @@ impl RuleDatabaseImpl {
         );
         self.controller.set_reloading(false);
         self.controller.set_initialized();
-        return Ok(());
+        return Ok(filter_guard.len() as u64);
     }
 
     /// Blocks the current thread until the database has been reloaded or told to stop
@@ -263,7 +263,7 @@ impl RuleDatabase for RuleDatabaseImpl {
         file_helper: &Box<&dyn FileHelper>,
         filter_files: Vec<Filter>,
         single_filters: Vec<Filter>,
-    ) -> Result<(), RuleDatabaseError> {
+    ) -> Result<u64, RuleDatabaseError> {
         self.initialize(file_helper, filter_files, single_filters)
     }
 
