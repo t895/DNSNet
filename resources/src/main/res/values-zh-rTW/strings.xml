@@ -130,4 +130,7 @@
     <string name="confirm">確認</string>
     <string name="view_source">檢視來源</string>
     <string name="doh3">HTTP/3 上的 DNS</string>
+    <string name="automatic_refresh_description">在充電、待機和使用非按用量收費網路時進行每日更新。</string>
+    <string name="legend_host_intro">首先新增被封鎖的條目。然後，允許的條目會建立例外。你可以使用以下選項控制此行為：</string>
+    <string name="switch_onboot_description">如果 DNSNet 在裝置關機時處於運行狀態，則在裝置開機時啟動。</string>
 </resources>
