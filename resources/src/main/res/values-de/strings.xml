@@ -199,4 +199,5 @@
     <string name="supported_formats_wildcard">Platzhalter (z. B. *.example.com)</string>
     <string name="supported_formats_adblock_plus">Adblock Plus (z. B. ||example.com^)</string>
     <string name="filter_update_error_item">Fehler %1$d: %2$s</string>
+    <string name="address_not_reachable">Adresse nicht erreichbar</string>
 </resources>
