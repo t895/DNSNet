@@ -101,7 +101,13 @@ class RuleDatabaseItemUpdate private constructor(
             return
         }
 
-        val response = networkRepository.downloadBodyToFile(filterFile.data, outputStream)
+        val response: Response
+        try {
+            response = networkRepository.downloadBodyToFile(filterFile.data, outputStream)
+        } catch (e: Exception) {
+            onError(filterFile, context.getString(R.string.unknown_error_s, e.localizedMessage ?: ""))
+            return
+        }
         file.finishWrite(outputStream)
 
         if (!checkForResponseErrors(response)) {
