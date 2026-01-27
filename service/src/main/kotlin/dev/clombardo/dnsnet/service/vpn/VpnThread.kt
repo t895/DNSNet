@@ -172,4 +172,8 @@ class VpnThread(
             androidFileHelper = NativeFileHelperWrapper(context)
         )
     }
+
+    fun destroy() {
+        vpnController.destroy()
+    }
 }
