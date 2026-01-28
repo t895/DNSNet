@@ -194,4 +194,5 @@
     <string name="oisd_small">oisd - 小型</string>
     <string name="oisd_big_description">完整列表，会占用大量系统内存。如果您不了解此含义，请选择小型列表。</string>
     <string name="oisd_small_description">大型列表的精简版，占用系统内存更少。</string>
+    <string name="x_filters_loaded">已加载 %s 个过滤规则</string>
 </resources>
