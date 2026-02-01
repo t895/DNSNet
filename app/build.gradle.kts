@@ -48,6 +48,7 @@ androidApplication {
             }
         }
 
+        //noinspection WrongGradleMethod
         bundletool {
             signingConfig {
                 this.keyAlias.set(keyAlias)
