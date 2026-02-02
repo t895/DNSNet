@@ -200,4 +200,5 @@
     <string name="doh3_warning">Selezionare almeno un server</string>
     <string name="skip_this_step">Salta questo passaggio</string>
     <string name="skip_presets_description">Se salti questo passaggio, dovrai impostare manualmente il blocco contenuti più tardi.</string>
+    <string name="x_filters_loaded">%s filtri caricati</string>
 </resources>
