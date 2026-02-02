@@ -188,4 +188,5 @@
     <string name="oisd_small">oisd - 소형</string>
     <string name="oisd_small_description">시스템 메모리 부담을 줄인 대형 목록의 축소판 버전.</string>
     <string name="translator_credits">&lt;Language&gt;와 같은 형식으로 번역하세요. 번역: 당신의 이름</string>
+    <string name="x_filters_loaded">%s 필터로드</string>
 </resources>
