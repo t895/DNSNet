@@ -76,9 +76,9 @@
     <string name="cannot_read_config">Konfiguration kann nicht gelesen werden</string>
     <string name="presets_description">Wählen Sie aus bekannten und regelmäßig aktualisierten Sperrlisten aus, welche Art von Inhalten Sie blockieren möchten</string>
     <string name="view_source">Quelle anzeigen</string>
-    <string name="export_description">Eine Sicherungskopie Ihrer Konfiguration erstellen</string>
-    <string name="import_description">Eine Sicherungsdatei wiederherstellen</string>
-    <string name="load_defaults_description">Alle Einstellungen auf ihre Standardwerte zurücksetzen</string>
+    <string name="export_description">Erstellen Sie eine Sicherungskopie Ihrer Konfiguration</string>
+    <string name="import_description">Laden Sie eine Sicherungseinstellungsdatei</string>
+    <string name="load_defaults_description">Stellt alle Einstellungen wieder auf ihre Standardwerte zurück</string>
     <string name="about_description">Informationen über DNSNet</string>
     <string name="adbuster_credit">Teile von AdBuster, erstellt von Daniel Brodie</string>
     <string name="legend_host_intro">Blockierte Einträge werden zuerst hinzugefügt. Die folgend erlaubten Einträge bilden Ausnahmen. Dies kann mit folgenden Optionen gesteuert werden:</string>
