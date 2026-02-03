@@ -18,10 +18,14 @@ import org.gradle.kotlin.dsl.provideDelegate
 internal fun Project.configureAndroid(
     commonExtension: CommonExtension,
 ) = with(commonExtension) {
-    compileSdk = libs.findVersion("compileSdk").get().toString().toInt()
+    compileSdk {
+        version = release(libs.findVersion("compileSdk").get().toString().toInt())
+    }
 
     defaultConfig.apply {
-        minSdk = libs.findVersion("minSdk").get().toString().toInt()
+        minSdk {
+            version = release(libs.findVersion("minSdk").get().toString().toInt())
+        }
 
         val versionName: String by rootProject.extra
         buildConfigField(
