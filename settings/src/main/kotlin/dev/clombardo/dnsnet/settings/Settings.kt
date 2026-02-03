@@ -28,16 +28,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
-sealed interface ResettableSetting {
-    fun resetState()
+internal sealed interface ResettableSetting {
+    fun reset()
 }
 
-abstract class Setting<T>(settingList: MutableList<ResettableSetting>) : ResettableSetting {
+abstract class Setting<T>() : ResettableSetting {
     protected abstract var value: T
-
-    init {
-        settingList.add(this)
-    }
 
     private val mutableFlow: MutableStateFlow<T> by lazy {
         MutableStateFlow(value)
@@ -57,18 +53,13 @@ abstract class Setting<T>(settingList: MutableList<ResettableSetting>) : Resetta
         mutableFlow.value = value
     }
 
-    override fun resetState() {
+    override fun reset() {
         mutableFlow.value = value
     }
 }
 
-abstract class SettingStateList<T>(settingList: MutableList<ResettableSetting>) :
-    ResettableSetting {
+abstract class SettingStateList<T> : ResettableSetting {
     protected abstract var list: List<T>
-
-    init {
-        settingList.add(this)
-    }
 
     private val snapshotList: SnapshotStateList<T> by lazy {
         val list = mutableStateListOf<T>()
@@ -114,7 +105,7 @@ abstract class SettingStateList<T>(settingList: MutableList<ResettableSetting>) 
         list = emptyList()
     }
 
-    override fun resetState() {
+    override fun reset() {
         snapshotList.clear()
         snapshotList.addAll(this@SettingStateList.list)
     }
@@ -124,10 +115,7 @@ class Settings @Inject constructor(
     private val configuration: ConfigurationManager,
     private val preferences: Preferences,
 ) {
-    private val _settingList = mutableListOf<ResettableSetting>()
-    val settingList: List<ResettableSetting> get() = _settingList
-
-    val autoStart = object : Setting<Boolean>(_settingList) {
+    val autoStart = object : Setting<Boolean>() {
         override var value: Boolean
             get() = configuration.read { autoStart }
             set(value) {
@@ -135,15 +123,22 @@ class Settings @Inject constructor(
             }
     }
 
-    abstract class FiltersSettings {
+    abstract class FiltersSettings : ResettableSetting {
         abstract val enabled: Setting<Boolean>
         abstract val automaticRefresh: Setting<Boolean>
         abstract val files: SettingStateList<FilterFile>
         abstract val singles: SettingStateList<SingleFilter>
+
+        override fun reset() {
+            enabled.reset()
+            automaticRefresh.reset()
+            files.reset()
+            singles.reset()
+        }
     }
 
     val filters = object : FiltersSettings() {
-        override val enabled = object : Setting<Boolean>(_settingList) {
+        override val enabled = object : Setting<Boolean>() {
             override var value: Boolean
                 get() = configuration.read { filters.enabled }
                 set(value) {
@@ -151,7 +146,7 @@ class Settings @Inject constructor(
                 }
         }
 
-        override val automaticRefresh = object : Setting<Boolean>(_settingList) {
+        override val automaticRefresh = object : Setting<Boolean>() {
             override var value: Boolean
                 get() = configuration.read { filters.automaticRefresh }
                 set(value) {
@@ -159,7 +154,7 @@ class Settings @Inject constructor(
                 }
         }
 
-        override val files = object : SettingStateList<FilterFile>(_settingList) {
+        override val files = object : SettingStateList<FilterFile>() {
             override var list: List<FilterFile>
                 get() = configuration.read { filters.files }
                 set(value) {
@@ -167,7 +162,7 @@ class Settings @Inject constructor(
                 }
         }
 
-        override val singles = object : SettingStateList<SingleFilter>(_settingList) {
+        override val singles = object : SettingStateList<SingleFilter>() {
             override var list: List<SingleFilter>
                 get() = configuration.read { filters.singleFilters }
                 set(value) {
@@ -176,14 +171,20 @@ class Settings @Inject constructor(
         }
     }
 
-    abstract class DnsServersSettings {
+    abstract class DnsServersSettings : ResettableSetting {
         abstract val enabled: Setting<Boolean>
         abstract val type: Setting<DnsServerType>
         abstract val items: SettingStateList<DnsServer>
+
+        override fun reset() {
+            enabled.reset()
+            type.reset()
+            items.reset()
+        }
     }
 
     val dnsServers = object : DnsServersSettings() {
-        override val enabled = object : Setting<Boolean>(_settingList) {
+        override val enabled = object : Setting<Boolean>() {
             override var value: Boolean
                 get() = configuration.read { dnsServers.enabled }
                 set(value) {
@@ -191,7 +192,7 @@ class Settings @Inject constructor(
                 }
         }
 
-        override val type = object : Setting<DnsServerType>(_settingList) {
+        override val type = object : Setting<DnsServerType>() {
             override var value: DnsServerType
                 get() = configuration.read { dnsServers.type }
                 set(value) {
@@ -199,7 +200,7 @@ class Settings @Inject constructor(
                 }
         }
 
-        override val items = object : SettingStateList<DnsServer>(_settingList) {
+        override val items = object : SettingStateList<DnsServer>() {
             override var list: List<DnsServer>
                 get() = configuration.read { dnsServers.items }
                 set(value) {
@@ -208,7 +209,7 @@ class Settings @Inject constructor(
         }
     }
 
-    abstract class AppListSettings {
+    abstract class AppListSettings : ResettableSetting {
         abstract val defaultMode: Setting<AllowListMode>
         abstract val onVpn: Setting<Set<String>>
         abstract val notOnVpn: Setting<Set<String>>
@@ -219,10 +220,16 @@ class Settings @Inject constructor(
             totalOnVpn: MutableSet<String>,
             totalNotOnVpn: MutableSet<String>,
         )
+
+        override fun reset() {
+            defaultMode.reset()
+            onVpn.reset()
+            notOnVpn.reset()
+        }
     }
 
     val appList = object : AppListSettings() {
-        override val defaultMode = object : Setting<AllowListMode>(_settingList) {
+        override val defaultMode = object : Setting<AllowListMode>() {
             override var value: AllowListMode
                 get() = configuration.read { appList.defaultMode }
                 set(value) {
@@ -230,7 +237,7 @@ class Settings @Inject constructor(
                 }
         }
 
-        override val onVpn = object : Setting<Set<String>>(_settingList) {
+        override val onVpn = object : Setting<Set<String>>() {
             override var value: Set<String>
                 get() = configuration.read { appList.onVpn }
                 set(value) {
@@ -238,7 +245,7 @@ class Settings @Inject constructor(
                 }
         }
 
-        override val notOnVpn = object : Setting<Set<String>>(_settingList) {
+        override val notOnVpn = object : Setting<Set<String>>() {
             override var value: Set<String>
                 get() = configuration.read { appList.notOnVpn }
                 set(value) {
@@ -263,7 +270,7 @@ class Settings @Inject constructor(
         }
     }
 
-    val blockLogging = object : Setting<Boolean>(_settingList) {
+    val blockLogging = object : Setting<Boolean>() {
         override var value: Boolean
             get() = configuration.read { blockLogging }
             set(value) {
@@ -271,7 +278,7 @@ class Settings @Inject constructor(
             }
     }
 
-    val useNetworkDnsServers = object : Setting<Boolean>(_settingList) {
+    val useNetworkDnsServers = object : Setting<Boolean>() {
         override var value: Boolean
             get() = configuration.read { useNetworkDnsServers }
             set(value) {
@@ -279,7 +286,14 @@ class Settings @Inject constructor(
             }
     }
 
-    private fun resetState() = settingList.forEach { it.resetState() }
+    private fun resetState() {
+        autoStart.reset()
+        filters.reset()
+        dnsServers.reset()
+        appList.reset()
+        blockLogging.reset()
+        useNetworkDnsServers.reset()
+    }
 
     suspend fun saveOutUserConfiguration(context: Context, uri: Uri) = withContext(Dispatchers.IO) {
         try {
