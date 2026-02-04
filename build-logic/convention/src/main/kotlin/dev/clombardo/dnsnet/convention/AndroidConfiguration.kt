@@ -22,6 +22,8 @@ internal fun Project.configureAndroid(
         version = release(libs.findVersion("compileSdk").get().toString().toInt())
     }
 
+    buildToolsVersion = libs.findVersion("buildTools").get().toString()
+
     defaultConfig.apply {
         minSdk {
             version = release(libs.findVersion("minSdk").get().toString().toInt())
