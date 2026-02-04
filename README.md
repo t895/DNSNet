@@ -58,14 +58,6 @@ since Android only allows for one at a time.
 
 For further information, see the [FAQ](https://github.com/t895/DNSNet/wiki/FAQ).
 
-Privacy Guarantee
------------------
-Privacy is the most important aspect of DNSNet. Currently, DNSNet is strictly
-data reducing: Running it can only reduce the amount of data leaving your
-device, not increase it (except for fetching hosts files, obviously), as for
-each request, we will either allow it to leave your device or not - we will
-not send other requests or add other information to the request.
-
 Contributing
 ------------
 See [CONTRIBUTING.md](CONTRIBUTING.md)
