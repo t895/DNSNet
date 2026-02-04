@@ -14,7 +14,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use base64::{Engine, prelude::BASE64_STANDARD_NO_PAD};
+use base64::{Engine, prelude::BASE64_URL_SAFE_NO_PAD};
 use mio::{Interest, Poll, Token, event::Source, net::UdpSocket};
 use quiche::h3::NameValue;
 use quiche::{SendInfo, h3::Header};
@@ -58,22 +58,13 @@ impl DoH3Request {
         let path = format!(
                     "{}/dns-query?dns={}",
                     server.path.clone().unwrap_or("".to_string()),
-                    BASE64_STANDARD_NO_PAD.encode(dns_payload)
+                    BASE64_URL_SAFE_NO_PAD.encode(dns_payload),
                 );
-        error!("path - {path}");
         vec![
             Header::new(b":method", b"GET"),
             Header::new(b":scheme", b"https"),
             Header::new(b":authority", server.host_name.as_bytes()),
-            Header::new(
-                b":path",
-                format!(
-                    "{}/dns-query?dns={}",
-                    server.path.clone().unwrap_or("".to_string()),
-                    BASE64_STANDARD_NO_PAD.encode(dns_payload)
-                )
-                .as_bytes(),
-            ),
+            Header::new(b":path", path.as_bytes()),
             Header::new(b"accept", b"application/dns-message"),
         ]
     }
