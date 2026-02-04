@@ -612,7 +612,7 @@ impl DnsBackend for DoH3Backend {
                             true,
                         ) {
                             Ok(stream_id) => {
-                                debug!("process_events: Sent request on stream id {}", stream_id);
+                                info!("process_events: Sent request to {} on stream id {}", connection.server.host_name, stream_id);
                                 connection.sent_request_streams.insert(stream_id, request);
                             }
 
@@ -718,9 +718,10 @@ impl DnsBackend for DoH3Backend {
                     'process: loop {
                         match http3_connection.poll(&mut session.client_connection) {
                             Ok((stream_id, quiche::h3::Event::Headers { list, .. })) => {
-                                trace!(
-                                    "process_events: Got response headers {:?} on stream id {}",
+                                info!(
+                                    "process_events: Got response headers {:?} from {} on stream id {}",
                                     headers_to_strings(&list),
+                                    connection.server.host_name,
                                     stream_id
                                 );
                             }
