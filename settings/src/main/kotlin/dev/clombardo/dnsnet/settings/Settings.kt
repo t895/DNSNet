@@ -174,12 +174,14 @@ class Settings @Inject constructor(
     abstract class DnsServersSettings : ResettableSetting {
         abstract val enabled: Setting<Boolean>
         abstract val type: Setting<DnsServerType>
-        abstract val items: SettingStateList<DnsServer>
+        abstract val standardServers: SettingStateList<StandardDnsServer>
+        abstract val doh3Servers: SettingStateList<Doh3Server>
 
         override fun reset() {
             enabled.reset()
             type.reset()
-            items.reset()
+            standardServers.reset()
+            doh3Servers.reset()
         }
     }
 
@@ -200,11 +202,19 @@ class Settings @Inject constructor(
                 }
         }
 
-        override val items = object : SettingStateList<DnsServer>() {
-            override var list: List<DnsServer>
-                get() = configuration.read { dnsServers.items }
+        override val standardServers = object : SettingStateList<StandardDnsServer>() {
+            override var list: List<StandardDnsServer>
+                get() = configuration.read { dnsServers.standardServers }
                 set(value) {
-                    configuration.edit { dnsServers.items = value.toMutableList() }
+                    configuration.edit { dnsServers.standardServers = value.toMutableList() }
+                }
+        }
+
+        override val doh3Servers = object : SettingStateList<Doh3Server>() {
+            override var list: List<Doh3Server>
+                get() = configuration.read { dnsServers.doh3Servers }
+                set(value) {
+                    configuration.edit { dnsServers.doh3Servers = value.toMutableList() }
                 }
         }
     }

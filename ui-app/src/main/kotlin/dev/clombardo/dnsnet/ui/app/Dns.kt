@@ -42,6 +42,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -57,6 +58,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastJoinToString
 import dev.clombardo.dnsnet.settings.DnsServer
 import dev.clombardo.dnsnet.settings.DnsServerType
+import dev.clombardo.dnsnet.settings.Doh3Server
+import dev.clombardo.dnsnet.settings.StandardDnsServer
 import dev.clombardo.dnsnet.ui.common.BasicTooltipButton
 import dev.clombardo.dnsnet.ui.common.FloatingTopActions
 import dev.clombardo.dnsnet.ui.common.InsetScaffold
@@ -79,15 +82,18 @@ fun DnsScreen(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
     listState: LazyListState = rememberLazyListState(),
-    servers: List<DnsServer> = emptyList(),
+    standardServers: List<StandardDnsServer> = emptyList(),
+    doh3Servers: List<Doh3Server> = emptyList(),
     customDnsServers: Boolean,
     onCustomDnsServersClick: () -> Unit,
     useNetworkDnsServers: Boolean,
     onUseNetworkDnsServersClick: () -> Unit,
     doh3Support: Boolean,
     onDoh3SupportClick: () -> Unit,
-    onItemClick: (DnsServer) -> Unit,
-    onItemCheckClicked: (DnsServer) -> Unit,
+    onStandardServerClick: () -> Unit,
+    onStandardServerCheckClick: () -> Unit,
+    onDoh3ServerClick: () -> Unit,
+    onDoh3ServerCheckClick: () -> Unit,
     firstItemFocusRequester: FocusRequester,
 ) {
     val serversState = servers.filter {
@@ -162,6 +168,7 @@ fun DnsScreen(
             }
         }
 
+        if ()
         itemsIndexed(
             items = serversState,
             key = { index: Int, item: DnsServer ->

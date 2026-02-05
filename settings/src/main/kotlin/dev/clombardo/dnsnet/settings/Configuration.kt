@@ -35,6 +35,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.polymorphic
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
@@ -122,17 +124,24 @@ data class Configuration(
         private const val VERSION = 1
 
         /* Default tweak level */
-        private const val MINOR_VERSION = 3
+        private const val MINOR_VERSION = 4
 
         private val json by lazy {
             Json {
                 ignoreUnknownKeys = true
                 encodeDefaults = true
+                serializersModule = SerializersModule {
+                    polymorphic()
+                }
             }
         }
 
         @OptIn(ExperimentalSerializationApi::class)
-        internal fun load(inputStream: InputStream, preferences: Preferences, replaced: Boolean): Configuration {
+        internal fun load(
+            inputStream: InputStream,
+            preferences: Preferences,
+            replaced: Boolean
+        ): Configuration {
             val config = try {
                 json.decodeFromStream<Configuration>(inputStream)
             } catch (e: Exception) {
@@ -149,7 +158,11 @@ data class Configuration(
             return config
         }
 
-        internal fun load(context: Context, preferences: Preferences, replaced: Boolean): Configuration {
+        internal fun load(
+            context: Context,
+            preferences: Preferences,
+            replaced: Boolean
+        ): Configuration {
             val inputStream = FileHelper.openRead(context, DEFAULT_CONFIG_FILENAME)
             if (inputStream == null) {
                 logDebug("Config file not found, creating new file")
@@ -201,6 +214,38 @@ data class Configuration(
                                 type = DnsServerType.DoH3,
                             )
                         )
+                    }
+                }
+            }
+
+            4 -> {
+                if (dnsServers.items.isNotEmpty()) {
+                    dnsServers.standardServers = dnsServers.items.mapNotNull {
+                        if (it.type == DnsServerType.Standard) {
+                            StandardDnsServer(
+                                title = it.title,
+                                addresses = it.addresses,
+                                enabled = it.enabled,
+                            )
+                        } else {
+                            null
+                        }
+                    }.toMutableList()
+                    dnsServers.doh3Servers.apply {
+                        dnsServers.items.forEach { dnsServer ->
+                            if (dnsServer.type == DnsServerType.DoH3) {
+                                dnsServer.getAddresses().forEach { address ->
+                                    add(
+                                        Doh3Server(
+                                            title = dnsServer.title,
+                                            hostName = address,
+                                            address = "",
+                                            enabled = dnsServer.enabled
+                                        )
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -308,10 +353,11 @@ enum class AllowListMode {
 
     companion object {
         fun Int.toAllowListMode(): AllowListMode =
-            AllowListMode.entries.firstOrNull { it.ordinal == this } ?: ON_VPN
+            entries.firstOrNull { it.ordinal == this } ?: ON_VPN
     }
 }
 
+@Deprecated("DnsServer has been replaced by StandardDnsServer and Doh3Server")
 @Parcelize
 @Serializable
 data class DnsServer(
@@ -322,6 +368,23 @@ data class DnsServer(
 ) : Parcelable {
     fun getAddresses(): List<String> = addresses.split(",").map { it.trim() }
 }
+
+@Serializable
+data class StandardDnsServer(
+    val title: String = "",
+    val addresses: String = "",
+    val enabled: Boolean = false,
+) {
+    fun getAddresses(): List<String> = addresses.split(",").map { it.trim() }
+}
+
+@Serializable
+data class Doh3Server(
+    val title: String = "",
+    val hostName: String = "",
+    val address: String = "",
+    val enabled: Boolean = false,
+)
 
 @Keep
 @Serializable
@@ -365,36 +428,36 @@ data class Filters(
 data class DnsServers(
     var enabled: Boolean = false,
     var type: DnsServerType = DnsServerType.Standard,
-    var items: MutableList<DnsServer> = defaultServers.toMutableList(),
+    var items: MutableList<DnsServer> = mutableListOf(),
+    var standardServers: MutableList<StandardDnsServer> = defaultStandardServers.toMutableList(),
+    var doh3Servers: MutableList<Doh3Server> = defaultDoh3Servers.toMutableList(),
 ) {
-    fun getCurrentServers(): List<DnsServer> =
-        items.mapNotNull { if (it.type == type && it.enabled) it else null }.toList()
-
     companion object {
-        val defaultServers = listOf(
-            DnsServer(
+        val defaultStandardServers = listOf(
+            StandardDnsServer(
                 title = "Cloudflare",
                 addresses = "1.1.1.1,1.0.0.1",
                 enabled = true,
-                type = DnsServerType.Standard,
             ),
-            DnsServer(
+            StandardDnsServer(
                 title = "Quad9",
                 addresses = "9.9.9.9",
                 enabled = false,
-                type = DnsServerType.Standard,
             ),
-            DnsServer(
+        )
+
+        val defaultDoh3Servers = listOf(
+            Doh3Server(
                 title = "Cloudflare DoH3",
-                addresses = "cloudflare-dns.com",
+                hostName = "cloudflare-dns.com",
+                address = "1.1.1.1",
                 enabled = true,
-                type = DnsServerType.DoH3,
             ),
-            DnsServer(
+            Doh3Server(
                 title = "Google DoH3",
-                addresses = "dns.google",
+                hostName = "dns.google",
+                address = "8.8.8.8",
                 enabled = false,
-                type = DnsServerType.DoH3,
             ),
         )
     }
