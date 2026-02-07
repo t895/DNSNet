@@ -35,8 +35,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
-import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.modules.polymorphic
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
@@ -130,9 +128,6 @@ data class Configuration(
             Json {
                 ignoreUnknownKeys = true
                 encodeDefaults = true
-                serializersModule = SerializersModule {
-                    polymorphic()
-                }
             }
         }
 
@@ -428,7 +423,7 @@ data class Filters(
 data class DnsServers(
     var enabled: Boolean = false,
     var type: DnsServerType = DnsServerType.Standard,
-    var items: MutableList<DnsServer> = mutableListOf(),
+    internal var items: MutableList<DnsServer> = mutableListOf(),
     var standardServers: MutableList<StandardDnsServer> = defaultStandardServers.toMutableList(),
     var doh3Servers: MutableList<Doh3Server> = defaultDoh3Servers.toMutableList(),
 ) {

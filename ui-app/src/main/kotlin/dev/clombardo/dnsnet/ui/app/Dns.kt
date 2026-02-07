@@ -57,7 +57,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastJoinToString
 import dev.clombardo.dnsnet.settings.DnsServer
-import dev.clombardo.dnsnet.settings.DnsServerType
 import dev.clombardo.dnsnet.settings.Doh3Server
 import dev.clombardo.dnsnet.settings.StandardDnsServer
 import dev.clombardo.dnsnet.ui.common.BasicTooltipButton
@@ -90,19 +89,12 @@ fun DnsScreen(
     onUseNetworkDnsServersClick: () -> Unit,
     doh3Support: Boolean,
     onDoh3SupportClick: () -> Unit,
-    onStandardServerClick: () -> Unit,
-    onStandardServerCheckClick: () -> Unit,
-    onDoh3ServerClick: () -> Unit,
-    onDoh3ServerCheckClick: () -> Unit,
+    onStandardServerClick: (StandardDnsServer) -> Unit,
+    onStandardServerCheckClick: (StandardDnsServer) -> Unit,
+    onDoh3ServerClick: (Doh3Server) -> Unit,
+    onDoh3ServerCheckClick: (Doh3Server) -> Unit,
     firstItemFocusRequester: FocusRequester,
 ) {
-    val serversState = servers.filter {
-        it.type == if (doh3Support) {
-            DnsServerType.DoH3
-        } else {
-            DnsServerType.Standard
-        }
-    }
     LazyColumn(
         modifier = modifier,
         contentPadding = contentPadding,
@@ -130,7 +122,13 @@ fun DnsScreen(
                 }
 
                 item {
-                    val allServersDisabled = serversState.all { !it.enabled }
+                    val allServersDisabled = remember(doh3Support, standardServers, doh3Servers) {
+                        if (doh3Support) {
+                            doh3Servers.all { !it.enabled }
+                        } else {
+                            standardServers.all { !it.enabled }
+                        }
+                    }
                     SwitchListItem(
                         enabled = customDnsServers && !allServersDisabled && !doh3Support,
                         title = stringResource(R.string.use_dns_servers_from_active_network),
@@ -143,47 +141,55 @@ fun DnsScreen(
             Spacer(modifier = Modifier.padding(vertical = 4.dp))
         }
 
-        if (doh3Support && serversState.all { it.type == DnsServerType.DoH3 && !it.enabled }) {
-            item(key = "doh3-warning") {
-                Column(
-                    modifier = Modifier
-                        .animateItem()
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                    )
-                    Text(
-                        text = stringResource(R.string.doh3_warning),
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.error,
-                    )
+        if (doh3Support) {
+            if (doh3Servers.all { !it.enabled }) {
+                item(key = "doh3-warning") {
+                    Column(
+                        modifier = Modifier
+                            .animateItem()
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                        Text(
+                            text = stringResource(R.string.doh3_warning),
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
                 }
             }
-        }
 
-        if ()
-        itemsIndexed(
-            items = serversState,
-            key = { index: Int, item: DnsServer ->
-                item.hashCode() + index
+            itemsIndexed(doh3Servers) { _, item ->
+                SplitCheckboxListItem(
+                    modifier = Modifier.animateItem(),
+                    title = item.title,
+                    details = item.hostName,
+                    checked = item.enabled,
+                    clip = true,
+                    onBodyClick = { onDoh3ServerClick(item) },
+                    onCheckedChange = { _ -> onDoh3ServerCheckClick(item) },
+                )
             }
-        ) { index: Int, item: DnsServer ->
-            SplitCheckboxListItem(
-                modifier = Modifier.animateItem(),
-                title = item.title,
-                details = item.addresses.replace(",", ", "),
-                checked = item.enabled,
-                clip = true,
-                onBodyClick = { onItemClick(item) },
-                onCheckedChange = { _ -> onItemCheckClicked(item) },
-            )
+        } else {
+            itemsIndexed(standardServers) { _, item ->
+                SplitCheckboxListItem(
+                    modifier = Modifier.animateItem(),
+                    title = item.title,
+                    details = item.addresses.replace(",", ", "),
+                    checked = item.enabled,
+                    clip = true,
+                    onBodyClick = { onStandardServerClick(item) },
+                    onCheckedChange = { _ -> onStandardServerCheckClick(item) },
+                )
+            }
         }
     }
 }
@@ -197,16 +203,19 @@ private fun DnsScreenPreview() {
         item.addresses = "213.73.91.35"
         DnsScreen(
             modifier = Modifier.background(MaterialTheme.colorScheme.surface),
-            servers = listOf(item, item, item),
-            onItemClick = {},
             customDnsServers = false,
             onCustomDnsServersClick = {},
             useNetworkDnsServers = false,
             onUseNetworkDnsServersClick = {},
-            onItemCheckClicked = {},
             doh3Support = false,
             onDoh3SupportClick = {},
             firstItemFocusRequester = rememberFocusRequester(),
+            standardServers = emptyList(),
+            doh3Servers = emptyList(),
+            onStandardServerClick = {},
+            onStandardServerCheckClick = {},
+            onDoh3ServerClick = {},
+            onDoh3ServerCheckClick = {},
         )
     }
 }
@@ -223,19 +232,69 @@ private enum class AddressInputError {
     NotReachable,
 }
 
+@Composable
+fun EditStandardServerScreen(
+    modifier: Modifier = Modifier,
+    server: StandardDnsServer,
+    onNavigateUp: () -> Unit,
+    onSave: (StandardDnsServer) -> Unit,
+    onDelete: (() -> Unit)? = null,
+    pingAddress: suspend (String) -> Boolean = { false },
+) {
+    EditDnsScreen(
+        modifier = modifier,
+        title = server.title,
+        primaryAddress = server.addresses,
+        enabled = server.enabled,
+        onNavigateUp = onNavigateUp,
+        onSave = { title, primaryAddress, _, enabled ->
+            onSave(StandardDnsServer(title, primaryAddress, enabled))
+        },
+        onDelete = onDelete,
+        pingAddress = pingAddress,
+    )
+}
+
+@Composable
+fun EditDoh3ServerScreen(
+    modifier: Modifier = Modifier,
+    server: Doh3Server,
+    onNavigateUp: () -> Unit,
+    onSave: (Doh3Server) -> Unit,
+    onDelete: (() -> Unit)? = null,
+    pingAddress: suspend (String) -> Boolean = { false },
+) {
+    EditDnsScreen(
+        modifier = modifier,
+        title = server.title,
+        primaryAddress = server.hostName,
+        secondaryAddress = server.address,
+        enabled = server.enabled,
+        onNavigateUp = onNavigateUp,
+        onSave = { title, primaryAddress, secondaryAddress, enabled ->
+            onSave(Doh3Server(title, primaryAddress, secondaryAddress, enabled))
+        },
+        onDelete = onDelete,
+        pingAddress = pingAddress,
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun EditDnsScreen(
     modifier: Modifier = Modifier,
-    server: DnsServer,
+    title: String,
+    primaryAddress: String,
+    secondaryAddress: String? = null,
+    enabled: Boolean,
     onNavigateUp: () -> Unit,
-    onSave: (DnsServer) -> Unit,
+    onSave: (title: String, primaryAddress: String, secondaryAddress: String, enabled: Boolean) -> Unit,
     onDelete: (() -> Unit)? = null,
     pingAddress: suspend (String) -> Boolean = { false },
 ) {
-    var titleInput by rememberSaveable { mutableStateOf(server.title) }
+    var titleInput by rememberSaveable { mutableStateOf(title) }
     var titleInputError by rememberSaveable { mutableStateOf(false) }
-    var enabledInput by rememberSaveable { mutableStateOf(server.enabled) }
+    var enabledInput by rememberSaveable { mutableStateOf(enabled) }
     val addressesState = rememberMutableStateListOf {
         val locations = server.getAddresses()
         if (locations.isEmpty()) {
