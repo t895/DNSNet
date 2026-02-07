@@ -67,7 +67,7 @@ impl<'a> GenericIpPacket<'a> {
     }
 
     /// Gets a slice of the UDP payload from the packet
-    pub fn get_udp_packet(&self) -> Option<&UdpSlice> {
+    pub fn get_udp_packet(&self) -> Option<&UdpSlice<'_>> {
         match &self.packet.transport {
             Some(transport) => match transport {
                 TransportSlice::Udp(udp) => Some(udp),
