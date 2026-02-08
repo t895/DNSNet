@@ -13,6 +13,7 @@ bincode = { workspace = true }
 etherparse = { workspace = true }
 getrandom = { workspace = true }
 mio = { workspace = true }
+memmap2 = { workspace = true }
 log = { workspace = true }
 lru = { workspace = true }
 quiche = { workspace = true }

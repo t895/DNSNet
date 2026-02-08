@@ -1,13 +1,12 @@
 use std::{
     collections::HashMap,
-    fs::File,
-    io::{self, BufRead},
     sync::{Arc, RwLock, atomic::AtomicBool},
     thread,
     time::Duration,
 };
 
 use log::{debug, error, info, warn};
+use memmap2::Mmap;
 
 use crate::file::FileHelper;
 
@@ -116,7 +115,7 @@ pub trait RuleDatabase {
 
 pub struct RuleDatabaseImpl {
     controller: Arc<RuleDatabaseController>,
-    map: RwLock<HashMap<String, (FilterType, FilterAction), ahash::RandomState>>,
+    map: RwLock<HashMap<Vec<u8>, (FilterType, FilterAction), ahash::RandomState>>,
 }
 
 impl RuleDatabaseImpl {
@@ -148,7 +147,7 @@ impl RuleDatabaseImpl {
             single_filters.len()
         );
 
-        let mut map = HashMap::<String, (FilterType, FilterAction), ahash::RandomState>::default();
+        let mut map = HashMap::<Vec<u8>, (FilterType, FilterAction), ahash::RandomState>::default();
 
         let mut sorted_filter_files = filter_files
             .iter()
@@ -171,7 +170,7 @@ impl RuleDatabaseImpl {
         sorted_single_filters.sort_by(|a, b| a.state.partial_cmp(&b.state).unwrap());
 
         for single_filter in sorted_single_filters {
-            add_line(&mut map, &single_filter.state, &single_filter.data)
+            add_line(&mut map, &single_filter.state, single_filter.data.as_bytes());
         }
 
         let mut filter_guard = match self.map.write() {
@@ -226,7 +225,7 @@ impl RuleDatabaseImpl {
             return false;
         }
 
-        if let Some(value) = map.get(host_name) {
+        if let Some(value) = map.get(host_name.as_bytes()) {
             return match value.1 {
                 FilterAction::Deny => true,
                 FilterAction::Allow => false,
@@ -241,7 +240,7 @@ impl RuleDatabaseImpl {
                 if !sub_host_name.contains('.') {
                     break;
                 }
-                if let Some(value) = map.get(sub_host_name) {
+                if let Some(value) = map.get(sub_host_name.as_bytes()) {
                     if value.0 == FilterType::HostName {
                         continue;
                     }
@@ -276,33 +275,34 @@ impl RuleDatabase for RuleDatabaseImpl {
     }
 }
 
-const IPV4_LOOPBACK: &'static str = "127.0.0.1 ";
-const IPV6_LOOPBACK: &'static str = "::1 ";
-const NO_ROUTE: &'static str = "0.0.0.0 ";
-const WILDCARD: &'static str = "*.";
-const ABP_START: &'static str = "||";
-const ABP_END: &'static str = "^";
-const ABP_SPECIAL: &'static str = "##";
-const COMMENT: &'static str = "#";
+const IPV4_LOOPBACK: &'static [u8] = b"127.0.0.1 ";
+const IPV6_LOOPBACK: &'static [u8] = b"::1 ";
+const NO_ROUTE: &'static [u8] = b"0.0.0.0 ";
+const WILDCARD: &'static [u8] = b"*.";
+const ABP_START: &'static [u8] = b"||";
+const ABP_END: &'static [u8] = b"^";
+const ABP_SPECIAL: &'static [u8] = b"##";
+const COMMENT: &'static [u8] = b"#";
+const NEWLINE: u8 = b'\n';
 
 /// Parses a single line in a filter file and adds it to the map if it's valid
 fn add_line(
-    map: &mut HashMap<String, (FilterType, FilterAction), ahash::RandomState>,
+    map: &mut HashMap<Vec<u8>, (FilterType, FilterAction), ahash::RandomState>,
     state: &FilterState,
-    line: &str,
-) {
+    line: &[u8],
+) -> bool {
     let filter_action = match state {
-        FilterState::IGNORE => return,
+        FilterState::IGNORE => return false,
         FilterState::DENY => FilterAction::Deny,
         FilterState::ALLOW => FilterAction::Allow,
     };
 
     if line.is_empty() {
-        return;
+        return false;
     }
 
     if line.starts_with(COMMENT) {
-        return;
+        return false;
     }
 
     let mut start_of_line = 0;
@@ -310,8 +310,11 @@ fn add_line(
     let mut filter_type = FilterType::Wildcard;
     if line.starts_with(ABP_START) && line.ends_with(ABP_END) {
         // AdBlock Plus style filter files use ## for extra functionality that we don't support
-        if line.contains(ABP_SPECIAL) {
-            return;
+        let mut line_window = line.windows(ABP_SPECIAL.len());
+        while let Some(value) = line_window.next() {
+            if value == ABP_SPECIAL {
+                return false;
+            }
         }
         start_of_line = 2;
         end_of_line -= 1;
@@ -329,18 +332,18 @@ fn add_line(
     }
 
     let host = &line[start_of_line..end_of_line];
-    if host.trim().is_empty() {
-        return;
+    if host.trim_ascii().is_empty() {
+        return false;
     }
 
-    map.insert(host.to_owned(), (filter_type, filter_action));
+    return map.insert(host.to_owned(), (filter_type, filter_action)).is_none();
 }
 
 /// Loads a generic host (file or single host) and adds them to the block list
 fn load_item(
     file_helper: &Box<&dyn FileHelper>,
     controller: &RuleDatabaseController,
-    map: &mut HashMap<String, (FilterType, FilterAction), ahash::RandomState>,
+    map: &mut HashMap<Vec<u8>, (FilterType, FilterAction), ahash::RandomState>,
     host: &Filter,
 ) -> Result<(), RuleDatabaseError> {
     if host.state == FilterState::IGNORE {
@@ -349,19 +352,26 @@ fn load_item(
 
     match file_helper.get_file(host.data.clone()) {
         Some(file) => {
-            let lines: io::Lines<io::BufReader<File>> = io::BufReader::new(file).lines();
-            if let Err(error) = load_file(controller, map, &host, lines) {
-                if let RuleDatabaseError::Interrupted = error {
-                    return Err(error);
-                }
-            }
+            match unsafe { Mmap::map(&file) } {
+                Ok(file) => {
+                    if let Err(error) = load_file(controller, map, &host, &file) {
+                        if let RuleDatabaseError::Interrupted = error {
+                            return Err(error);
+                        }
+                    }
+                },
+                Err(error) => {
+                    error!("load_item: Failed to open file! - {error:?}");
+                    return Err(RuleDatabaseError::BadFilterFormat);
+                },
+            };
         }
         None => {
             warn!(
                 "Failed to open {}. Attempting to add as single host.",
                 host.data
             );
-            add_line(map, &host.state, &host.data);
+            add_line(map, &host.state, host.data.as_bytes());
         }
     };
     return Ok(());
@@ -370,28 +380,19 @@ fn load_item(
 /// Loads a file of filters and adds them to the block list
 fn load_file(
     controller: &RuleDatabaseController,
-    map: &mut HashMap<String, (FilterType, FilterAction), ahash::RandomState>,
+    map: &mut HashMap<Vec<u8>, (FilterType, FilterAction), ahash::RandomState>,
     filter: &Filter,
-    lines: io::Lines<io::BufReader<File>>,
+    file: &[u8],
 ) -> Result<(), RuleDatabaseError> {
     let mut count = 0;
+    let lines = file.split(|char| *char == NEWLINE);
     for line in lines {
         if controller.get_should_stop() {
             return Err(RuleDatabaseError::Interrupted);
         }
 
-        match line {
-            Ok(value) => {
-                add_line(map, &filter.state, &value);
-                count += 1;
-            }
-            Err(error) => {
-                error!(
-                    "load_file: Error while reading {} after {} lines - {:?}",
-                    &filter.data, count, error
-                );
-                return Err(RuleDatabaseError::BadFilterFormat);
-            }
+        if add_line(map, &filter.state, line) {
+            count += 1;
         }
     }
     debug!("load_file: Loaded {} filters from {}", count, &filter.data);
@@ -400,6 +401,8 @@ fn load_file(
 
 #[cfg(test)]
 mod tests {
+    use std::fs::File;
+
     use super::*;
 
     struct DummyFileHelper;

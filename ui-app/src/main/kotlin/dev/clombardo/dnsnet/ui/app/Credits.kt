@@ -255,6 +255,13 @@ fun CreditsScreen(
                 )
             }
 
+            item {
+                LicenseListItem(
+                    title = stringResource(R.string.memmap2),
+                    licenseLink = stringResource(R.string.memmap2_link),
+                )
+            }
+
             if (libs != null) {
                 items(librariesList) {
                     CreditListItem(it)

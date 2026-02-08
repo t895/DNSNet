@@ -255,4 +255,6 @@
     <string name="lru_link" translatable="false">https://github.com/jeromefroe/lru-rs/blob/0.16.2/LICENSE</string>
     <string name="ahash" translatable="false">aHash</string>
     <string name="ahash_link" translatable="false">https://github.com/tkaitchuck/aHash/tree/v0.8.12</string>
+    <string name="memmap2" translatable="false">memmap2</string>
+    <string name="memmap2_link" translatable="false">https://github.com/RazrFalcon/memmap2-rs</string>
 </resources>
