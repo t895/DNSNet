@@ -123,4 +123,16 @@
     <string name="supported_formats">Formatos suportados</string>
     <string name="supported_formats_host_name">Nomes de host (por exemplo, exemplo.pt)</string>
     <string name="supported_formats_wildcard">Curinga (por exemplo, *.exemplo.com)</string>
+    <string name="translator_credits">Traduza com algo como &lt;Idioma&gt; Tradução: Seu Nome</string>
+    <string name="address">Endereço</string>
+    <string name="address_not_reachable">Endereço não acessível</string>
+    <string name="block_log">Registro de blocos</string>
+    <string name="last_connected">Última conexão</string>
+    <string name="supported_formats_adblock_plus">Adblock Plus (e.g. ||example.com^)</string>
+    <string name="credits">Créditos</string>
+    <string name="open_license">Licença aberta</string>
+    <string name="search">Pesquisar</string>
+    <string name="ascending">Ascendente</string>
+    <string name="descending">Descendente</string>
+    <string name="system_apps">Aplicativos do sistema</string>
 </resources>
