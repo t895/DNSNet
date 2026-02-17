@@ -651,8 +651,12 @@ class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
 
         // Looks like uniffi gets confused with this setup so we need to destroy this manually
         // to prevent a memory leak. Just wait for it to finish whatever it's doing first.
-        vpnThread.destroy()
-        ruleDatabaseManager.destroy()
+        if (this::vpnThread.isInitialized) {
+            vpnThread.destroy()
+        }
+        if (this::ruleDatabaseManager.isInitialized) {
+            ruleDatabaseManager.destroy()
+        }
     }
 
     fun configurePackages(builder: VpnService.Builder) {
