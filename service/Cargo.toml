@@ -5,6 +5,9 @@ members = ["libnet_bindings", "libnet"]
 [profile.release]
 lto = "thin"
 
+[profile.bench]
+debug = true
+
 [workspace.dependencies]
 ahash = "0.8.12"
 android_logger = "0.15.1"
