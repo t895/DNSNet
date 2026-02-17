@@ -1,11 +1,8 @@
 use std::{
-    collections::HashMap,
-    sync::{Arc, RwLock, atomic::AtomicBool},
-    thread,
-    time::Duration,
+    collections::HashMap, fs::File, sync::{Arc, RwLock, atomic::AtomicBool, mpsc}, thread::{self, JoinHandle}, time::Duration
 };
 
-use log::{debug, error, info, warn};
+use log::{error, info, warn};
 use memmap2::Mmap;
 
 use crate::file::FileHelper;
@@ -60,6 +57,7 @@ impl RuleDatabaseController {
 }
 
 /// Whether a single filter should be denied or allowed
+#[derive(Clone)]
 enum FilterAction {
     Deny,
     Allow,
@@ -84,6 +82,15 @@ pub struct Filter {
     pub title: String,
     pub data: String,
     pub state: FilterState,
+}
+
+impl Into<FilterAction> for FilterState {
+    fn into(self) -> FilterAction {
+        match self {
+            FilterState::DENY => FilterAction::Deny,
+            _ => FilterAction::Allow,
+        }
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -153,14 +160,52 @@ impl RuleDatabaseImpl {
             .iter()
             .filter(|item| item.state != FilterState::IGNORE)
             .collect::<Vec<&Filter>>();
+        sorted_filter_files.dedup_by(|a, b| a.data.eq(&b.data));
         sorted_filter_files.sort_by(|a, b| a.state.partial_cmp(&b.state).unwrap());
 
+        let (sender, receiver) = mpsc::channel::<Result<Vec::<(Vec<u8>, (FilterType, FilterAction))>, RuleDatabaseError>>();
+        let mut handles = Vec::<JoinHandle<()>>::new();
         for item in sorted_filter_files.iter() {
-            if let Err(database_error) = load_item(file_helper, &self.controller, &mut map, item) {
-                if let RuleDatabaseError::Interrupted = database_error {
-                    return Err(database_error);
+            let data = item.data.clone();
+            let file = file_helper.get_file(data.clone());
+            let filter_action: FilterAction = item.state.into();
+            let controller = self.controller.clone();
+            let sender = sender.clone();
+            let thread_handle = thread::spawn(move || {
+                let mut result_vec = Vec::<(Vec<u8>, (FilterType, FilterAction))>::new();
+                match file {
+                    Some(file) => {
+                        if let Err(database_error) = load_item(file, controller, &mut result_vec, filter_action) {
+                            if let RuleDatabaseError::Interrupted = database_error {
+                                let _ = sender.send(Err(database_error));
+                            }
+                        }
+                    },
+                    None => {
+                        info!("initialize: Failed to load data {} as file. Loading as single filter.", data);
+                        add_line(&mut result_vec, &filter_action, data.as_bytes());
+                    },
                 }
-            }
+                let _ = sender.send(Ok(result_vec));
+            });
+            handles.push(thread_handle);
+        }
+
+        let mut received_results = 0;
+        while received_results < handles.len() {
+            match receiver.recv_timeout(Duration::from_secs(1)) {
+                Ok(result) => match result {
+                    Ok(result_vec) => {
+                        map.extend(result_vec);
+                        received_results += 1;
+                    },
+                    Err(error) => return Err(error),
+                },
+                Err(error) => {
+                    warn!("initialize: Receiver timed out! - {error:?}");
+                    return Err(RuleDatabaseError::Interrupted);
+                },
+            };
         }
 
         let mut sorted_single_filters = single_filters
@@ -170,7 +215,9 @@ impl RuleDatabaseImpl {
         sorted_single_filters.sort_by(|a, b| a.state.partial_cmp(&b.state).unwrap());
 
         for single_filter in sorted_single_filters {
-            add_line(&mut map, &single_filter.state, single_filter.data.as_bytes());
+            let mut result = Vec::new();
+            add_line(&mut result, &(single_filter.state.into()), single_filter.data.as_bytes());
+            map.extend(result);
         }
 
         let mut filter_guard = match self.map.write() {
@@ -287,22 +334,16 @@ const NEWLINE: u8 = b'\n';
 
 /// Parses a single line in a filter file and adds it to the map if it's valid
 fn add_line(
-    map: &mut HashMap<Vec<u8>, (FilterType, FilterAction), ahash::RandomState>,
-    state: &FilterState,
+    vec: &mut Vec::<(Vec<u8>, (FilterType, FilterAction))>,
+    filter_action: &FilterAction,
     line: &[u8],
-) -> bool {
-    let filter_action = match state {
-        FilterState::IGNORE => return false,
-        FilterState::DENY => FilterAction::Deny,
-        FilterState::ALLOW => FilterAction::Allow,
-    };
-
+) {
     if line.is_empty() {
-        return false;
+        return;
     }
 
     if line.starts_with(COMMENT) {
-        return false;
+        return;
     }
 
     let mut start_of_line = 0;
@@ -313,7 +354,7 @@ fn add_line(
         let mut line_window = line.windows(ABP_SPECIAL.len());
         while let Some(value) = line_window.next() {
             if value == ABP_SPECIAL {
-                return false;
+                return;
             }
         }
         start_of_line = 2;
@@ -333,69 +374,50 @@ fn add_line(
 
     let host = &line[start_of_line..end_of_line];
     if host.trim_ascii().is_empty() {
-        return false;
+        return;
     }
 
-    return map.insert(host.to_owned(), (filter_type, filter_action)).is_none();
+    vec.push((host.to_owned(), (filter_type, filter_action.clone())));
 }
 
 /// Loads a generic host (file or single host) and adds them to the block list
 fn load_item(
-    file_helper: &Box<&dyn FileHelper>,
-    controller: &RuleDatabaseController,
-    map: &mut HashMap<Vec<u8>, (FilterType, FilterAction), ahash::RandomState>,
-    host: &Filter,
+    file: File,
+    controller: Arc<RuleDatabaseController>,
+    vec: &mut Vec::<(Vec<u8>, (FilterType, FilterAction))>,
+    filter_action: FilterAction,
 ) -> Result<(), RuleDatabaseError> {
-    if host.state == FilterState::IGNORE {
-        return Err(RuleDatabaseError::Interrupted);
-    }
-
-    match file_helper.get_file(host.data.clone()) {
-        Some(file) => {
-            match unsafe { Mmap::map(&file) } {
-                Ok(file) => {
-                    if let Err(error) = load_file(controller, map, &host, &file) {
-                        if let RuleDatabaseError::Interrupted = error {
-                            return Err(error);
-                        }
-                    }
-                },
-                Err(error) => {
-                    error!("load_item: Failed to open file! - {error:?}");
-                    return Err(RuleDatabaseError::BadFilterFormat);
-                },
-            };
-        }
-        None => {
-            warn!(
-                "Failed to open {}. Attempting to add as single host.",
-                host.data
-            );
-            add_line(map, &host.state, host.data.as_bytes());
-        }
+    match unsafe { Mmap::map(&file) } {
+        Ok(file) => {
+            if let Err(error) = load_file(controller, vec, filter_action, &file) {
+                if let RuleDatabaseError::Interrupted = error {
+                    return Err(error);
+                }
+            }
+        },
+        Err(error) => {
+            error!("load_item: Failed to open file! - {error:?}");
+            return Err(RuleDatabaseError::BadFilterFormat);
+        },
     };
     return Ok(());
 }
 
 /// Loads a file of filters and adds them to the block list
 fn load_file(
-    controller: &RuleDatabaseController,
-    map: &mut HashMap<Vec<u8>, (FilterType, FilterAction), ahash::RandomState>,
-    filter: &Filter,
+    controller: Arc<RuleDatabaseController>,
+    vec: &mut Vec::<(Vec<u8>, (FilterType, FilterAction))>,
+    filter_action: FilterAction,
     file: &[u8],
 ) -> Result<(), RuleDatabaseError> {
-    let mut count = 0;
     let lines = file.split(|char| *char == NEWLINE);
     for line in lines {
         if controller.get_should_stop() {
             return Err(RuleDatabaseError::Interrupted);
         }
 
-        if add_line(map, &filter.state, line) {
-            count += 1;
-        }
+        let _ = add_line(vec, &filter_action, line);
     }
-    debug!("load_file: Loaded {} filters from {}", count, &filter.data);
     return Ok(());
 }
 
