@@ -24,8 +24,10 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.clombardo.dnsnet.blocklogger.BlockLogger
 import dev.clombardo.dnsnet.blocklogger.LoggedConnection
 import dev.clombardo.dnsnet.common.logDebug
+import dev.clombardo.dnsnet.settings.AllowListMode
 import dev.clombardo.dnsnet.settings.BlockList
 import dev.clombardo.dnsnet.settings.DnsServer
+import dev.clombardo.dnsnet.settings.DnsServerType
 import dev.clombardo.dnsnet.settings.Filter
 import dev.clombardo.dnsnet.settings.FilterFile
 import dev.clombardo.dnsnet.settings.FilterState
@@ -59,6 +61,7 @@ class HomeViewModel @AssistedInject constructor(
     private val blockLogger: BlockLogger,
     @Assisted private val onSetupComplete: OnSetupComplete,
     @Assisted private val onReloadVpn: OnReloadVpn,
+    @Assisted private val onReloadDatabase: OnReloadDatabase,
     @Assisted private val databaseUpdaterErrors: StateFlow<List<String>>,
     @Assisted private val onClearDatabaseUpdaterErrors: OnClearDatabaseUpdaterErrors,
 ) : ViewModel() {
@@ -206,10 +209,12 @@ class HomeViewModel @AssistedInject constructor(
 
     private fun addFilterFile(filter: FilterFile) {
         settings.filters.files.add(filter)
+        onReloadDatabase()
     }
 
     private fun addSingleFilter(filter: SingleFilter) {
         settings.filters.singles.add(filter)
+        onReloadDatabase()
     }
 
     fun addFilter(filter: Filter) {
@@ -221,10 +226,12 @@ class HomeViewModel @AssistedInject constructor(
 
     private fun removeFilterFile(filter: FilterFile) {
         settings.filters.files.remove(filter)
+        onReloadDatabase()
     }
 
     private fun removeSingleFilter(filter: SingleFilter) {
         settings.filters.singles.remove(filter)
+        onReloadDatabase()
     }
 
     fun removeFilter(filter: Filter) {
@@ -236,10 +243,12 @@ class HomeViewModel @AssistedInject constructor(
 
     private fun replaceFilterFile(oldFilter: FilterFile, newFilter: FilterFile) {
         settings.filters.files.replace(oldFilter, newFilter)
+        onReloadDatabase()
     }
 
     private fun replaceSingleFilter(oldFilter: SingleFilter, newFilter: SingleFilter) {
         settings.filters.singles.replace(oldFilter, newFilter)
+        onReloadDatabase()
     }
 
     fun replaceFilter(oldFilter: Filter, newFilter: Filter) {
@@ -288,6 +297,7 @@ class HomeViewModel @AssistedInject constructor(
 
     fun removeDnsServer(server: DnsServer) {
         settings.dnsServers.items.remove(server)
+        onReloadVpn()
     }
 
     fun replaceDnsServer(
@@ -295,6 +305,7 @@ class HomeViewModel @AssistedInject constructor(
         newDnsServer: DnsServer
     ) {
         settings.dnsServers.items.replace(oldServer, newDnsServer)
+        onReloadVpn()
     }
 
     fun toggleDnsServer(server: DnsServer) {
@@ -315,6 +326,13 @@ class HomeViewModel @AssistedInject constructor(
         }
         settings.appList.notOnVpn.set(notOnVpn)
         settings.appList.onVpn.set(onVpn)
+        onReloadVpn()
+    }
+
+    fun setAllowListMode(mode: AllowListMode) {
+        settings.appList.defaultMode.set(mode)
+        onReloadVpn()
+        populateAppList()
     }
 
     fun onFilePermissionDenied() {
@@ -373,11 +391,16 @@ class HomeViewModel @AssistedInject constructor(
         _showDeleteFilterWarningDialog.value = false
     }
 
+    fun onEnableBlockLog() {
+        settings.blockLogging.set(true)
+        onReloadVpn()
+    }
+
     fun onDisableBlockLog() {
         settings.blockLogging.set(false)
         _connectionsLog.clear()
         blockLogger.clear(context)
-        onReloadVpn.invoke()
+        onReloadVpn()
         onDismissDisableBlockLogWarning()
     }
 
@@ -461,7 +484,25 @@ class HomeViewModel @AssistedInject constructor(
         }
     }
 
-    fun onReloadVpn() = onReloadVpn.invoke()
+    fun toggleCustomDnsServers() {
+        settings.dnsServers.enabled.set(!settings.dnsServers.enabled.get())
+        onReloadVpn()
+    }
+
+    fun toggleUseNetworkDnsServers() {
+        settings.useNetworkDnsServers.set(!settings.useNetworkDnsServers.get())
+        onReloadVpn()
+    }
+
+    fun toggleDoh3Support() {
+        settings.dnsServers.type.set(
+            when (settings.dnsServers.type.get()) {
+                DnsServerType.Standard -> DnsServerType.DoH3
+                DnsServerType.DoH3 -> DnsServerType.Standard
+            }
+        )
+        onReloadVpn()
+    }
 
     fun pingAddress(address: String): Boolean =
         try {
@@ -480,6 +521,10 @@ class HomeViewModel @AssistedInject constructor(
         operator fun invoke()
     }
 
+    fun interface OnReloadDatabase {
+        operator fun invoke()
+    }
+
     fun interface OnClearDatabaseUpdaterErrors {
         operator fun invoke()
     }
@@ -489,6 +534,7 @@ class HomeViewModel @AssistedInject constructor(
         fun create(
             onSetupComplete: OnSetupComplete,
             onReloadVpn: OnReloadVpn,
+            onReloadDatabase: OnReloadDatabase,
             databaseUpdaterErrors: StateFlow<List<String>>,
             onClearDatabaseUpdaterErrors: OnClearDatabaseUpdaterErrors,
         ): HomeViewModel

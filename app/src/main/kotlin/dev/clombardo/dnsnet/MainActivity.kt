@@ -96,6 +96,7 @@ class MainActivity : AppCompatActivity() {
                         }
                     },
                     onReloadVpn = { DnsNetVpnService.reconnect(this@MainActivity) },
+                    onReloadDatabase = { DnsNetVpnService.reloadDatabase(this@MainActivity) },
                     databaseUpdaterErrors = RuleDatabaseUpdateWorker.lastErrors,
                     onClearDatabaseUpdaterErrors = { RuleDatabaseUpdateWorker.clearErrors(this@MainActivity) },
                 )

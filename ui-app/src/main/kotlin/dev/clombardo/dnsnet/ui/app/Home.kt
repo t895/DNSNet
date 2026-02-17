@@ -410,7 +410,6 @@ fun App(
                     filter = filter,
                     vm = vm,
                     onPopBackStack = { navController.tryPopBackstack(backstackEntry.id) },
-                    onReloadVpn = { vm.onReloadVpn() },
                     onReloadDatabase = onReloadDatabase,
                 )
             }
@@ -420,7 +419,6 @@ fun App(
                     filter = filter,
                     vm = vm,
                     onPopBackStack = { navController.tryPopBackstack(backstackEntry.id) },
-                    onReloadVpn = { vm.onReloadVpn() },
                     onReloadDatabase = onReloadDatabase,
                 )
             }
@@ -442,7 +440,6 @@ fun App(
                                 vm.removeDnsServer(server)
                                 vm.onDismissDeleteDnsServerWarning()
                                 navController.tryPopBackstack(backstackEntry.id)
-                                vm.onReloadVpn()
                             },
                         ),
                         secondaryButton = DialogButton(
@@ -463,7 +460,6 @@ fun App(
                             vm.replaceDnsServer(server, savedServer)
                         }
                         navController.tryPopBackstack(backstackEntry.id)
-                        vm.onReloadVpn()
                     },
                     onDelete = if (server.title.isEmpty()) {
                         null
@@ -511,7 +507,6 @@ fun EditFilterDestination(
     filter: Filter,
     vm: HomeViewModel,
     onPopBackStack: () -> Unit,
-    onReloadVpn: () -> Unit,
     onReloadDatabase: () -> Unit,
 ) {
     val showDeleteFilterWarningDialog by vm.showDeleteFilterWarningDialog.collectAsState()
@@ -528,7 +523,6 @@ fun EditFilterDestination(
                     vm.removeFilter(filter)
                     vm.onDismissDeleteFilterWarning()
                     onPopBackStack()
-                    onReloadVpn()
                 },
             ),
             secondaryButton = DialogButton(
@@ -782,8 +776,7 @@ fun HomeScreen(
                         if (blockLog) {
                             vm.onDisableBlockLogWarning()
                         } else {
-                            vm.settings.blockLogging.set(true)
-                            vm.onReloadVpn()
+                            vm.onEnableBlockLog()
                         }
                     },
                     onOpenBlockLog = {
@@ -845,14 +838,11 @@ fun HomeScreen(
                     onRefresh = { vm.populateAppList() },
                     bypassSelection = allowlistDefault,
                     onBypassSelection = { selection ->
-                        vm.settings.appList.defaultMode.set(selection)
-                        vm.onReloadVpn()
-                        vm.populateAppList()
+                        vm.setAllowListMode(selection)
                     },
                     apps = appList,
                     onAppClick = { app, enabled ->
                         vm.onToggleApp(app, enabled)
-                        vm.onReloadVpn()
                     },
                     firstItemFocusRequester = firstItemFocusRequester,
                 )
@@ -870,32 +860,21 @@ fun HomeScreen(
                     servers = dnsServers,
                     customDnsServers = customDnsServers,
                     onCustomDnsServersClick = {
-                        vm.settings.dnsServers.enabled.set(!customDnsServers)
-                        vm.onReloadVpn()
+                        vm.toggleCustomDnsServers()
                     },
                     useNetworkDnsServers = useNetworkDnsServers,
                     onUseNetworkDnsServersClick = {
-                        vm.settings.useNetworkDnsServers.set(!useNetworkDnsServers)
-                        vm.onReloadVpn()
+                        vm.toggleUseNetworkDnsServers()
                     },
                     doh3Support = type == DnsServerType.DoH3,
                     onDoh3SupportClick = {
-                        vm.settings.dnsServers.type.set(
-                            when (type) {
-                                DnsServerType.Standard -> DnsServerType.DoH3
-                                DnsServerType.DoH3 -> DnsServerType.Standard
-                            }
-                        )
-                        vm.onReloadVpn()
+                        vm.toggleDoh3Support()
                     },
                     onItemClick = { item ->
                         topLevelNavController.navigate(item)
                     },
                     onItemCheckClicked = { item ->
                         vm.toggleDnsServer(item)
-                        if (customDnsServers) {
-                            vm.onReloadVpn()
-                        }
                     },
                     firstItemFocusRequester = firstItemFocusRequester,
                 )
