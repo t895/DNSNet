@@ -342,7 +342,7 @@ fn add_line(
     filter_state: &FilterState,
     line: &[u8],
 ) {
-    let mut start_of_line = 0;
+    let start_of_line: usize;
     let mut end_of_line = line.len();
     let mut wildcard = true;
     if line.starts_with(ABP_START) && line.ends_with(ABP_END) {
@@ -366,6 +366,8 @@ fn add_line(
     } else if line.starts_with(NO_ROUTE) {
         start_of_line = NO_ROUTE.len();
         wildcard = false;
+    } else {
+        return;
     }
 
     let host = &line[start_of_line..end_of_line];
@@ -435,18 +437,18 @@ mod tests {
             // Single host denied test
             Filter {
                 title: String::from(""),
-                data: String::from("singlehostdenied.com"),
+                data: String::from("::1 singlehostdenied.com"),
                 state: FilterState::DENY,
             },
             // Single host allowed test
             Filter {
                 title: String::from(""),
-                data: String::from("singlehostallowed.com"),
+                data: String::from("127.0.0.1 singlehostallowed.com"),
                 state: FilterState::DENY,
             },
             Filter {
                 title: String::from(""),
-                data: String::from("singlehostallowed.com"),
+                data: String::from("0.0.0.0 singlehostallowed.com"),
                 state: FilterState::ALLOW,
             },
             // Single star wildcard denied test
