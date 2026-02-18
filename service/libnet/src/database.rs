@@ -369,7 +369,7 @@ fn add_line(
     }
 
     let host = &line[start_of_line..end_of_line];
-    vec.push((host.to_owned(), FilterAction::new(wildcard, *filter_state == FilterState::DENY)));
+    vec.push((host.to_vec(), FilterAction::new(wildcard, *filter_state == FilterState::DENY)));
 }
 
 /// Loads a generic host (file or single host) and adds them to the block list
