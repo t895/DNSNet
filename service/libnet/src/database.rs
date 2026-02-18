@@ -57,18 +57,34 @@ impl RuleDatabaseController {
     }
 }
 
-/// Whether a single filter should be denied or allowed
-#[derive(Clone)]
-enum FilterAction {
-    Deny,
-    Allow,
+struct FilterAction {
+    value: u8
 }
 
-/// Whether a filter is a wildcard or a host name in the [RuleDatabase]
-#[derive(PartialEq)]
-enum FilterType {
-    HostName,
-    Wildcard,
+impl FilterAction {
+    const WILDCARD_FLAG: u8 = 0x2;
+    const DENY_FLAG: u8 = 0x1;
+
+    fn new(wildcard: bool, deny: bool) -> Self {
+        let mut value = 0u8;
+        if wildcard {
+            value |= Self::WILDCARD_FLAG;
+        }
+        if deny {
+            value |= Self::DENY_FLAG;
+        }
+        Self {
+            value
+        }
+    }
+
+    fn is_wildcard(&self) -> bool {
+        self.value & Self::WILDCARD_FLAG > 0
+    }
+
+    fn deny(&self) -> bool {
+        self.value & Self::DENY_FLAG > 0
+    }
 }
 
 #[derive(PartialEq, PartialOrd, Debug, Clone, Copy)]
@@ -83,15 +99,6 @@ pub struct Filter {
     pub title: String,
     pub data: String,
     pub state: FilterState,
-}
-
-impl Into<FilterAction> for FilterState {
-    fn into(self) -> FilterAction {
-        match self {
-            FilterState::DENY => FilterAction::Deny,
-            _ => FilterAction::Allow,
-        }
-    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -123,7 +130,7 @@ pub trait RuleDatabase {
 
 pub struct RuleDatabaseImpl {
     controller: Arc<RuleDatabaseController>,
-    map: RwLock<HashMap<Vec<u8>, (FilterType, FilterAction)>>,
+    map: RwLock<HashMap<Vec<u8>, FilterAction>>,
 }
 
 const BASE_FILE_ITEMS: usize = 200_000;
@@ -157,7 +164,7 @@ impl RuleDatabaseImpl {
             single_filters.len()
         );
 
-        let mut map = HashMap::<Vec<u8>, (FilterType, FilterAction)>::with_capacity(filter_files.len() * BASE_FILE_ITEMS);
+        let mut map = HashMap::<Vec<u8>, FilterAction>::with_capacity(filter_files.len() * BASE_FILE_ITEMS);
 
         let mut sorted_filter_files = filter_files
             .iter()
@@ -166,19 +173,19 @@ impl RuleDatabaseImpl {
         sorted_filter_files.dedup_by(|a, b| a.data.eq(&b.data));
         sorted_filter_files.sort_by(|a, b| a.state.partial_cmp(&b.state).unwrap());
 
-        let (sender, receiver) = mpsc::channel::<Result<Vec::<(Vec<u8>, (FilterType, FilterAction))>, RuleDatabaseError>>();
+        let (sender, receiver) = mpsc::channel::<Result<Vec::<(Vec<u8>, FilterAction)>, RuleDatabaseError>>();
         let mut handles = Vec::<JoinHandle<()>>::new();
         for item in sorted_filter_files.iter() {
             let data = item.data.clone();
             let file = file_helper.get_file(data.clone());
-            let filter_action: FilterAction = item.state.into();
+            let filter_state = item.state.clone();
             let controller = self.controller.clone();
             let sender = sender.clone();
             let thread_handle = thread::spawn(move || {
-                let mut result_vec = Vec::<(Vec<u8>, (FilterType, FilterAction))>::with_capacity(BASE_FILE_ITEMS);
+                let mut result_vec = Vec::<(Vec<u8>, FilterAction)>::with_capacity(BASE_FILE_ITEMS);
                 match file {
                     Some(file) => {
-                        if let Err(database_error) = load_item(file, controller, &mut result_vec, filter_action) {
+                        if let Err(database_error) = load_item(file, controller, &mut result_vec, filter_state) {
                             if let RuleDatabaseError::Interrupted = database_error {
                                 let _ = sender.send(Err(database_error));
                             }
@@ -186,7 +193,7 @@ impl RuleDatabaseImpl {
                     },
                     None => {
                         info!("initialize: Failed to load data {} as file. Loading as single filter.", data);
-                        add_line(&mut result_vec, &filter_action, data.as_bytes());
+                        add_line(&mut result_vec, &filter_state, data.as_bytes());
                     },
                 }
                 let _ = sender.send(Ok(result_vec));
@@ -277,10 +284,7 @@ impl RuleDatabaseImpl {
         }
 
         if let Some(value) = map.get(host_name.as_bytes()) {
-            return match value.1 {
-                FilterAction::Deny => true,
-                FilterAction::Allow => false,
-            };
+            return value.deny();
         } else {
             let mut sub_host_name = host_name;
             for _ in host_name.split('.') {
@@ -292,14 +296,11 @@ impl RuleDatabaseImpl {
                     break;
                 }
                 if let Some(value) = map.get(sub_host_name.as_bytes()) {
-                    if value.0 == FilterType::HostName {
+                    if !value.is_wildcard() {
                         continue;
                     }
 
-                    return match value.1 {
-                        FilterAction::Deny => true,
-                        FilterAction::Allow => false,
-                    };
+                    return value.deny();
                 }
             }
             return false;
@@ -337,13 +338,13 @@ const NEWLINE: u8 = b'\n';
 
 /// Parses a single line in a filter file and adds it to the map if it's valid
 fn add_line(
-    vec: &mut Vec::<(Vec<u8>, (FilterType, FilterAction))>,
-    filter_action: &FilterAction,
+    vec: &mut Vec::<(Vec<u8>, FilterAction)>,
+    filter_state: &FilterState,
     line: &[u8],
 ) {
     let mut start_of_line = 0;
     let mut end_of_line = line.len();
-    let mut filter_type = FilterType::Wildcard;
+    let mut wildcard = true;
     if line.starts_with(ABP_START) && line.ends_with(ABP_END) {
         // AdBlock Plus style filter files use ## for extra functionality that we don't support
         let mut line_window = line.windows(ABP_SPECIAL.len());
@@ -358,29 +359,29 @@ fn add_line(
         start_of_line = 2;
     } else if line.starts_with(IPV4_LOOPBACK) {
         start_of_line = IPV4_LOOPBACK.len();
-        filter_type = FilterType::HostName;
+        wildcard = false;
     } else if line.starts_with(IPV6_LOOPBACK) {
         start_of_line = IPV6_LOOPBACK.len();
-        filter_type = FilterType::HostName;
+        wildcard = false;
     } else if line.starts_with(NO_ROUTE) {
         start_of_line = NO_ROUTE.len();
-        filter_type = FilterType::HostName;
+        wildcard = false;
     }
 
     let host = &line[start_of_line..end_of_line];
-    vec.push((host.to_owned(), (filter_type, filter_action.clone())));
+    vec.push((host.to_owned(), FilterAction::new(wildcard, *filter_state == FilterState::DENY)));
 }
 
 /// Loads a generic host (file or single host) and adds them to the block list
 fn load_item(
     file: File,
     controller: Arc<RuleDatabaseController>,
-    vec: &mut Vec::<(Vec<u8>, (FilterType, FilterAction))>,
-    filter_action: FilterAction,
+    vec: &mut Vec::<(Vec<u8>, FilterAction)>,
+    filter_state: FilterState,
 ) -> Result<(), RuleDatabaseError> {
     match unsafe { Mmap::map(&file) } {
         Ok(file) => {
-            if let Err(error) = load_file(controller, vec, filter_action, &file) {
+            if let Err(error) = load_file(controller, vec, filter_state, &file) {
                 if let RuleDatabaseError::Interrupted = error {
                     return Err(error);
                 }
@@ -397,8 +398,8 @@ fn load_item(
 /// Loads a file of filters and adds them to the block list
 fn load_file(
     controller: Arc<RuleDatabaseController>,
-    vec: &mut Vec::<(Vec<u8>, (FilterType, FilterAction))>,
-    filter_action: FilterAction,
+    vec: &mut Vec::<(Vec<u8>, FilterAction)>,
+    filter_state: FilterState,
     file: &[u8],
 ) -> Result<(), RuleDatabaseError> {
     let lines = file.split(|char| *char == NEWLINE);
@@ -407,7 +408,7 @@ fn load_file(
             return Err(RuleDatabaseError::Interrupted);
         }
 
-        let _ = add_line(vec, &filter_action, line);
+        let _ = add_line(vec, &filter_state, line);
     }
     return Ok(());
 }
