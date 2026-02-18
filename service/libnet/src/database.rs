@@ -341,7 +341,7 @@ fn add_line(
     filter_action: &FilterAction,
     line: &[u8],
 ) {
-    let start_of_line: usize;
+    let mut start_of_line = 0;
     let mut end_of_line = line.len();
     let mut filter_type = FilterType::Wildcard;
     if line.starts_with(ABP_START) && line.ends_with(ABP_END) {
@@ -365,8 +365,6 @@ fn add_line(
     } else if line.starts_with(NO_ROUTE) {
         start_of_line = NO_ROUTE.len();
         filter_type = FilterType::HostName;
-    } else {
-        return;
     }
 
     let host = &line[start_of_line..end_of_line];
