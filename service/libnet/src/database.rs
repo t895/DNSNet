@@ -342,15 +342,7 @@ fn add_line(
     filter_action: &FilterAction,
     line: &[u8],
 ) {
-    if line.is_empty() {
-        return;
-    }
-
-    if line.starts_with(COMMENT) {
-        return;
-    }
-
-    let mut start_of_line = 0;
+    let start_of_line: usize;
     let mut end_of_line = line.len();
     let mut filter_type = FilterType::Wildcard;
     if line.starts_with(ABP_START) && line.ends_with(ABP_END) {
@@ -374,13 +366,11 @@ fn add_line(
     } else if line.starts_with(NO_ROUTE) {
         start_of_line = NO_ROUTE.len();
         filter_type = FilterType::HostName;
-    }
-
-    let host = &line[start_of_line..end_of_line];
-    if host.trim_ascii().is_empty() {
+    } else {
         return;
     }
 
+    let host = &line[start_of_line..end_of_line];
     vec.push((host.to_owned(), (filter_type, filter_action.clone())));
 }
 
