@@ -1,4 +1,4 @@
-use std::{fs::File, sync::Arc, time::Duration};
+use std::{fs::File, io::Read, sync::Arc, time::Duration};
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use net::{
@@ -17,7 +17,7 @@ impl FileHelper for BenchmarkFileHelper {
     }
 }
 
-fn load_files(files: Vec<&str>) {
+fn load_files(files: Vec<&str>) -> RuleDatabaseImpl {
     let database = RuleDatabaseImpl::new(Arc::new(RuleDatabaseController::new()));
     let file_helper: Box<&dyn FileHelper> = Box::from(&BenchmarkFileHelper as &dyn FileHelper);
     if let Err(_) = database.initialize(
@@ -34,22 +34,23 @@ fn load_files(files: Vec<&str>) {
     ) {
         panic!("Failed to initialize database");
     }
+    database
 }
 
 fn criterion_bench_load_data(c: &mut Criterion) {
-    let mut group = c.benchmark_group("Load");
-    group.measurement_time(Duration::from_secs(30));
+    let mut load_group = c.benchmark_group("Load");
+    load_group.measurement_time(Duration::from_secs(10));
 
-    group.bench_function("oisd ABP Load", |b| {
+    load_group.bench_function("oisd ABP Load", |b| {
         b.iter(|| load_files(vec!["./benches/test-data/oisd_big_abp.txt"]))
     });
-    group.bench_function("hagezi Wildcard Load", |b| {
+    load_group.bench_function("hagezi Wildcard Load", |b| {
         b.iter(|| load_files(vec!["./benches/test-data/hagezi_ultimate_wildcard.txt"]))
     });
-    group.bench_function("Stevenblack Hosts Load", |b| {
+    load_group.bench_function("Stevenblack Hosts Load", |b| {
         b.iter(|| load_files(vec!["./benches/test-data/stevenblack_hosts.txt"]))
     });
-    group.bench_function("All", |b| {
+    load_group.bench_function("All", |b| {
         b.iter(|| {
             load_files(vec![
                 "./benches/test-data/oisd_big_abp.txt",
@@ -58,8 +59,23 @@ fn criterion_bench_load_data(c: &mut Criterion) {
             ])
         })
     });
+    load_group.finish();
 
-    group.finish();
+    let mut lookup_group = c.benchmark_group("Lookup");
+    lookup_group.measurement_time(Duration::from_secs(10));
+    lookup_group.bench_function("Is Blocked", |b| {
+        b.iter(|| {
+            let path = String::from("./benches/test-data/oisd_big_abp.txt");
+            let database = load_files(vec![&path]);
+            let mut file = BenchmarkFileHelper.get_file(path).unwrap();
+            let mut buf = String::from("");
+            file.read_to_string(&mut buf).unwrap();
+            buf.lines().for_each(|line| {
+                database.is_blocked(line);
+            });
+        });
+    });
+    lookup_group.finish();
 }
 
 criterion_group!(benches, criterion_bench_load_data);
