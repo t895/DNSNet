@@ -1,7 +1,8 @@
 use std::{
-    collections::HashMap, fs::File, sync::{Arc, RwLock, atomic::AtomicBool, mpsc}, thread::{self, JoinHandle}, time::Duration
+    fs::File, sync::{Arc, RwLock, atomic::AtomicBool, mpsc}, thread::{self, JoinHandle}, time::Duration
 };
 
+use ahash::{HashMap, HashMapExt};
 use log::{error, info, warn};
 use memmap2::Mmap;
 
@@ -122,8 +123,10 @@ pub trait RuleDatabase {
 
 pub struct RuleDatabaseImpl {
     controller: Arc<RuleDatabaseController>,
-    map: RwLock<HashMap<Vec<u8>, (FilterType, FilterAction), ahash::RandomState>>,
+    map: RwLock<HashMap<Vec<u8>, (FilterType, FilterAction)>>,
 }
+
+const BASE_FILE_ITEMS: usize = 200_000;
 
 impl RuleDatabaseImpl {
     pub fn new(controller: Arc<RuleDatabaseController>) -> Self {
@@ -154,7 +157,7 @@ impl RuleDatabaseImpl {
             single_filters.len()
         );
 
-        let mut map = HashMap::<Vec<u8>, (FilterType, FilterAction), ahash::RandomState>::default();
+        let mut map = HashMap::<Vec<u8>, (FilterType, FilterAction)>::with_capacity(filter_files.len() * BASE_FILE_ITEMS);
 
         let mut sorted_filter_files = filter_files
             .iter()
@@ -172,7 +175,7 @@ impl RuleDatabaseImpl {
             let controller = self.controller.clone();
             let sender = sender.clone();
             let thread_handle = thread::spawn(move || {
-                let mut result_vec = Vec::<(Vec<u8>, (FilterType, FilterAction))>::new();
+                let mut result_vec = Vec::<(Vec<u8>, (FilterType, FilterAction))>::with_capacity(BASE_FILE_ITEMS);
                 match file {
                     Some(file) => {
                         if let Err(database_error) = load_item(file, controller, &mut result_vec, filter_action) {
@@ -231,6 +234,7 @@ impl RuleDatabaseImpl {
             }
         };
 
+        map.shrink_to_fit();
         *filter_guard = map;
 
         info!(
