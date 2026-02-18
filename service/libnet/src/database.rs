@@ -333,7 +333,6 @@ const WILDCARD: &'static [u8] = b"*.";
 const ABP_START: &'static [u8] = b"||";
 const ABP_END: &'static [u8] = b"^";
 const ABP_SPECIAL: &'static [u8] = b"##";
-const COMMENT: &'static [u8] = b"#";
 const NEWLINE: u8 = b'\n';
 
 /// Parses a single line in a filter file and adds it to the map if it's valid
