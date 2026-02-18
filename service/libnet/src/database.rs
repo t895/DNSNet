@@ -279,8 +279,8 @@ impl RuleDatabaseImpl {
             };
         } else {
             let mut sub_host_name = host_name;
-            for split in host_name.split('.') {
-                sub_host_name = match sub_host_name.split_once(&(split.to_owned() + ".")) {
+            for _ in host_name.split('.') {
+                sub_host_name = match sub_host_name.split_once('.') {
                     Some(value) => value.1,
                     None => break,
                 };
