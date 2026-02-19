@@ -333,7 +333,7 @@ const NO_ROUTE: &'static [u8] = b"0.0.0.0 ";
 const WILDCARD: &'static [u8] = b"*.";
 const ABP_START: &'static [u8] = b"||";
 const ABP_END: &'static [u8] = b"^";
-const ABP_SPECIAL: &'static [u8] = b"##";
+const ABP_SPECIAL: u8 = b'#';
 const NEWLINE: u8 = b'\n';
 const NEWLINE_SPLAT: std::simd::u8x64 = std::simd::u8x64::splat(NEWLINE);
 
@@ -348,11 +348,8 @@ fn add_line(
     let mut wildcard = true;
     if line.starts_with(ABP_START) && line.ends_with(ABP_END) {
         // AdBlock Plus style filter files use ## for extra functionality that we don't support
-        let mut line_window = line.windows(ABP_SPECIAL.len());
-        while let Some(value) = line_window.next() {
-            if value == ABP_SPECIAL {
-                return;
-            }
+        if line.contains(&ABP_SPECIAL) {
+            return
         }
         start_of_line = 2;
         end_of_line -= 1;
