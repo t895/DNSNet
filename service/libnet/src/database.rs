@@ -342,7 +342,7 @@ fn add_line(
     filter_state: &FilterState,
     line: &[u8],
 ) {
-    let start_of_line: usize;
+    let mut start_of_line = 0;
     let mut end_of_line = line.len();
     let mut wildcard = true;
     if line.starts_with(ABP_START) && line.ends_with(ABP_END) {
@@ -366,8 +366,6 @@ fn add_line(
     } else if line.starts_with(NO_ROUTE) {
         start_of_line = NO_ROUTE.len();
         wildcard = false;
-    } else {
-        return;
     }
 
     let host = &line[start_of_line..end_of_line];
@@ -437,6 +435,12 @@ mod tests {
             // Single host denied test
             Filter {
                 title: String::from(""),
+                data: String::from("anothersinglehostdenied.com"),
+                state: FilterState::DENY,
+            },
+            // Single host denied test
+            Filter {
+                title: String::from(""),
                 data: String::from("::1 singlehostdenied.com"),
                 state: FilterState::DENY,
             },
@@ -491,6 +495,9 @@ mod tests {
         if let Err(error) = database.initialize(&file_helper, vec![], single_filters) {
             panic!("Failed to initialize database! - {:?}", error)
         }
+
+        // Single host name denied
+        assert!(database.is_blocked("anothersinglehostdenied.com"));
 
         // Single host name denied
         assert!(database.is_blocked("singlehostdenied.com"));
