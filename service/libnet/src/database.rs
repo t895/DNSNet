@@ -1,5 +1,5 @@
 use std::{
-    fs::File, sync::{Arc, RwLock, atomic::AtomicBool, mpsc}, thread::{self, JoinHandle}, time::Duration
+    fs::File, simd::cmp::SimdPartialEq, sync::{Arc, RwLock, atomic::AtomicBool, mpsc}, thread::{self, JoinHandle}, time::Duration
 };
 
 use ahash::{HashMap, HashMapExt};
@@ -335,6 +335,7 @@ const ABP_START: &'static [u8] = b"||";
 const ABP_END: &'static [u8] = b"^";
 const ABP_SPECIAL: &'static [u8] = b"##";
 const NEWLINE: u8 = b'\n';
+const NEWLINE_SPLAT: std::simd::u8x64 = std::simd::u8x64::splat(NEWLINE);
 
 /// Parses a single line in a filter file and adds it to the map if it's valid
 fn add_line(
@@ -402,13 +403,33 @@ fn load_file(
     filter_state: FilterState,
     file: &[u8],
 ) -> Result<(), RuleDatabaseError> {
-    let lines = file.split(|char| *char == NEWLINE);
-    for line in lines {
+    let simd_width = NEWLINE_SPLAT.len();
+    let file_len = file.len();
+    let mut line_start = 0usize;
+    let mut window_start = line_start;
+    let mut window_end = file_len.min(simd_width);
+    while window_end < file_len {
         if controller.get_should_stop() {
             return Err(RuleDatabaseError::Interrupted);
         }
 
-        let _ = add_line(vec, &filter_state, line);
+        let line_simd = std::simd::u8x64::from_slice(&file[window_start..window_end]);
+        let result_mask = line_simd.simd_eq(NEWLINE_SPLAT);
+        let index = result_mask.to_bitmask().trailing_zeros() as usize;
+        if index < simd_width {
+            if index > 0 || (index == 0 && line_start != window_start) {
+                let line_end = window_end - (simd_width - index);
+                add_line(vec, &filter_state, &file[line_start..line_end]);
+                line_start = line_end;
+            } else {
+                line_start += 1;
+            }
+            window_start = line_start;
+            window_end = file_len.min(window_start + simd_width);
+        } else {
+            window_start = file_len.min(window_start + simd_width);
+            window_end = file_len.min(window_end + simd_width);
+        }
     }
     return Ok(());
 }

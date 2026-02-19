@@ -6,6 +6,8 @@
  * (at your option) any later version.
  */
 
+ #![feature(portable_simd)]
+
 pub mod backend;
 pub mod cache;
 pub mod controller;
