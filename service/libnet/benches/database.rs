@@ -39,7 +39,7 @@ fn load_files(files: Vec<&str>) -> RuleDatabaseImpl {
 
 fn criterion_bench_load_data(c: &mut Criterion) {
     let mut load_group = c.benchmark_group("Load");
-    load_group.measurement_time(Duration::from_secs(10));
+    load_group.measurement_time(Duration::from_secs(30));
 
     load_group.bench_function("oisd ABP Load", |b| {
         b.iter(|| load_files(vec!["./benches/test-data/oisd_big_abp.txt"]))
@@ -62,7 +62,7 @@ fn criterion_bench_load_data(c: &mut Criterion) {
     load_group.finish();
 
     let mut lookup_group = c.benchmark_group("Lookup");
-    lookup_group.measurement_time(Duration::from_secs(10));
+    lookup_group.measurement_time(Duration::from_secs(30));
     lookup_group.bench_function("Is Blocked", |b| {
         b.iter(|| {
             let path = String::from("./benches/test-data/oisd_big_abp.txt");
