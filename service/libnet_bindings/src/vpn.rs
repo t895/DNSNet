@@ -292,6 +292,7 @@ impl Vpn {
         block_logger: Option<Box<dyn BlockLoggerBinding>>,
         rule_database: Arc<RuleDatabaseBinding>,
         file_helper: Box<dyn FileHelperBinding>,
+        is_doh3: bool,
     ) -> Result<VpnResultBinding, VpnErrorBinding> {
         let mut packet = vec![0u8; i16::MAX as usize];
 
@@ -335,10 +336,6 @@ impl Vpn {
                 VpnConfigurationResult::Success(fd, servers) => (fd, servers),
             };
 
-        let is_doh3 = dns_servers.iter().any(|container| match container.server {
-            NativeDnsServer::DoH3(_, _, _) => true,
-            NativeDnsServer::Standard(_) => false,
-        });
         let mut backend: Box<dyn DnsBackend> =
             if is_doh3 {
                 match DoH3Backend::new(

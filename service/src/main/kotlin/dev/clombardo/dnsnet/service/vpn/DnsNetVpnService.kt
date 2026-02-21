@@ -576,7 +576,8 @@ class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
                 null
             },
             ruleDatabaseManager = ruleDatabaseManager,
-            context = applicationContext
+            context = applicationContext,
+            isDoh3 = configuration.read { dnsServers.type == DnsServerType.DoH3 },
         )
     }
 
@@ -744,6 +745,7 @@ class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
                 vpnController = vpnController,
                 ipv6Support = ipv6Support,
                 userServers = unvalidatedDnsServers,
+                isDoh3 = configuration.read { dnsServers.type == DnsServerType.DoH3 },
                 dnsCache = dnsCache
             )
 

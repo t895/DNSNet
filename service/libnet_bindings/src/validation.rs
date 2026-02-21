@@ -158,6 +158,7 @@ pub fn validate_dns_servers(
     vpn_controller: Arc<VpnControllerBinding>,
     dns_cache: Arc<DnsCacheBinding>,
     ipv6_support: bool,
+    is_doh3: bool,
     user_servers: Vec<String>,
 ) -> Result<ValidateDnsResult, ValidateDnsError> {
     let mut validated_servers = Vec::<Arc<NativeDnsServerContainer>>::new();
@@ -171,31 +172,33 @@ pub fn validate_dns_servers(
     };
     let sender_holder = Arc::new(RwLock::new(sender_pipe));
     for (index, unvalidated_server) in user_servers.iter().enumerate() {
-        match IpAddr::from_str(&unvalidated_server) {
-            Ok(value) => {
-                match value {
-                    IpAddr::V4(ipv4_addr) => {
-                        debug!("validate_dns_server: Validated {}", ipv4_addr);
-                        validated_servers.push(Arc::new(NativeDnsServerContainer::new(
-                            NativeDnsServer::Standard(ipv4_addr.octets().to_vec()),
-                        )));
-                    }
-                    IpAddr::V6(ipv6_addr) => {
-                        if ipv6_support {
-                            debug!("validate_dns_server: Validated {}", ipv6_addr);
+        if !is_doh3 {
+            match IpAddr::from_str(&unvalidated_server) {
+                Ok(value) => {
+                    match value {
+                        IpAddr::V4(ipv4_addr) => {
+                            debug!("validate_dns_server: Validated {}", ipv4_addr);
                             validated_servers.push(Arc::new(NativeDnsServerContainer::new(
-                                NativeDnsServer::Standard(ipv6_addr.octets().to_vec()),
+                                NativeDnsServer::Standard(ipv4_addr.octets().to_vec()),
                             )));
+                        }
+                        IpAddr::V6(ipv6_addr) => {
+                            if ipv6_support {
+                                debug!("validate_dns_server: Validated {}", ipv6_addr);
+                                validated_servers.push(Arc::new(NativeDnsServerContainer::new(
+                                    NativeDnsServer::Standard(ipv6_addr.octets().to_vec()),
+                                )));
+                            }
                         }
                     }
                 }
-                continue;
-            }
-            Err(error) => debug!(
-                "validate_dns_servers: Could not parse {unvalidated_server} - {:?}",
-                error
-            ),
-        };
+                Err(error) => debug!(
+                    "validate_dns_servers: Could not parse {unvalidated_server} - {:?}",
+                    error
+                ),
+            };
+            continue;
+        }
 
         let mut stripped_server = unvalidated_server
             .strip_prefix("https://")
