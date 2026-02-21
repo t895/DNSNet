@@ -20,7 +20,6 @@ use mio::{
     Events, Interest, Poll, Token,
     unix::{SourceFd, pipe},
 };
-use net::backend::DnsServer;
 
 use crate::{VpnResultBinding, cache::DnsCacheBinding, vpn::VpnControllerBinding};
 
@@ -47,17 +46,6 @@ impl NativeDnsServerContainer {
             NativeDnsServer::DoH3(address, _, _) => address,
             NativeDnsServer::Standard(address) => address,
         }.clone()
-    }
-}
-
-impl Into<DnsServer> for NativeDnsServer {
-    fn into(self) -> DnsServer {
-        match self {
-            NativeDnsServer::DoH3(address, host_name, path) => {
-                DnsServer::DoH3(address, host_name, path)
-            }
-            NativeDnsServer::Standard(address) => DnsServer::Standard(address),
-        }
     }
 }
 
