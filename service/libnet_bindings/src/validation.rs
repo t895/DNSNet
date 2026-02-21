@@ -197,7 +197,7 @@ pub fn validate_dns_servers(
             ),
         };
 
-        let stripped_server = unvalidated_server
+        let mut stripped_server = unvalidated_server
             .strip_prefix("https://")
             .unwrap_or(&unvalidated_server);
 
@@ -209,7 +209,15 @@ pub fn validate_dns_servers(
         }
 
         let path = match stripped_server.find("/") {
-            Some(index) => Some(stripped_server[index..].to_string()),
+            Some(index) => {
+                let path = stripped_server[index..].to_string();
+                stripped_server = stripped_server.strip_suffix(&path).unwrap_or(stripped_server);
+                if path == "/" || path == "/dns-query" {
+                    None
+                } else {
+                    Some(path)
+                }
+            },
             None => None,
         };
 
