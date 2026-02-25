@@ -89,10 +89,16 @@ class RuleDatabaseManager(
     fun setShouldStop(shouldStop: Boolean) = ruleDatabaseController.setShouldStop(shouldStop)
 
     fun destroy() {
-        onLoadedFiltersChanged(0UL)
+        if (destroyed) {
+            return
+        }
         destroyed = true
+        setShouldStop(true)
         waitOnInit()
-        ruleDatabase.destroy()
-        ruleDatabaseController.destroy()
+        onLoadedFiltersChanged(0UL)
+        CoroutineScope(Dispatchers.IO).launch {
+            ruleDatabase.destroy()
+            ruleDatabaseController.destroy()
+        }
     }
 }
