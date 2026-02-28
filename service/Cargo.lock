@@ -890,9 +890,9 @@ dependencies = [
 
 [[package]]
 name = "octets"
-version = "0.3.4"
+version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2ba5d98c13e549f6f26f7d70808688ab85c6b42eb350ba2524d96c24ebde27e9"
+checksum = "8311fa8ab7a57759b4ff1f851a3048d9ef0effaa0130726426b742d26d8a88e7"
 
 [[package]]
 name = "once_cell"
@@ -992,9 +992,9 @@ dependencies = [
 
 [[package]]
 name = "quiche"
-version = "0.25.0"
+version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f43add8fa7e790331d35b15e92f2e725dd981e563f908eccad7f95101485312"
+checksum = "ae3d74f54c01a8be984dabe97ec79b9fceba5054177f703c012ed0f9dc541f81"
 dependencies = [
  "cmake",
  "either",
