@@ -198,4 +198,7 @@
     <string name="supported_formats_adblock_plus">Adblock Plus (por exemplo, ||exemplo.com^)</string>
     <string name="skip_this_step">Pular esta etapa</string>
     <string name="skip_presets_description">Se pular esta etapa, você precisará configurar manualmente o bloqueio de conteúdo depois.</string>
+    <string name="address_not_reachable">Endereço não acessível</string>
+    <string name="activity_not_found">Atividade não encontrada</string>
+    <string name="x_filters_loaded">%s filtros carregados</string>
 </resources>
