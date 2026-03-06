@@ -168,9 +168,9 @@
     <string name="notifications">Bildirimler</string>
     <string name="notice_vpn_service">Çalışmak için bir \"VPN (Sanal Gizli Ağ) hizmeti\" kullanıyoruz. Bilindiği üzere VPNler internet trafiğinizi uzak bir sunucudan yeniden yönlendirir, fakat bu durum DNSNet için geçerli değil. Bu tür bir hizmet bütün işlemler cihaz üstünde, internet trafiğinizi filtrelemek için yapılır. Bu, aynı zamanda, DNSNet ile aynı anda başka bir \"VPN hizmeti\" kullanamayacağınız anlamına geliyor.</string>
     <string name="notice_application">İçeriği bir hizmete bağlanmak için kullanılan sunucu adresi temelli olarak engelliyoruz (örn. google.com). Eğer bir hizmet ana içeriğini ve istenmeyen herhangi bir şeyi aynı sunucu adresi üzerinden yükleyecek olursa, istenmeyen içeriği engelleyemeyiz.</string>
-    <string name="grant">İzin ver</string>
+    <string name="grant">Yetki Ver</string>
     <string name="learn_more">Daha fazlasını öğren</string>
-    <string name="button_continue">Devam et</string>
+    <string name="button_continue">Sürdür</string>
     <string name="use_dns_servers_from_active_network">Etkin ağdan sunucular kullan</string>
     <string name="hagezi_dns_blocklists_description">Farklı boyutlara sahip derleme engel listeleri. Reklamları, takip ölçevlerini, ve zararlı yazılımları engeller.</string>
     <string name="oisd_big_description">Önemli miktarda sistem belleği alacak tam liste. Bunun ne anlama geldiğini bilmiyorsanız, bunun yerine küçük listeyi seçin.</string>
