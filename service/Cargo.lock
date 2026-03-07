@@ -992,9 +992,9 @@ dependencies = [
 
 [[package]]
 name = "quiche"
-version = "0.26.0"
+version = "0.26.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae3d74f54c01a8be984dabe97ec79b9fceba5054177f703c012ed0f9dc541f81"
+checksum = "c24cee496cc37e2a86c95013008fe59378f4ddc1172dcf60e44e1eef7c35c8e7"
 dependencies = [
  "cmake",
  "either",
