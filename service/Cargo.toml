@@ -15,7 +15,7 @@ base64 = "0.22.1"
 bincode = "2.0.1"
 criterion = { version = "0.8.2", features = ["html_reports"] }
 etherparse = "0.19.0"
-getrandom = "0.4.1"
+getrandom = "0.4.2"
 log = "0.4.29"
 lru = "0.16.3"
 mio = { version="1.1.1", features=["net","os-poll","os-ext"] }
