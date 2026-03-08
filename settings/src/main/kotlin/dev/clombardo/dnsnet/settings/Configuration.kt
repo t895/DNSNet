@@ -364,7 +364,7 @@ data class Filters(
 @Serializable
 data class DnsServers(
     var enabled: Boolean = false,
-    var type: DnsServerType = DnsServerType.Standard,
+    var type: DnsServerType = DnsServerType.DoH3,
     var items: MutableList<DnsServer> = defaultServers.toMutableList(),
 ) {
     fun getCurrentServers(): List<DnsServer> =
