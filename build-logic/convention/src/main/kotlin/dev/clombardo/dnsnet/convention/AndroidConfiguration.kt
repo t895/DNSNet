@@ -18,9 +18,7 @@ import org.gradle.kotlin.dsl.provideDelegate
 internal fun Project.configureAndroid(
     commonExtension: CommonExtension,
 ) = with(commonExtension) {
-    compileSdk {
-        version = release(libs.findVersion("compileSdk").get().toString().toInt())
-    }
+    compileSdkPreview = libs.findVersion("compileSdk").get().toString()
 
     buildToolsVersion = libs.findVersion("buildTools").get().toString()
 
