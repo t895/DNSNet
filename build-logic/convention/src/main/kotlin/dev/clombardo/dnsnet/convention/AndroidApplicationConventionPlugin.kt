@@ -21,7 +21,9 @@ abstract class AndroidApplicationConventionPlugin : Plugin<Project> {
     override fun apply(target: Project): Unit = with(target) {
         apply(plugin = "com.android.application")
         extensions.configure<ApplicationExtension> {
-            defaultConfig.targetSdkPreview = libs.findVersion("targetSdk").get().toString()
+            defaultConfig.targetSdk {
+                version = release(libs.findVersion("targetSdk").get().toString().toInt())
+            }
             configureKotlin()
             configureAndroid(this)
         }

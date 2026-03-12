@@ -19,11 +19,11 @@ kotlin {
 
 androidTest {
     namespace = "dev.clombardo.baselineprofile"
-    compileSdkPreview = libs.versions.compileSdk.get()
+    compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
         minSdk = libs.versions.minSdkBaselineProfile.get().toInt()
-        targetSdkPreview = libs.versions.targetSdk.get()
+        targetSdk = libs.versions.targetSdk.get().toInt()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
