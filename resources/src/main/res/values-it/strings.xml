@@ -31,7 +31,7 @@
         <item>@string/ignore</item>
     </string-array>
     <!-- Translate with something like <Language> Translation: Your Name -->
-    <string name="translator_credits">Traduzione italiana: TJL73 - http://tjl73.altervista.org/</string>
+    <string name="translator_credits">Traduzione italiana: TJL73, spyrotsk</string>
     <string name="app_version_info">Versione: %s</string>
     <string name="button_no">No</string>
     <string name="button_yes">Sì</string>
@@ -67,7 +67,7 @@
     <string name="hagezi_dns_blocklists_light_description">Non dovrebbe causare alcuna restrizione e utilizzerà il minimo delle risorse di sistema.</string>
     <string name="oisd_big">oisd - grande</string>
     <string name="hagezi_dns_blocklists_ultimate_description">Limiterà le funzionalità in molte app e siti web. Dovrebbe essere usato solo da utenti molto esperti.</string>
-    <string name="oisd_small">oisd - piccolo</string>
+    <string name="oisd_small">oisd - ridotto</string>
     <string name="notice_vpn_service">Utilizziamo un \"servizio VPN (Virtual Private Network)\" per funzionare. Tradizionalmente le VPN reindirizzano il tuo traffico internet attraverso un server remoto, ma questo non è il caso di DNSNet. Questo tipo di servizio viene utilizzato come un modo per filtrare il tuo traffico internet con tutta l\'elaborazione eseguita sul dispositivo. Questo significa anche che non potrai utilizzare nessun altro \"servizio VPN\" contemporaneamente a DNSNet.</string>
     <string name="presets">Preset</string>
     <string name="presets_description">Selezionare il tipo di contenuto che si desidera bloccare da elenchi di blocco ben noti e regolarmente aggiornati</string>
@@ -89,8 +89,8 @@
     <string name="stevenblack_hosts_description">Aggrega diverse fonti per i domini bloccati. Può rompere alcune applicazioni.</string>
     <string name="stevenblack_hosts_gambling">StevenBlack - Gioco d\'azzardo</string>
     <string name="stevenblack_hosts_nsfw">StevenBlack - Esplicito</string>
-    <string name="oisd_description">Aumenta la privacy riducendo gli annunci e il malware. Privilegia la stabilità rispetto al blocco.</string>
-    <string name="oisd_big_description">Elenco completo che richiede una quantità significativa di memoria di sistema. Se non sapete cosa significa, selezionate invece l\'elenco piccolo.</string>
+    <string name="oisd_description">Aumenta la privacy riducendo annunci e malware. Privilegia la stabilità rispetto al blocco.</string>
+    <string name="oisd_big_description">Elenco completo: richiede una quantità significativa di memoria di sistema. Se non sai cosa significa, seleziona l\'elenco ridotto.</string>
     <string name="oisd_small_description">Versione più leggera dell\'elenco, meno esigente per la memoria del sistema.</string>
     <string name="export_description">Crea una copia di backup della tua configurazione</string>
     <string name="import_description">Carica un file di impostazioni di backup</string>
