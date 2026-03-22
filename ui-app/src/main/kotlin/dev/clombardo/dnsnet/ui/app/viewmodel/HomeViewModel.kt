@@ -507,7 +507,7 @@ class HomeViewModel @AssistedInject constructor(
     fun pingAddress(address: String): Boolean =
         try {
             InetAddress.getByName(
-                address.substringBeforeLast("/").substringAfterLast("/")
+                address.substringAfter("://").substringBefore("/")
             ).isReachable(3_000)
         } catch (_: UnknownHostException) {
             false
