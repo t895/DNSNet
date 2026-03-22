@@ -50,6 +50,7 @@ jobs:
         with:
           ndk-version: r29
           link-to-sdk: true
+          add-to-path: true
 
       - name: Give execution permissions to the gradle wrapper
         run: chmod +x ./gradlew
