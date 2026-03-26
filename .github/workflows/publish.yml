@@ -140,6 +140,8 @@ jobs:
           ANDROID_NDK_ROOT: ${{ steps.setup-ndk.outputs.ndk-path }}
           ANDROID_NDK_LATEST_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
         run: |
+          sudo rm -rf /usr/local/lib/android/sdk/ndk/27.3.13750724
+          sudo rm -rf /usr/local/lib/android/sdk/ndk/28.2.13676358
           echo "${{secrets.STORE_FILE}}" | base64 --decode > ${HOME}/keyfile.jks
           export STORE_FILE_PATH=${HOME}/keyfile.jks
           echo "${{secrets.SERVICE_ACCOUNT_KEY_FILE}}" | base64 --decode > ${HOME}/servicekey.json
