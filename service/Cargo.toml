@@ -18,7 +18,7 @@ etherparse = "0.19.0"
 getrandom = "0.4.2"
 log = "0.4.29"
 lru = "0.16.3"
-mio = { version="1.1.1", features=["net","os-poll","os-ext"] }
+mio = { version="1.2.0", features=["net","os-poll","os-ext"] }
 memmap2 = "0.9.10"
 quiche = "0.26.1"
 simple-dns = "0.11.2"
