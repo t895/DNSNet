@@ -75,7 +75,7 @@
     <string name="reset_settings_warning_description">Esto eliminará permanentemente tus ajustes actuales.</string>
     <string name="open_license">Licencia abierta</string>
     <string name="hagezi_dns_blocklists_light_description">No debería generar ninguna restricción y utilizará la menor cantidad de recursos del sistema.</string>
-    <string name="stevenblack_hosts_nsfw">StevenBlack - Not safe for work</string>
+    <string name="stevenblack_hosts_nsfw">StevenBlack - Contenido explicito NSFW</string>
     <string name="oisd_big_description">Lista completa que ocupará una cantidad significativa de memoria del sistema. Si no sabes lo que esto significa, selecciona la lista small en su lugar.</string>
     <string name="no_block_items">No se han encontrado listas de bloqueo ni dominios</string>
     <string name="view_source">Ver fuente</string>
@@ -89,7 +89,7 @@
     <string name="confirm">Confirmar</string>
     <string name="hagezi_dns_blocklists_description">Listas de bloqueo unificadas de distintos tamaños. Bloquea anuncios, rastreo, métricas y malware.</string>
     <string name="hagezi_dns_blocklists_light">hagezi - Light</string>
-    <string name="hagezi_dns_blocklists_normal">hagezi - Normal</string>
+    <string name="hagezi_dns_blocklists_normal">hagezi - Estándar</string>
     <string name="hagezi_dns_blocklists_normal_description">En general, no debería conllevar ninguna restricción.</string>
     <string name="hagezi_dns_blocklists_pro">hagezi - Pro</string>
     <string name="hagezi_dns_blocklists_pro_description">Solo en muy raras ocasiones debería dar lugar a restricciones. Es posible que tengas que desbloquear dominios específicos.</string>
@@ -98,8 +98,8 @@
     <string name="stevenblack_hosts">StevenBlack\'s hosts</string>
     <string name="stevenblack_hosts_description">Unifica varias fuentes de dominios bloqueados. Puede romper algunas aplicaciones.</string>
     <string name="stevenblack_hosts_adware_malware">StevenBlack - Adware + malware</string>
-    <string name="stevenblack_hosts_gambling">StevenBlack - Gambling</string>
-    <string name="stevenblack_hosts_social_media">StevenBlack - Social media</string>
+    <string name="stevenblack_hosts_gambling">StevenBlack - Apuestas</string>
+    <string name="stevenblack_hosts_social_media">StevenBlack - Redes sociales</string>
     <string name="oisd">oisd</string>
     <string name="oisd_small">oisd - small</string>
     <string name="oisd_small_description">Versión más pequeña de la lista big que ocupa menos memoria del sistema.</string>
@@ -193,7 +193,7 @@
     <string name="supported_formats_wildcard">Comodín (por ejemplo, *.ejemplo.com)</string>
     <string name="doh3_warning">Es necesario seleccionar al menos un servidor</string>
     <string name="doh3_description">Envía tus peticiones DNS de forma segura. Utiliza URLs \"https://ejemplo.com/dns-query\".</string>
-    <string name="hagezi_dns_blocklists">hagezi\'s DNS-Blocklists</string>
+    <string name="hagezi_dns_blocklists">hagezi\'s DNS-Listas de bloqueo</string>
     <string name="doh3">DNS mediante HTTP/3</string>
     <string name="filter_field_hint">Filtro</string>
     <string name="address">Dirección</string>
@@ -201,4 +201,5 @@
     <string name="skip_presets_description">Si te saltas este paso, tendrás que configurar manualmente el bloqueo de contenido más adelante.</string>
     <string name="address_not_reachable">Dirección no accesible</string>
     <string name="activity_not_found">Actividad no encontrada</string>
+    <string name="x_filters_loaded">filtros cargados</string>
 </resources>
