@@ -201,5 +201,5 @@
     <string name="skip_presets_description">Si te saltas este paso, tendrás que configurar manualmente el bloqueo de contenido más adelante.</string>
     <string name="address_not_reachable">Dirección no accesible</string>
     <string name="activity_not_found">Actividad no encontrada</string>
-    <string name="x_filters_loaded">filtros cargados</string>
+    <string name="x_filters_loaded">%s filtros cargados</string>
 </resources>
