@@ -200,4 +200,5 @@
     <string name="skip_presets_description">Jeżeli pominiesz ten krok, później będziesz musiał ręcznie skonfigurować blokowanie treści.</string>
     <string name="address_not_reachable">Adres nieosiągalny</string>
     <string name="activity_not_found">Nie znaleziono aktywności</string>
+    <string name="x_filters_loaded">%s załadowanych filtrów</string>
 </resources>
