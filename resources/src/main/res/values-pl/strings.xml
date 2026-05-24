@@ -53,7 +53,7 @@
     <string name="automatic_refresh">Odśwież codziennie</string>
     <string name="automatic_refresh_description">Codzienne aktualizacje mają miejsce podczas ładowania, bezczynności i w sieci niezmierzonej.</string>
     <string name="activity_edit_dns_server">Edytuj serwer DNS</string>
-    <string name="notification_action_pause">Pauza</string>
+    <string name="notification_action_pause">Wstrzymaj</string>
     <string-array name="allowlist_defaults">
         <item>Brak domyślnie wykluczonych aplikacji</item>
         <item>Wszystkie aplikacje wykluczone domyślnie</item>
@@ -95,7 +95,7 @@
     <string name="switch_onboot_description">Uruchom DNSNet po włączeniu urządzenia, jeżeli był aktywny, gdy urządzenie zostało wyłączone.</string>
     <string name="add_dns_server">Dodaj serwer DNS</string>
     <string name="add_address">Dodaj adres</string>
-    <string name="notification_paused_title">DNSNet zatrzymany</string>
+    <string name="notification_paused_title">DNSNet wstrzymany</string>
     <string name="action_logcat">Dziennik aplikacji</string>
     <string name="logcat_description">Udostępnij dziennik aplikacji, kiedy zgłaszasz je do modułu śledzenia błędów</string>
     <string name="notifications_running">Działająca usługa</string>
