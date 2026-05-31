@@ -21,7 +21,7 @@ lru = "0.16.3"
 mio = { version="1.2.0", features=["net","os-poll","os-ext"] }
 memmap2 = "0.9.10"
 quiche = "0.28.0"
-simple-dns = "0.11.2"
+simple-dns = "0.11.3"
 simple_logger = "5.2.0"
 thiserror = "2.0.18"
 uniffi = { version = "0.31.1", features = ["cli"] }
