@@ -370,6 +370,8 @@ data class DnsServers(
     fun getCurrentServers(): List<DnsServer> =
         items.mapNotNull { if (it.type == type && it.enabled) it else null }.toList()
 
+    fun isDoH3Enabled(): Boolean = enabled && type == DnsServerType.DoH3 && items.any { it.enabled && it.type == DnsServerType.DoH3 }
+
     companion object {
         val defaultServers = listOf(
             DnsServer(

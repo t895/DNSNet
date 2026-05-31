@@ -577,7 +577,7 @@ class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
             },
             ruleDatabaseManager = ruleDatabaseManager,
             context = applicationContext,
-            isDoh3 = configuration.read { dnsServers.type == DnsServerType.DoH3 },
+            getIsDoH3 = { configuration.read { dnsServers.isDoH3Enabled() } },
         )
     }
 
@@ -723,11 +723,15 @@ class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
 
         // Add all known DNS servers from local network
         val addLocalDnsServers = configuration.read {
-            val noConfigServersEnabled = this.dnsServers.items.none { it.enabled } || !this.dnsServers.enabled
-            if (this.dnsServers.type == DnsServerType.DoH3) {
-                noConfigServersEnabled
+            if (dnsServers.enabled) {
+                val noConfigServersEnabled = dnsServers.items.none { it.enabled && it.type == dnsServers.type }
+                if (dnsServers.type == DnsServerType.DoH3) {
+                    noConfigServersEnabled
+                } else {
+                    noConfigServersEnabled || useNetworkDnsServers
+                }
             } else {
-                noConfigServersEnabled || useNetworkDnsServers
+                true
             }
         }
         if (addLocalDnsServers) {
@@ -745,7 +749,7 @@ class DnsNetVpnService : VpnService(), Handler.Callback, VpnCallback {
                 vpnController = vpnController,
                 ipv6Support = ipv6Support,
                 userServers = unvalidatedDnsServers,
-                isDoh3 = configuration.read { dnsServers.type == DnsServerType.DoH3 },
+                isDoh3 = configuration.read { dnsServers.isDoH3Enabled() },
                 dnsCache = dnsCache
             )
 

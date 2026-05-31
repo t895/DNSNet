@@ -34,7 +34,7 @@ class VpnThread(
     private val blockLoggerBinding: BlockLoggerBinding?,
     private val ruleDatabaseManager: RuleDatabaseManager,
     private val context: Context,
-    private val isDoh3: Boolean,
+    private val getIsDoH3: () -> Boolean,
 ) : Runnable {
     companion object {
         private const val MIN_RETRY_TIME = 5
@@ -171,7 +171,7 @@ class VpnThread(
             vpnController = vpnController,
             ruleDatabase = ruleDatabaseManager.ruleDatabase,
             androidFileHelper = NativeFileHelperWrapper(context),
-            isDoh3 = isDoh3,
+            isDoh3 = getIsDoH3(),
         )
     }
 
