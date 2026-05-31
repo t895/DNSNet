@@ -25,6 +25,11 @@
         android:name=".DnsNetApplication"
         android:enableOnBackInvokedCallback="true"
         tools:targetApi="tiramisu">
+
+        <property
+            android:name="android.app.backup.PROPERTY_USE_RESTRICTED_BACKUP_MODE"
+            android:value="false"/>
+
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"
