@@ -16,7 +16,7 @@ bincode = "2.0.1"
 criterion = { version = "0.8.2", features = ["html_reports"] }
 etherparse = "0.20.1"
 getrandom = "0.4.2"
-log = "0.4.30"
+log = "0.4.32"
 lru = "0.18.0"
 mio = { version="1.2.1", features=["net","os-poll","os-ext"] }
 memmap2 = "0.9.10"
