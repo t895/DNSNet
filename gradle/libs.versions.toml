@@ -44,7 +44,7 @@ playPublisher = "4.0.0"
 aboutLibraries = "15.0.0"
 graphicsShapes = "1.1.0"
 material3 = "1.5.0-alpha22"
-runtimeAndroid = "1.11.2"
+runtimeAndroid = "1.11.3"
 ktor = "3.5.0"
 
 [libraries]
