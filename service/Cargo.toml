@@ -24,5 +24,5 @@ quiche = "0.29.1"
 simple-dns = "0.11.3"
 simple_logger = "5.2.0"
 thiserror = "2.0.18"
-uniffi = { version = "0.31.1", features = ["cli"] }
+uniffi = { version = "0.32.0", features = ["cli"] }
 url = "2.5.8"
