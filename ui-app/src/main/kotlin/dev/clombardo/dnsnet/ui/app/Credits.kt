@@ -33,7 +33,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.core.net.toUri
 import com.mikepenz.aboutlibraries.entity.Library
 import com.mikepenz.aboutlibraries.ui.compose.produceLibraries
-import com.mikepenz.aboutlibraries.ui.compose.rememberLibraries
 import dev.clombardo.dnsnet.ui.common.BasicTooltipButton
 import dev.clombardo.dnsnet.ui.common.ContentSetting
 import dev.clombardo.dnsnet.ui.common.ExpandableOptionsItem
