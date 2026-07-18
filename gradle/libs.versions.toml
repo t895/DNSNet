@@ -43,7 +43,7 @@ hiltNavigationCompose = "1.4.0"
 playPublisher = "4.0.0"
 aboutLibraries = "15.0.3"
 graphicsShapes = "1.1.0"
-material3 = "1.5.0-alpha23"
+material3 = "1.5.0-alpha24"
 runtimeAndroid = "1.11.4"
 ktor = "3.5.1"
 
