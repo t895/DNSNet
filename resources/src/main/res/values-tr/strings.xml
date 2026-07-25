@@ -20,7 +20,7 @@
     <string name="action">Eylem</string>
     <string name="cannot_read_config">Yapılandırma okunamıyor</string>
     <string name="cannot_write_config">Yapılandırma yazılamıyor: %s</string>
-    <string name="action_refresh">Filtre dosyalarını yenileyin</string>
+    <string name="action_refresh">Filtre dosyalarını yenile</string>
     <string name="notification_starting">Başlatılıyor</string>
     <string name="notification_running">Aktif</string>
     <string name="notification_stopping">Durduruluyor</string>
@@ -36,7 +36,7 @@
         <item>@string/allow</item>
         <item>@string/ignore</item>
     </string-array>
-    <string name="translator_credits">Çeviri : Mehmet Yüksel POLAT ve mikropsoft</string>
+    <string name="translator_credits">Çeviri : Mehmet Yüksel POLAT, mikropsoft, Oğuz Ersen</string>
     <string name="app_version_info">Sürüm: %s</string>
     <string name="dns66_credit">Julian Andres Klode tarafından oluşturulan DNS66 temel alınmıştır</string>
     <string name="adbuster_credit">Bazı kısımlar Daniel Brodie tarafından oluşturulan AdBuster\'dan türetilmiştir</string>
@@ -136,16 +136,16 @@
     <string name="select_an_option_to_continue">Devam etmek için bir seçenek seçin</string>
     <string name="confirm">Doğrula</string>
     <string name="no_block_items">Engel listesi ya da domain bulunamadı</string>
-    <string name="hagezi_dns_blocklists">hagezi\'s DNS-Blocklists</string>
+    <string name="hagezi_dns_blocklists">hagezi\'nin DNS Engelleme Listeleri</string>
     <string name="hagezi_dns_blocklists_light_description">Herhangi bir kısıtlamaya sebep olmamalı ve en az sistem kaynaklarını kullanacaktır.</string>
     <string name="hagezi_dns_blocklists_normal_description">Çoğunlukla herhangi bir kısıtlamaya sebep olmamalı.</string>
     <string name="hagezi_dns_blocklists_pro_description">Çok nadiren kısıtlamalara neden olmalı. Belirli domainlerin engelini açmak zorunda kalabilirsiniz.</string>
     <string name="hagezi_dns_blocklists_pro_plus_plus">hagezi - Pro++</string>
-    <string name="hagezi_dns_blocklists_ultimate">hagezi - Ultimate</string>
-    <string name="stevenblack_hosts">StevenBlack\'s hosts</string>
+    <string name="hagezi_dns_blocklists_ultimate">hagezi - En Yüksek</string>
+    <string name="stevenblack_hosts">StevenBlack\'un adresleri</string>
     <string name="stevenblack_hosts_description">Engellenen alan adları için birden fazla kaynak derler. Bazı uygulamaları bozabilir.</string>
-    <string name="stevenblack_hosts_adware_malware">StevenBlack - Adware + malware</string>
-    <string name="stevenblack_hosts_nsfw">StevenBlack - NSFW</string>
+    <string name="stevenblack_hosts_adware_malware">StevenBlack - Reklam ve zararlı yazılım</string>
+    <string name="stevenblack_hosts_nsfw">StevenBlack - Yetişkin içerik</string>
     <string name="stevenblack_hosts_social_media">StevenBlack - Sosyal medya</string>
     <string name="oisd_description">Reklamları ve kötücül yazılımları azaltırken gizliliği arttırabilir. Stabiliteyi engellemekten önceler.</string>
     <string name="oisd_big">oisd - büyük</string>
@@ -154,10 +154,10 @@
     <string name="view_source">Kaynağı görüntüle</string>
     <string name="hagezi_dns_blocklists_normal">hagezi - Normal</string>
     <string name="collapse">Daralt</string>
-    <string name="hagezi_dns_blocklists_light">hagezi - Light</string>
+    <string name="hagezi_dns_blocklists_light">hagezi - Hafif</string>
     <string name="add_address">Adres ekle</string>
     <string name="expand">Genişlet</string>
-    <string name="filter">Süzgeç</string>
+    <string name="filter">Filtre</string>
     <string name="sort">Sırala</string>
     <string name="failed_to_open_network_settings">Ağ ayarlarını açmak başarısız oldu</string>
     <string name="help">Yardım</string>
@@ -175,4 +175,33 @@
     <string name="hagezi_dns_blocklists_description">Farklı boyutlara sahip derleme engel listeleri. Reklamları, takip ölçevlerini, ve zararlı yazılımları engeller.</string>
     <string name="oisd_big_description">Önemli miktarda sistem belleği alacak tam liste. Bunun ne anlama geldiğini bilmiyorsanız, bunun yerine küçük listeyi seçin.</string>
     <string name="hagezi_dns_blocklists_ultimate_description">Birçok uygulamada ve web sitelerinde işlevselliği sınırlayacaktır. Sadece çok deneyimli kullanıcılar tarafından kullanılmalıdır.</string>
+    <string name="filters_tab">Filtreler</string>
+    <string name="filter_field_hint">Filtre</string>
+    <string name="missing_filter_files_message">Yapılandırdığınız (yok sayılmayan) filtre dosyalarından bazıları eksik.\n\nBunları indirmek için filtre sekmesindeki yenile düğmesini kullanın.\n\nYine de devam etmek istiyor musunuz?</string>
+    <string name="missing_filter_files_title">Filtre dosyası eksik</string>
+    <string name="address">Adres</string>
+    <string name="filter_update_error_item">Hata %1$d: %2$s</string>
+    <string name="updating_filter_files">Filtre dosyaları güncelleniyor</string>
+    <string name="could_not_update_all_filter_files">Tüm filtre dosyaları güncellenemedi</string>
+    <string name="updating_n_filter_files">%1$d filtre dosyası güncelleniyor</string>
+    <string name="address_not_reachable">Adres ulaşılabilir değil</string>
+    <string name="add_filter_file">Filtre dosyası ekle</string>
+    <string name="edit_filter_file">Filtre dosyasını düzenle</string>
+    <string name="add_filter">Filtre ekle</string>
+    <string name="edit_filter">Filtreyi düzenle</string>
+    <string name="supported_formats">Desteklenen biçimler</string>
+    <string name="supported_formats_host_name">Sunucu adresleri (örn. example.com)</string>
+    <string name="supported_formats_wildcard">Joker karakter (örn. *.example.com)</string>
+    <string name="supported_formats_adblock_plus">Adblock Plus (örn. ||example.com^)</string>
+    <string name="activity_not_found">Etkinlik bulunamadı</string>
+    <string name="acknowledge">Kabul et</string>
+    <string name="complete">Tamamla</string>
+    <string name="use_dns_servers_from_active_network_description">Kendi sunucularınızın yanı sıra, bağlı olduğunuz ağdaki sunucuları da kullanır</string>
+    <string name="doh3">HTTP/3 üzerinden DNS</string>
+    <string name="doh3_description">DNS isteklerinizi güvenli bir şekilde gönderin. \"https://example.com/dns-query\" URL\'leri kullanır.</string>
+    <string name="doh3_warning">En az bir sunucu seçilmeli</string>
+    <string name="skip_this_step">Bu adımı atla</string>
+    <string name="skip_presets_description">Bu adımı atlarsanız, içerik engellemeyi daha sonra elle ayarlamanız gerekecek.</string>
+    <string name="x_filters_loaded">%s filtre yüklendi</string>
+    <string name="oisd_small_description">Sistem belleğini daha az kullanan, büyük listenin daha küçük bir çeşidi.</string>
 </resources>
