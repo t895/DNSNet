@@ -14,7 +14,7 @@ android_logger = "0.15.1"
 base64 = "0.22.1"
 bincode = "2.0.1"
 criterion = { version = "0.8.2", features = ["html_reports"] }
-etherparse = "0.20.3"
+etherparse = "0.21.0"
 getrandom = "0.4.3"
 log = "0.4.33"
 lru = "0.18.1"
