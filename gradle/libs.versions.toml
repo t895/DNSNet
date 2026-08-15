@@ -1,7 +1,7 @@
 [versions]
 accompanistPermissions = "0.37.3"
 activityCompose = "1.13.0"
-appcompat = "1.7.1"
+appcompat = "1.8.0"
 atomicfu = "0.33.0"
 coilCompose = "3.5.0"
 coreSplashscreen = "1.2.0"
