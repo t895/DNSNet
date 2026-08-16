@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_shortdesc">Blocage d\'hôtes et serveur DNS personnalisé</string>
+    <string name="app_shortdesc">Blocage d’hôtes et serveur DNS personnalisé</string>
     <string name="custom_dns">Activer les serveurs DNS personnalisés</string>
     <string name="start_tab">Démarrer</string>
     <string name="dns_tab">DNS</string>
@@ -9,11 +9,11 @@
     <string name="load_defaults">Charger les paramètres par défaut</string>
     <string name="action_about">À propos</string>
     <string name="info_app_license">Ce programme est un logiciel libre : vous pouvez le redistribuer et le modifier suivant les termes de la Licence Public Générale GNU telle que publiée par la Free Software Foundation, soit la version 3 de la licence, soit (à votre gré) toute version ultérieure.</string>
-    <string name="switch_onboot">Lancer l\'application automatiquement au démarrage</string>
+    <string name="switch_onboot">Lancer l’application automatiquement au démarrage</string>
     <string name="title">Titre</string>
     <string name="location">Localisation</string>
     <string name="action">Action</string>
-    <string name="cannot_write_config">Impossible d\'écrire la configuration : %s</string>
+    <string name="cannot_write_config">Impossible d\'écrire la configuration : %s</string>
     <string name="action_refresh">Actualiser les fichiers de filtre</string>
     <string name="notification_starting">Démarrage</string>
     <string name="notification_running">Active</string>
@@ -22,8 +22,8 @@
     <string name="notification_reconnecting">Reconnexion</string>
     <string name="notification_reconnecting_error">Erreur de reconnexion</string>
     <string name="notification_stopped">Arrêtée</string>
-    <string name="deny">Refuser</string>
-    <string name="allow">Accepter</string>
+    <string name="deny">Bloquer</string>
+    <string name="allow">Autoriser</string>
     <string name="ignore">Ignorer</string>
     <string-array name="item_states">
         <item>@string/deny</item>
@@ -31,8 +31,8 @@
         <item>@string/ignore</item>
     </string-array>
     <!-- Translate with something like <Language> Translation: Your Name -->
-    <string name="translator_credits">Traduction française : Julien Lepiller</string>
-    <string name="app_version_info">Version : %s</string>
+    <string name="translator_credits">Traduction française : Julien Lepiller</string>
+    <string name="app_version_info">Version : %s</string>
     <string name="button_no">Non</string>
     <string name="button_yes">Oui</string>
     <string name="allowlist_tab">Apps</string>
@@ -41,11 +41,11 @@
     <string name="update_incomplete">Mise à jour incomplète</string>
     <string name="update_incomplete_description">Certains fichiers de filtre n\'ont pas pu être téléchargés. Si des fichiers avaient déjà été téléchargés, les anciennes versions continueront d\'être utilisées.</string>
     <string name="action_use_file">Utiliser le fichier</string>
-    <string name="persistable_uri_permission_failed">Impossible d\'utiliser le fichier demandé : utilisation persistante du fichier demandé non permise</string>
+    <string name="persistable_uri_permission_failed">Impossible d\'utiliser le fichier demandé   utilisation persistante du fichier demandé non permise</string>
     <string name="permission_denied">Permission refusée</string>
-    <string name="invalid_url_s">URL invalide : %1$s</string>
+    <string name="invalid_url_s">URL invalide : %1$s</string>
     <string name="file_not_found">Fichier introuvable</string>
-    <string name="unknown_error_s">Erreur inattendue : %1$s</string>
+    <string name="unknown_error_s">Erreur inattendue : %1$s</string>
     <string name="requested_timed_out">Délai de la requête dépassé</string>
     <string name="action_delete">Supprimer</string>
     <string name="action_stop">Arrêter</string>
@@ -62,7 +62,7 @@
     <string name="notifications_paused">Service suspendu</string>
     <string name="notifications_paused_desc">Notifications pour reprendre après une pause</string>
     <string name="notifications_group_service">Contrôle du service</string>
-    <string name="notifications_group_updates">Mises à joir</string>
+    <string name="notifications_group_updates">Mises à jour</string>
     <string-array name="allowlist_defaults">
         <item>Toutes les apps passent par DNSNet par défaut</item>
         <item>Aucune app ne passe par DNSNet par défaut</item>
@@ -150,13 +150,13 @@
     <string name="block_log">Journal de blocage</string>
     <string name="block_log_description">Enregistrer chaque connexion pour la visualiser et l\'analyser</string>
     <string name="try_again">Réessayer</string>
-    <string name="blocked_connections_percent">%d%% Bloqué</string>
+    <string name="blocked_connections_percent">%d%% bloqué</string>
     <string name="disable_block_log_warning_description">Une fois désactivé, le journal de blocage existant sera définitivement supprimé.</string>
     <string name="scroll_up">Faites défiler vers le haut</string>
     <string name="modify_list">Liste de modifications</string>
     <string name="last_connected">Dernière connexion</string>
     <string name="reset_settings_warning_description">Cette opération supprimera définitivement vos paramètres actuels.</string>
-    <string name="permanently_delete_warning_description">Cela supprimera définitivement %s</string>
+    <string name="permanently_delete_warning_description">Cela supprimera définitivement %s.</string>
     <string name="create_exception">Créer une exception</string>
     <string name="failed_to_open_link">Impossible d\'ouvrir le lien</string>
     <string name="open_license">Licence ouverte</string>
@@ -167,13 +167,13 @@
     <string name="welcome_to">Bienvenue à</string>
     <string name="get_started">Commencer</string>
     <string name="notice">Avis</string>
-    <string name="notice_vpn_service">Nous utilisons un service VPN (réseau privé virtuel) pour fonctionner. En général, les VPN redirigent votre trafic internet via un serveur distant, mais ce n\'est pas le cas pour DNSNet. Ce type de service sert à filtrer votre trafic internet, tout le traitement étant effectué sur votre appareil. Cela signifie également que vous ne pourrez pas utiliser d\'autre service VPN simultanément avec DNSNet.</string>
+    <string name="notice_vpn_service">Nous utilisons un service VPN (réseau privé virtuel) pour fonctionner. En général, les VPN redirigent votre trafic internet via un serveur distant, mais ce n’est pas le cas pour DNSNet. Ce type de service sert à filtrer votre trafic internet, tout le traitement étant effectué sur votre appareil. Cela signifie également que vous ne pourrez pas utiliser d’autre service VPN simultanément avec DNSNet.</string>
     <string name="grant">Accorder</string>
     <string name="acknowledge">Reconnaître</string>
     <string name="learn_more">En savoir plus</string>
     <string name="complete">Complet</string>
     <string name="use_dns_servers_from_active_network">Utiliser les serveurs du réseau actif</string>
-    <string name="use_dns_servers_from_active_network_description">S\'applique aux serveurs du réseau auquel vous êtes connecté, en plus des vôtres</string>
+    <string name="use_dns_servers_from_active_network_description">S’applique aux serveurs du réseau auquel vous êtes connecté, en plus des vôtres</string>
     <string name="filters_tab">Filtres</string>
     <string name="filter_field_hint">Filtre</string>
     <string name="missing_filter_files_message">Certains de vos fichiers de filtre configurés (non ignorés) sont manquants.\n\nUtilisez le bouton Actualiser dans l\'onglet Filtres pour les télécharger.\n\nVoulez-vous continuer ?</string>
@@ -194,11 +194,12 @@
     <string name="supported_formats_adblock_plus">Adblock Plus (par exemple ||example.com^)</string>
     <string name="activity_not_found">Activité introuvable</string>
     <string name="doh3">DNS sur HTTP/3</string>
-    <string name="doh3_description">Envoyez vos requêtes DNS en toute sécurité. Utilise les URL « https://example.com/dns-query ».</string>
+    <string name="doh3_description">Envoyez vos requêtes DNS en toute sécurité. Utilise les URL « https://example.com/dns-query ».</string>
     <string name="doh3_warning">Au moins un serveur doit être sélectionné</string>
     <string name="skip_this_step">Passer cette étape</string>
     <string name="skip_presets_description">Si vous passez cette étape, vous devrez configurer manuellement le blocage de contenu ultérieurement.</string>
     <string name="stevenblack_hosts_gambling">StevenBlack - Jeux de hasard</string>
     <string name="stevenblack_hosts_nsfw">StevenBlack - Interdit aux moins de 18 ans</string>
     <string name="stevenblack_hosts_social_media">StevenBlack - Réseaux sociaux</string>
+    <string name="x_filters_loaded">%s filtres chargés</string>
 </resources>
