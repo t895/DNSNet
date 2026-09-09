@@ -71,7 +71,9 @@ androidApplication {
             if (storeFilePath != null) {
                 signingConfig = signingConfigs.getByName("release")
             }
-            isMinifyEnabled = true
+            optimization {
+                enable = true
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -83,6 +85,9 @@ androidApplication {
             applicationIdSuffix = benchmark
             versionNameSuffix = benchmark
             isMinifyEnabled = true
+            optimization {
+                enable = true
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
