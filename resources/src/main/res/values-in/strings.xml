@@ -38,7 +38,7 @@
         <item>@string/ignore</item>
     </string-array>
     <!-- Translate with something like <Language> Translation: Your Name -->
-    <string name="translator_credits">Terjemahan Indonesia oleh cyberboh</string>
+    <string name="translator_credits">Terjemahan bahasa Indonesia oleh cyberboh, Steven Felix</string>
     <string name="app_version_info">Versi: %s</string>
     <string name="dns66_credit">Berdasarkan pada DNS66 yang dibuat oleh Julian Andres Klode</string>
     <string name="adbuster_credit">Beberapa bagian diperoleh dari AdBuster yang dibuat oleh Daniel Brodie</string>
@@ -49,7 +49,7 @@
     <string name="allowlist_tab">Aplikasi</string>
     <string name="dns_description">Aktifkan server DNS pilihan Anda</string>
     <string name="allowlist_description">Abaikan DNSNet untuk aplikasi yang ditandai</string>
-    <string name="state_dns_enabled">Diaktifkan</string>
+    <string name="state_dns_enabled">Dihidupkan</string>
     <string name="update_incomplete">Pembaruan tidak lengkap</string>
     <string name="update_incomplete_description">Beberapa berkas penyaring tidak dapat diunduh. Jika berkas tersebut sebelumnya telah diunduh, versi lama akan tetap digunakan.</string>
     <string name="action_use_file">Gunakan berkas</string>
@@ -82,7 +82,7 @@
     <string name="notifications_group_service">Kontrol layanan</string>
     <string name="notifications_group_updates">Pembaruan</string>
     <string name="unstable_feature">Fitur yang tidak stabil</string>
-    <string name="button_cancel">Batalkan</string>
+    <string name="button_cancel">Batal</string>
     <string name="allowlist_defaults_title">Daftar yang diijinkan secara default</string>
     <string-array name="allowlist_defaults">
         <item>Tidak ada aplikasi yang dilewati secara default</item>
@@ -113,7 +113,7 @@
     <string name="block_log_description">Rekam setiap sambungan untuk melihat dan menganalisisnya</string>
     <string name="warning">Peringatan</string>
     <string name="disable_block_log_warning_description">Setelah dinonaktifkan, catatan blokir yang ada akan dihapus secara permanen.</string>
-    <string name="disable">Nonaktifkan</string>
+    <string name="disable">Matikan</string>
     <string name="scroll_up">Gulir ke atas</string>
     <string name="alphabetical">Menurut abjad</string>
     <string name="attempts">Upaya</string>
