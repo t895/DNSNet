@@ -45,7 +45,7 @@ aboutLibraries = "15.3.0"
 graphicsShapes = "1.1.0"
 material3 = "1.5.0-beta02"
 runtimeAndroid = "1.11.4"
-ktor = "3.6.0"
+ktor = "3.6.1"
 
 [libraries]
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistPermissions" }
