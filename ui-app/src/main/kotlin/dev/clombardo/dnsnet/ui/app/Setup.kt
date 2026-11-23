@@ -11,6 +11,7 @@
 package dev.clombardo.dnsnet.ui.app
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.compose.animation.AnimatedContent
@@ -204,6 +205,7 @@ fun GreetingScreen(
     }
 }
 
+@SuppressLint("UnusedContentLambdaTargetStateParameter")
 @Preview
 @Composable
 private fun GreetingScreenPreview() {
@@ -212,7 +214,6 @@ private fun GreetingScreenPreview() {
             AnimatedContent(
                 targetState = true,
             ) {
-                it
                 GreetingScreen(
                     onGetStartedClick = {},
                     animatedVisibilityScope = this@AnimatedContent,
@@ -368,13 +369,13 @@ fun NoticeScreen(
     }
 }
 
+@SuppressLint("UnusedContentLambdaTargetStateParameter")
 @Preview
 @Composable
 private fun NoticeScreenPreview() {
     DnsNetTheme {
         SharedTransitionLayout {
             AnimatedContent(targetState = true) {
-                it
                 NoticeScreen(
                     onContinueClick = {},
                     animatedVisibilityScope = this@AnimatedContent,

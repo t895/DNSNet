@@ -8,7 +8,7 @@
 
 package dev.clombardo.dnsnet.ui.common
 
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.window.core.layout.WindowSizeClass
@@ -16,6 +16,6 @@ import androidx.window.core.layout.WindowSizeClass
 @Stable
 @Composable
 fun isSmallScreen(): Boolean {
-    return !currentWindowAdaptiveInfo().windowSizeClass
+    return !currentWindowAdaptiveInfoV2().windowSizeClass
         .isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
 }

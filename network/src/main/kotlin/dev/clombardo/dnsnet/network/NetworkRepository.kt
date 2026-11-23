@@ -13,7 +13,7 @@ import io.ktor.client.call.body
 import io.ktor.client.request.prepareGet
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.exhausted
-import io.ktor.utils.io.readRemaining
+import io.ktor.utils.io.readBuffer
 import kotlinx.io.asSink
 import java.io.FileOutputStream
 import javax.inject.Inject
@@ -31,7 +31,7 @@ class NetworkRepository @Inject constructor(
             val channel: ByteReadChannel = response.body()
             sink.use {
                 while (!channel.exhausted()) {
-                    val chunk = channel.readRemaining(max = 4096)
+                    val chunk = channel.readBuffer(max = 4096L)
                     chunk.transferTo(sink)
                 }
             }

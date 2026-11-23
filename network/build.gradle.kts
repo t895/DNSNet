@@ -24,4 +24,5 @@ androidLibrary {
 dependencies {
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.okhttp)
+    implementation(libs.kotlinx.io)
 }

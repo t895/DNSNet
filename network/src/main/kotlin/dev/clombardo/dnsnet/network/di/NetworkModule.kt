@@ -19,6 +19,7 @@ import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.cache.HttpCache
 import io.ktor.client.plugins.cache.storage.FileStorage
+import kotlinx.io.files.Path
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -28,7 +29,7 @@ object NetworkModule {
         @ApplicationContext context: Context,
     ): HttpClient = HttpClient(OkHttp) {
         install(HttpCache) {
-            publicStorage(FileStorage(context.cacheDir))
+            publicStorage(FileStorage(Path(context.cacheDir.absolutePath)))
         }
 
         install(HttpRequestRetry) {

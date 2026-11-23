@@ -209,11 +209,22 @@ object Home {
                     fadeOut(animationSpec = TopLevelFadeExitSpec)
         }
     }
+    val TopLevelPredictivePopEnter: AnimatedContentTransitionScope<NavBackStackEntry>.(Int) -> EnterTransition by lazy {
+        {
+            slideIn(initialOffset = ::getOffsetForTopLevelExit) +
+                    fadeIn(animationSpec = TopLevelFadeEnterSpec)
+        }
+    }
+    val TopLevelPredictivePopExit: AnimatedContentTransitionScope<NavBackStackEntry>.(Int) -> ExitTransition by lazy {
+        {
+            slideOut(targetOffset = ::getOffsetForTopLevelEnter) +
+                    fadeOut(animationSpec = TopLevelFadeExitSpec)
+        }
+    }
 
     const val TEST_TAG_IGNORE_MISSING_FILTERS_BUTTON = "ignore_missing_filters_button"
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalComposeUiApi::class)
 @SuppressLint("RestrictedApi")
 @Composable
 fun App(
@@ -345,6 +356,8 @@ fun App(
             exitTransition = Home.TopLevelExit,
             popEnterTransition = Home.TopLevelPopEnter,
             popExitTransition = Home.TopLevelPopExit,
+            predictivePopEnterTransition = Home.TopLevelPredictivePopEnter,
+            predictivePopExitTransition = Home.TopLevelPredictivePopExit,
         ) {
             composable<TopLevelDestination.Greeting> {
                 GreetingScreen(
